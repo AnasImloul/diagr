@@ -177,3 +177,9 @@ scenarios:
       - title: Record lineage
         at: catalog
         do: [draw catalog->spark, "set catalog.sub: backfill recorded", done catalog]
+
+# Parts of the diagram built as their own images and pages: data-platform-ingestion and data-platform-serving.
+# The nodes are pinned, so each view is a crop of the whole.
+views:
+  ingestion: {title: Ingestion, include: [ingestion, bus]}
+  serving: {title: Self-serve queries, include: [serving, analyst, access], scenarios: [query]}

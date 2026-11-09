@@ -37,11 +37,27 @@ PAGE = """# {title}
     The same diagram in the built-in `contrast` theme (`diagr build --theme contrast`), in the site's light or dark
     scheme.
 
-## Source
+{views}## Source
 
 ```yaml
 {source}
 ```
+"""
+
+VIEWS = """## Views
+
+This diagram has [views](../format.md#views): parts of it built as their own images and pages, next to the whole
+diagram's.
+
+{items}
+"""
+
+VIEW = """### {title}
+
+`{key}`: written as `{id}-{key}-light.svg`, `{id}-{key}-dark.svg` and [`{id}-{key}.html`]({id}/{id}-{key}.html).
+
+![{title}]({id}/{id}-{key}-light.svg#only-light){{ .dg-shot .dg-view }}
+![{title}]({id}/{id}-{key}-dark.svg#only-dark){{ .dg-shot .dg-view }}
 """
 
 INDEX = """---
@@ -87,8 +103,16 @@ def on_files(files, config):
         for name in (f"{id_}-light.svg", f"{id_}-dark.svg"):
             src = str(built / "contrast" / name)
             files.append(File.generated(config, f"examples/{id_}/contrast/{name}", abs_src_path=src))
+        views = ""
+        if data.get("views"):
+            items = []
+            for key, v in data["views"].items():
+                for name in (f"{id_}-{key}.html", f"{id_}-{key}-light.svg", f"{id_}-{key}-dark.svg"):
+                    files.append(File.generated(config, f"examples/{id_}/{name}", abs_src_path=str(built / name)))
+                items.append(VIEW.format(id=id_, key=key, title=v.get("title") or title))
+            views = VIEWS.format(items="\n".join(items)) + "\n"
         lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
-        page = PAGE.format(id=id_, title=title, description=description, source="\n".join(lines).strip())
+        page = PAGE.format(id=id_, title=title, description=description, views=views, source="\n".join(lines).strip())
         files.append(File.generated(config, f"examples/{id_}.md", content=page))
         items.append(ITEM.format(id=id_, title=title, description=description))
     files.append(File.generated(config, "examples/index.md", content=INDEX.format(items="\n".join(items))))

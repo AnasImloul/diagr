@@ -300,6 +300,12 @@ iframe.diagr-embed {
   box-shadow: var(--dg-shadow);
 }
 
+/* A view is often a small part of the diagram: show it at its own size, never wider than the column. */
+.md-typeset img.dg-view {
+  width: auto;
+  max-width: 100%;
+}
+
 [data-md-color-scheme="default"] .md-typeset img.dg-shot[src$="#only-dark"],
 [data-md-color-scheme="slate"] .md-typeset img.dg-shot[src$="#only-light"] {
   display: none;

@@ -122,6 +122,7 @@ edges:
   nodes whose place matters and leave the rest. A group with a fixed area (`at` and `span`) needs its nodes pinned.
 - **Pinning everything.** `diagr expand FILE` writes every computed position as `at` and every computed path as a
   `route`, so the output draws the same picture with nothing left to place. Start from it to fine-tune by hand.
+  Its [views](#views) become crops of the pinned diagram.
 - `diagr build --debug` labels each placed node with the cell it got (`[2, 1] auto`).
 
 The [event-driven example](examples/event-driven.md) is laid out this way from start to finish. The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
@@ -262,6 +263,11 @@ views:
   scenario is left out. A kept scenario must only use what the view shows; if it does not, `diagr check` reports the
   step, prefixed with the view's name.
 - `title` replaces the diagram's title on the view's page.
+- `diagr expand` pins every position, so in the expanded file a view of automatically placed nodes is a crop of the
+  whole rather than laid out again.
+
+The [data platform example](examples/data-platform.md#views) has two views of a pinned diagram, and the
+[event-driven example](examples/event-driven.md#views) one of a diagram placed automatically.
 
 ## Validation
 

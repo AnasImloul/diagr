@@ -59,3 +59,8 @@ scenarios:
         do:
           - parallel: [flow bus -> stock, flow bus -> search, flow bus -> notify]
           - done bus stock search notify
+
+# A view built as its own images and page, event-driven-consumers. Its nodes were placed automatically, so they are
+# placed again for the view, which closes up around them.
+views:
+  consumers: {title: Consumers, include: [bus, consumers, monitor]}

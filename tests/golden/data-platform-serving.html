@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-serve queries</title>
+<style>
+:root { --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; --page-width: 646px; --bg: #ffffff; --text: #1f2328; --muted: #656d76; --line: #57606a; --rule: #d0d7de; --hover: #f6f8fa; --accent: #16a34a; --on-accent: #ffffff; --fail: #cf222e; --new: #8250df; --changed: #bf8700; --button: #1f2328; --on-button: #ffffff; --badge: #1f2328; --on-badge: #ffffff; --tone-neutral-fill: #f6f8fa; --tone-neutral-stroke: #afb8c1; --tone-blue-fill: #f1f6fd; --tone-blue-stroke: #2e8bf0; --tone-teal-fill: #f1fbf8; --tone-teal-stroke: #1fa38a; --tone-green-fill: #f1faf3; --tone-green-stroke: #2da44e; --tone-violet-fill: #f7f3fe; --tone-violet-stroke: #8a63d2; --tone-amber-fill: #fefaf0; --tone-amber-stroke: #d4a72c; --tone-orange-fill: #fff8f1; --tone-orange-stroke: #f38020; --tile-blue-0: #0a5cb8; --tile-blue-1: #2e8bf0; --tile-teal-0: #0f7b6c; --tile-teal-1: #2bb59a; --tile-green-0: #0b5f55; --tile-green-1: #1fa38a; --tile-violet-0: #6a3fc4; --tile-violet-1: #a07be8; --tile-amber-0: #c9970a; --tile-amber-1: #f2c811; --tile-orange-0: #c2410c; --tile-orange-1: #f38020; --tile-slate-0: #475569; --tile-slate-1: #94a3b8; --tile-red-0: #b42318; --tile-red-1: #ef4444; }
+:root[data-theme="dark"] { --bg: #0d1117; --text: #e6edf3; --muted: #8d96a0; --line: #8d96a0; --rule: #30363d; --hover: #151b23; --accent: #3fb950; --on-accent: #ffffff; --fail: #f85149; --new: #a371f7; --changed: #d29922; --button: #e6edf3; --on-button: #0d1117; --badge: #e6edf3; --on-badge: #0d1117; --tone-neutral-fill: #151b23; --tone-neutral-stroke: #3d444d; --tone-blue-fill: #0f1824; --tone-blue-stroke: #3a8dde; --tone-teal-fill: #0f1b19; --tone-teal-stroke: #2bb59a; --tone-green-fill: #0f1a12; --tone-green-stroke: #3fb950; --tone-violet-fill: #16121f; --tone-violet-stroke: #8a63d2; --tone-amber-fill: #1a1608; --tone-amber-stroke: #d4a72c; --tone-orange-fill: #1c1410; --tone-orange-stroke: #f38020; --tile-blue-0: #0a5cb8; --tile-blue-1: #2e8bf0; --tile-teal-0: #0f7b6c; --tile-teal-1: #2bb59a; --tile-green-0: #0b5f55; --tile-green-1: #1fa38a; --tile-violet-0: #6a3fc4; --tile-violet-1: #a07be8; --tile-amber-0: #c9970a; --tile-amber-1: #f2c811; --tile-orange-0: #c2410c; --tile-orange-1: #f38020; --tile-slate-0: #475569; --tile-slate-1: #94a3b8; --tile-red-0: #b42318; --tile-red-1: #ef4444; }
+:root[data-contrast="on"] { --bg: #ffffff; --text: #000000; --muted: #32383f; --line: #24292f; --rule: #6e7781; --hover: #eaeef2; --accent: #0f7a35; --on-accent: #ffffff; --fail: #a40e26; --new: #6639ba; --changed: #7d4e00; --button: #000000; --on-button: #ffffff; --badge: #000000; --on-badge: #ffffff; --tone-neutral-fill: #f6f8fa; --tone-neutral-stroke: #57606a; --tone-blue-fill: #eef5ff; --tone-blue-stroke: #0550ae; --tone-teal-fill: #eefaf6; --tone-teal-stroke: #0b6b5e; --tone-green-fill: #eefaf1; --tone-green-stroke: #116329; --tone-violet-fill: #f5f0ff; --tone-violet-stroke: #5a32a3; --tone-amber-fill: #fff8e5; --tone-amber-stroke: #7d4e00; --tone-orange-fill: #fff4eb; --tone-orange-stroke: #953800; --tile-blue-0: #0a5cb8; --tile-blue-1: #2e8bf0; --tile-teal-0: #0f7b6c; --tile-teal-1: #2bb59a; --tile-green-0: #0b5f55; --tile-green-1: #1fa38a; --tile-violet-0: #6a3fc4; --tile-violet-1: #a07be8; --tile-amber-0: #c9970a; --tile-amber-1: #f2c811; --tile-orange-0: #c2410c; --tile-orange-1: #f38020; --tile-slate-0: #475569; --tile-slate-1: #94a3b8; --tile-red-0: #b42318; --tile-red-1: #ef4444; }
+:root[data-contrast="on"][data-theme="dark"] { --bg: #010409; --text: #ffffff; --muted: #d1d7e0; --line: #d1d7e0; --rule: #8b949e; --hover: #161b22; --accent: #56d364; --on-accent: #010409; --fail: #ff7b72; --new: #bc8cff; --changed: #e3b341; --button: #ffffff; --on-button: #010409; --badge: #ffffff; --on-badge: #010409; --tone-neutral-fill: #0d1117; --tone-neutral-stroke: #9198a1; --tone-blue-fill: #0b1626; --tone-blue-stroke: #58a6ff; --tone-teal-fill: #0a1a17; --tone-teal-stroke: #3ccfb4; --tone-green-fill: #0b1a10; --tone-green-stroke: #56d364; --tone-violet-fill: #150f24; --tone-violet-stroke: #bc8cff; --tone-amber-fill: #1a1405; --tone-amber-stroke: #e3b341; --tone-orange-fill: #1e1208; --tone-orange-stroke: #ffa657; --tile-blue-0: #0a5cb8; --tile-blue-1: #2e8bf0; --tile-teal-0: #0f7b6c; --tile-teal-1: #2bb59a; --tile-green-0: #0b5f55; --tile-green-1: #1fa38a; --tile-violet-0: #6a3fc4; --tile-violet-1: #a07be8; --tile-amber-0: #c9970a; --tile-amber-1: #f2c811; --tile-orange-0: #c2410c; --tile-orange-1: #f38020; --tile-slate-0: #475569; --tile-slate-1: #94a3b8; --tile-red-0: #b42318; --tile-red-1: #ef4444; }
+:root[data-contrast="on"] svg.diagr .edge .base, :root[data-contrast="on"] svg.diagr .grp > rect { stroke-width: 2px; }
+:root[data-contrast="on"] svg.diagr .edge .flow { stroke-width: 4.5px; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+.wrap { max-width: var(--page-width); margin: 0 auto; padding: 8px 0 40px; }
+
+#toggle { position: fixed; top: 20px; right: 20px; z-index: 5; width: 40px; height: 40px; display: grid; place-items: center;
+  padding: 0; cursor: pointer; color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; }
+#toggle:hover { background: var(--hover); }
+#toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+:root[data-theme="light"] #toggle .sun, :root[data-theme="dark"] #toggle .moon { display: none; }
+#toggle:focus-visible, .controls button:focus-visible, .trigger:focus-visible .btnbg { outline: 2px solid var(--text); outline-offset: 2px; }
+
+svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y; }
+/* Room under the diagram for the toolbar, so it never covers a label. */
+.stage { position: relative; padding-bottom: 40px; }
+.stage.zoomed svg.diagr { cursor: grab; }
+.stage.panning svg.diagr { cursor: grabbing; }
+.zoom { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 4px; transition: opacity 150ms; }
+.zoom button { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.zoom button:hover { background: var(--hover); }
+.zoom button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.zoom svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.zoom .half { fill: currentColor; stroke: none; }
+.zoom #contrast[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+.stage:not(.zoomed) [data-zoom="fit"] { display: none; }
+.zoom .leave, .wrap:fullscreen .zoom .enter { display: none; }
+.wrap:fullscreen .zoom .leave { display: inline; }
+.wrap:fullscreen { max-width: none; height: 100vh; overflow: auto; padding: 24px 32px; background: var(--bg); }
+.wrap:fullscreen svg.diagr { max-height: calc(100vh - 220px); }
+@media (hover: hover) {
+  .zoom { opacity: .5; }
+  .stage:hover .zoom, .stage:focus-within .zoom, .stage.zoomed .zoom { opacity: 1; }
+}
+svg.diagr .rot, svg.diagr .glyph { transform-box: fill-box; transform-origin: center; }
+svg.diagr .node, svg.diagr .edge, svg.diagr .elab, svg.diagr .grp { transition: opacity 300ms; }
+svg.diagr [data-hidden="1"] { opacity: 0; pointer-events: none; }
+
+.edge .flow { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
+.edge .head-ok { opacity: 0; }
+.edge[data-status="drawn"] .flow { opacity: 1; stroke-dashoffset: 0; transition: stroke-dashoffset var(--dur, 700ms) ease-in-out; }
+.edge[data-status="drawn"] .head-ok { opacity: 1; transition: opacity 120ms linear var(--dur, 700ms); }
+
+.node .ring { opacity: 0; }
+.node[data-status="active"] .ring { opacity: 1; animation: dg-pulse 1.2s ease-in-out infinite; }
+.node[data-status="failed"] .ring { opacity: 1; stroke: var(--fail); }
+.node .st { opacity: 0; transition: opacity 200ms; }
+.node[data-status="active"] .st-spin, .node[data-status="done"] .st-done, .node[data-status="failed"] .st-fail { opacity: 1; }
+.node[data-status="active"] .st-spin .rot, .node[data-status="active"] .glyph.spins, .node[data-spin] .glyph,
+.trigger[aria-disabled="true"] .btnbusy .rot { animation: dg-rotate 1s linear infinite; }
+.node[data-status="active"] .glyph.spins { animation-duration: 1.4s; }
+
+.cell { transition: fill 200ms, stroke 200ms; }
+.cell[data-status="act"] { fill: var(--accent); fill-opacity: .3; stroke: var(--accent); stroke-opacity: 1; animation: dg-pulse .9s ease-in-out infinite; }
+.cell[data-status="ok"] { fill: var(--accent); stroke: var(--accent); stroke-opacity: 1; }
+.cell[data-status="fail"] { fill: var(--fail); stroke: var(--fail); stroke-opacity: 1; }
+
+svg.running .node:not(.junction):not([data-status]) { opacity: .35; }
+svg.running .edge:not([data-status]), svg.running .elab:not([data-status]) { opacity: .25; }
+svg.focusing .node:not([data-focused]), svg.focusing .edge:not([data-focused]), svg.focusing .elab:not([data-focused]) { opacity: .2; }
+
+.trigger { cursor: pointer; }
+.trigger:hover .btnbg { opacity: .88; }
+.trigger .btnbusy { display: none; }
+.trigger[aria-disabled="true"] { cursor: default; }
+.trigger[aria-disabled="true"] .btnicon { display: none; }
+.trigger[aria-disabled="true"] .btnbusy { display: inline; }
+.trigger[aria-disabled="true"] .btnbg { opacity: .35; }
+
+.seeking, .seeking * { transition: none !important; }
+
+@keyframes dg-pulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: .25; } }
+@keyframes dg-rotate { to { transform: rotate(360deg); } }
+
+.panel { padding: 0 20px; }
+.scenarios { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.scenarios button { height: 32px; padding: 0 12px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.scenarios button:hover { color: var(--text); background: var(--hover); }
+.scenarios button[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+.scenarios button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.bar { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 400ms ease; }
+.row { display: flex; align-items: center; gap: 16px; margin: 10px 0 24px; flex-wrap: wrap; }
+#status { flex: 1 1 260px; font-size: 14px; color: var(--muted); min-height: 1.4em; }
+.controls { display: flex; align-items: center; gap: 6px; }
+.controls button { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.controls button:hover { background: var(--hover); }
+.controls button svg { width: 16px; height: 16px; fill: currentColor; }
+.controls .pause, .controls[data-playing="1"] .play { display: none; }
+.controls[data-playing="1"] .pause { display: block; }
+#scrub { width: 160px; accent-color: var(--accent); }
+#speed { height: 32px; color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; padding: 0 6px; }
+
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 56px; }
+ol.steps[hidden] { display: none; }
+ol.steps li { display: flex; gap: 12px; align-items: flex-start; opacity: .55; transition: opacity 300ms; cursor: pointer; }
+ol.steps li.active, ol.steps li.done, .idle ol.steps li { opacity: 1; }
+ol.steps h3 { margin: 0 0 3px; font-size: 14px; }
+ol.steps h3 button { all: unset; cursor: pointer; }
+ol.steps h3 button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; border-radius: 2px; }
+ol.steps p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+ol.steps .num { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; margin-top: 1px;
+  font-size: 11px; font-weight: 600; background: var(--badge); color: var(--on-badge); }
+ol.steps li.active .num { background: var(--accent); color: var(--on-accent); animation: dg-fade 1.2s ease-in-out infinite; }
+ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
+@keyframes dg-fade { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (max-width: 800px) { ol.steps { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  svg.diagr *, ol.steps .num { animation: none !important; }
+  svg.diagr *, .bar i, ol.steps li { transition: none !important; }
+}
+
+.p-fill-accent { fill: var(--accent); }
+.p-fill-badge { fill: var(--badge); }
+.p-fill-bg { fill: var(--bg); }
+.p-fill-button { fill: var(--button); }
+.p-fill-fail { fill: var(--fail); }
+.p-fill-line { fill: var(--line); }
+.p-fill-muted { fill: var(--muted); }
+.p-fill-on-badge { fill: var(--on-badge); }
+.p-fill-on-button { fill: var(--on-button); }
+.p-fill-text { fill: var(--text); }
+.p-fill-tone-green-fill { fill: var(--tone-green-fill); }
+.p-fill-tone-neutral-fill { fill: var(--tone-neutral-fill); }
+.p-fill-tone-violet-fill { fill: var(--tone-violet-fill); }
+.p-stop-color-tile-amber-0 { stop-color: var(--tile-amber-0); }
+.p-stop-color-tile-amber-1 { stop-color: var(--tile-amber-1); }
+.p-stop-color-tile-blue-0 { stop-color: var(--tile-blue-0); }
+.p-stop-color-tile-blue-1 { stop-color: var(--tile-blue-1); }
+.p-stop-color-tile-slate-0 { stop-color: var(--tile-slate-0); }
+.p-stop-color-tile-slate-1 { stop-color: var(--tile-slate-1); }
+.p-stop-color-tile-teal-0 { stop-color: var(--tile-teal-0); }
+.p-stop-color-tile-teal-1 { stop-color: var(--tile-teal-1); }
+.p-stroke-accent { stroke: var(--accent); }
+.p-stroke-line { stroke: var(--line); }
+.p-stroke-on-button { stroke: var(--on-button); }
+.p-stroke-tone-green-stroke { stroke: var(--tone-green-stroke); }
+.p-stroke-tone-neutral-stroke { stroke: var(--tone-neutral-stroke); }
+.p-stroke-tone-violet-stroke { stroke: var(--tone-violet-stroke); }
+svg.diagr[data-scenario="query"] [data-badges]:not([data-badges="query"]) { display: none; }
+</style>
+<script>(function(){var t=null,c=null;try{t=localStorage.getItem("diagr-theme");c=localStorage.getItem("diagr-contrast")}catch(e){}if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";var r=document.documentElement;r.setAttribute("data-theme",t);if(c==="on")r.setAttribute("data-contrast","on")})();</script>
+</head>
+<body>
+<button id="toggle" type="button" aria-label="Switch between light and dark mode" title="Switch theme"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+<div class="wrap">
+<div class="stage"><svg class="diagr" data-scenario="query" id="dg-data-platform-serving" xmlns="http://www.w3.org/2000/svg" viewBox="1440 -117 646 1052" font-family="-apple-system, BlinkMacSystemFont, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" role="group" aria-label="Three source feeds are ingested, validated and merged into a lakehouse, where a batch engine cleans and curates the data through bronze, silver and gold zones before a warehouse serves it to dashboards and an API. Four scenarios: the nightly batch, a bad record, a self-serve query and a backfill."><defs><linearGradient id="tile-amber" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="p-stop-color-tile-amber-0"/><stop offset="1" class="p-stop-color-tile-amber-1"/></linearGradient><linearGradient id="tile-blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="p-stop-color-tile-blue-0"/><stop offset="1" class="p-stop-color-tile-blue-1"/></linearGradient><linearGradient id="tile-slate" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="p-stop-color-tile-slate-0"/><stop offset="1" class="p-stop-color-tile-slate-1"/></linearGradient><linearGradient id="tile-teal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="p-stop-color-tile-teal-0"/><stop offset="1" class="p-stop-color-tile-teal-1"/></linearGradient></defs><g class="dg-body"><g class="grp" data-id="account" id="g-account"><rect x="1460" y="-97" width="400" height="1012" rx="12" stroke-width="1.5" class="p-fill-tone-neutral-fill p-stroke-tone-neutral-stroke"/><text class="gtitle p-fill-text" x="1476" y="899" font-size="15" font-weight="600">Data platform<tspan class="gsub p-fill-muted" dx="8" font-size="12.5" font-weight="400">one cloud account</tspan></text></g><g class="grp" data-id="serving" id="g-serving"><rect x="1472" y="-85" width="376" height="431" rx="12" stroke-width="1.5" class="p-fill-tone-violet-fill p-stroke-tone-violet-stroke"/><text class="gtitle p-fill-text" x="1488" y="330" font-size="15" font-weight="600">Serving</text></g><g class="grp" data-id="governance" id="g-governance"><rect x="1472" y="665" width="176" height="210" rx="12" stroke-width="1.5" class="p-fill-tone-green-fill p-stroke-tone-green-stroke"/><text class="gtitle p-fill-text" x="1488" y="859" font-size="15" font-weight="600">Governance</text></g><g class="edge" id="e-api-_warehouse" data-id="api-&gt;warehouse" data-from="api" data-to="warehouse"><path class="base p-stroke-line" d="M1560 80 L1560 210" fill="none" stroke-width="1.5"/><path class="head p-fill-line" d="M1560 211L1554.75 200.5L1565.25 200.5z"/><path class="flow p-stroke-accent" d="M1560 80 L1560 210" fill="none" pathLength="1" stroke-width="3.5"/><path class="head-ok p-fill-accent" d="M1560 211L1554.75 200.5L1565.25 200.5z"/></g><g class="edge" id="e-warehouse-_dashboards" data-id="warehouse-&gt;dashboards" data-from="warehouse" data-to="dashboards"><path class="base p-stroke-line" d="M1590 230 L1730 230" fill="none" stroke-width="1.5"/><path class="head p-fill-line" d="M1731 230L1720.5 235.25L1720.5 224.75z"/><path class="flow p-stroke-accent" d="M1590 230 L1730 230" fill="none" pathLength="1" stroke-width="3.5"/><path class="head-ok p-fill-accent" d="M1731 230L1720.5 235.25L1720.5 224.75z"/></g><g class="edge" id="e-dashboards-_warehouse" data-id="dashboards-&gt;warehouse" data-from="dashboards" data-to="warehouse"><path class="base p-stroke-line" d="M1730 250 L1590 250" fill="none" stroke-width="1.5" stroke-dasharray="5 4"/><path class="head p-fill-line" d="M1589 250L1599.5 244.75L1599.5 255.25z"/><path class="flow p-stroke-accent" d="M1730 250 L1590 250" fill="none" pathLength="1" stroke-width="3.5"/><path class="head-ok p-fill-accent" d="M1589 250L1599.5 244.75L1599.5 255.25z"/></g><g class="edge" id="e-analyst-_dashboards" data-id="analyst-&gt;dashboards" data-from="analyst" data-to="dashboards"><path class="base p-stroke-line" d="M1970 240 L1790 240" fill="none" stroke-width="1.5"/><path class="head p-fill-line" d="M1789 240L1799.5 234.75L1799.5 245.25z"/><path class="flow p-stroke-accent" d="M1970 240 L1790 240" fill="none" pathLength="1" stroke-width="3.5"/><path class="head-ok p-fill-accent" d="M1789 240L1799.5 234.75L1799.5 245.25z"/></g><g class="edge" id="e-access-_warehouse" data-id="access-&gt;warehouse" data-from="access" data-to="warehouse"><path class="base p-stroke-line" d="M1560 750 L1560 290" fill="none" stroke-width="1.5" stroke-dasharray="5 4"/><path class="head p-fill-line" d="M1560 289L1565.25 299.5L1554.75 299.5z"/><path class="flow p-stroke-accent" d="M1560 750 L1560 290" fill="none" pathLength="1" stroke-width="3.5"/><path class="head-ok p-fill-accent" d="M1560 289L1565.25 299.5L1554.75 299.5z"/></g><g class="labels"><g class="elab" data-edge="api-&gt;warehouse"><rect x="1539.97" y="136" width="40.06" height="18" rx="4" class="p-fill-tone-violet-fill"/><text class="elabel p-fill-muted" x="1560" y="149" font-size="12" text-anchor="middle" data-key="t:api-&gt;warehouse:label" data-default="reads">reads</text></g><g class="elab" data-edge="warehouse-&gt;dashboards"><rect x="1643.16" y="221" width="33.68" height="18" rx="4" class="p-fill-tone-violet-fill"/><text class="elabel p-fill-muted" x="1660" y="234" font-size="12" text-anchor="middle" data-key="t:warehouse-&gt;dashboards:label" data-default="data">data</text></g><g class="elab" data-edge="dashboards-&gt;warehouse"><rect x="1639.97" y="241" width="40.06" height="18" rx="4" class="p-fill-tone-violet-fill"/><text class="elabel p-fill-muted" x="1660" y="254" font-size="12" text-anchor="middle" data-key="t:dashboards-&gt;warehouse:label" data-default="query">query</text></g><g class="elab" data-edge="analyst-&gt;dashboards"><rect x="1858.63" y="231" width="42.74" height="18" rx="4" class="p-fill-bg"/><text class="elabel p-fill-muted" x="1880" y="244" font-size="12" text-anchor="middle" data-key="t:analyst-&gt;dashboards:label" data-default="opens">opens</text></g><g class="elab" data-edge="access-&gt;warehouse"><rect x="1538.16" y="511" width="43.68" height="18" rx="4" class="p-fill-tone-neutral-fill"/><text class="elabel p-fill-muted" x="1560" y="524" font-size="12" text-anchor="middle" data-key="t:access-&gt;warehouse:label" data-default="grants">grants</text></g></g><g class="node" id="n-api" data-id="api"><rect class="ring p-stroke-accent" x="1526" y="-4" width="68" height="68" rx="14" fill="none" stroke-width="2.5"/><g class="tile" transform="translate(1534 4) scale(0.81)"><rect width="64" height="64" rx="10" fill="url(#tile-teal)"/><g class="glyph" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 16c-5 0-6 3-6 7v4c0 3-2 5-5 5 3 0 5 2 5 5v4c0 4 1 7 6 7"/><path d="M40 16c5 0 6 3 6 7v4c0 3 2 5 5 5-3 0-5 2-5 5v4c0 4-1 7-6 7"/></g></g><text class="ntitle p-fill-text" x="1560" y="76" font-size="14" font-weight="600" text-anchor="middle" data-key="t:api:title" data-default="Metrics API">Metrics API</text><g class="st st-spin"><circle cx="1594" cy="0" r="10" class="p-fill-accent"/><g class="rot"><g transform="translate(1594 0) scale(0.27) translate(-32 -32)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/><path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/></g></g></g><g class="st st-done"><circle cx="1594" cy="0" r="10" class="p-fill-accent"/><path d="M1589.5 0l3.2 3.2 6-6.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g class="st st-fail"><circle cx="1594" cy="0" r="10" class="p-fill-fail"/><path d="M1590.5 -3.5l7 7M1597.5 -3.5l-7 7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g></g><g class="node" id="n-warehouse" data-id="warehouse"><rect class="ring p-stroke-accent" x="1526" y="206" width="68" height="68" rx="14" fill="none" stroke-width="2.5"/><g class="tile" transform="translate(1539 209) scale(0.81)" opacity=".55"><rect width="64" height="64" rx="10" fill="url(#tile-blue)"/><g class="glyph" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="18" rx="16" ry="6"/><path d="M16 18v28c0 3.3 7.2 6 16 6s16-2.7 16-6V18"/><path d="M16 32c0 3.3 7.2 6 16 6s16-2.7 16-6"/></g></g><g class="tile" transform="translate(1534 214) scale(0.81)"><rect width="64" height="64" rx="10" fill="url(#tile-blue)"/><g class="glyph" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="32" cy="18" rx="16" ry="6"/><path d="M16 18v28c0 3.3 7.2 6 16 6s16-2.7 16-6V18"/><path d="M16 32c0 3.3 7.2 6 16 6s16-2.7 16-6"/></g></g><text class="ntitle p-fill-text" x="1560" y="286" font-size="14" font-weight="600" text-anchor="middle" data-key="t:warehouse:title" data-default="Warehouse">Warehouse</text><g data-badges="query"><rect class="badge p-fill-badge" x="1516" y="200" width="20" height="20" rx="10"/><text class="badget p-fill-on-badge" x="1526" y="213.8" font-size="11" font-weight="600" text-anchor="middle">3</text></g><g class="st st-spin"><circle cx="1594" cy="210" r="10" class="p-fill-accent"/><g class="rot"><g transform="translate(1594 210) scale(0.27) translate(-32 -32)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/><path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/></g></g></g><g class="st st-done"><circle cx="1594" cy="210" r="10" class="p-fill-accent"/><path d="M1589.5 210l3.2 3.2 6-6.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g class="st st-fail"><circle cx="1594" cy="210" r="10" class="p-fill-fail"/><path d="M1590.5 206.5l7 7M1597.5 206.5l-7 7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g></g><g class="node" id="n-dashboards" data-id="dashboards"><rect class="ring p-stroke-accent" x="1726" y="206" width="68" height="68" rx="14" fill="none" stroke-width="2.5"/><g class="tile" transform="translate(1734 214) scale(0.81)"><rect width="64" height="64" rx="10" fill="url(#tile-amber)"/><g class="glyph" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 50V32M28 50V20M40 50V38M52 50V26"/></g></g><text class="ntitle p-fill-text" x="1760" y="286" font-size="14" font-weight="600" text-anchor="middle" data-key="t:dashboards:title" data-default="Dashboards">Dashboards</text><text class="nsub p-fill-muted" x="1760" y="302" font-size="12" text-anchor="middle" data-key="t:dashboards:sub:0" data-default="refreshed daily">refreshed daily</text><g class="st st-spin"><circle cx="1794" cy="210" r="10" class="p-fill-accent"/><g class="rot"><g transform="translate(1794 210) scale(0.27) translate(-32 -32)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/><path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/></g></g></g><g class="st st-done"><circle cx="1794" cy="210" r="10" class="p-fill-accent"/><path d="M1789.5 210l3.2 3.2 6-6.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g class="st st-fail"><circle cx="1794" cy="210" r="10" class="p-fill-fail"/><path d="M1790.5 206.5l7 7M1797.5 206.5l-7 7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g></g><g class="node" id="n-access" data-id="access"><rect class="ring p-stroke-accent" x="1526" y="746" width="68" height="68" rx="14" fill="none" stroke-width="2.5"/><g class="tile" transform="translate(1534 754) scale(0.81)"><rect width="64" height="64" rx="10" fill="url(#tile-slate)"/><g class="glyph" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><rect x="17" y="29" width="30" height="22" rx="4"/><path d="M23 29v-6a9 9 0 0 1 18 0v6"/></g></g><text class="ntitle p-fill-text" x="1560" y="826" font-size="14" font-weight="600" text-anchor="middle" data-key="t:access:title" data-default="Access control">Access control</text><g data-badges="query"><rect class="badge p-fill-badge" x="1516" y="740" width="20" height="20" rx="10"/><text class="badget p-fill-on-badge" x="1526" y="753.8" font-size="11" font-weight="600" text-anchor="middle">2</text></g><g class="st st-spin"><circle cx="1594" cy="750" r="10" class="p-fill-accent"/><g class="rot"><g transform="translate(1594 750) scale(0.27) translate(-32 -32)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/><path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/></g></g></g><g class="st st-done"><circle cx="1594" cy="750" r="10" class="p-fill-accent"/><path d="M1589.5 750l3.2 3.2 6-6.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g class="st st-fail"><circle cx="1594" cy="750" r="10" class="p-fill-fail"/><path d="M1590.5 746.5l7 7M1597.5 746.5l-7 7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g></g><g class="node" id="n-analyst" data-id="analyst"><rect class="ring p-stroke-accent" x="1966" y="206" width="68" height="68" rx="14" fill="none" stroke-width="2.5"/><g class="tile" transform="translate(1974 214) scale(0.81)"><rect width="64" height="64" rx="10" fill="url(#tile-slate)"/><g class="glyph" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="24" r="8"/><path d="M16 50c2-9 9-14 16-14s14 5 16 14"/></g></g><text class="ntitle p-fill-text" x="2000" y="286" font-size="14" font-weight="600" text-anchor="middle" data-key="t:analyst:title" data-default="Analyst">Analyst</text><text class="nsub p-fill-muted" x="2000" y="302" font-size="12" text-anchor="middle" data-key="t:analyst:sub:0" data-default=""></text><g class="trigger" data-node="analyst" role="button" tabindex="0" aria-label="Run a query: play Self-serve query" data-plays="query"><rect class="btnbg p-fill-button" x="1934" y="323" width="132" height="34" rx="10"/><path class="btnicon p-fill-on-button" d="M1950.13 333l11 7-11 7z"/><g class="btnbusy"><g class="rot"><g transform="translate(1956.13 340) scale(0.3) translate(-32 -32)" fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" class="p-stroke-on-button"><path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/><path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/></g></g></g><text class="btntext p-fill-on-button" x="2009" y="344.5" font-size="14" font-weight="600" text-anchor="middle" data-default="Run a query">Run a query</text></g><g data-badges="query"><rect class="badge p-fill-badge" x="1956" y="200" width="20" height="20" rx="10"/><text class="badget p-fill-on-badge" x="1966" y="213.8" font-size="11" font-weight="600" text-anchor="middle">1</text></g><g class="st st-spin"><circle cx="2034" cy="210" r="10" class="p-fill-accent"/><g class="rot"><g transform="translate(2034 210) scale(0.27) translate(-32 -32)" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/><path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/></g></g></g><g class="st st-done"><circle cx="2034" cy="210" r="10" class="p-fill-accent"/><path d="M2029.5 210l3.2 3.2 6-6.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><g class="st st-fail"><circle cx="2034" cy="210" r="10" class="p-fill-fail"/><path d="M2030.5 206.5l7 7M2037.5 206.5l-7 7" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></g></g></g></svg><div class="zoom" role="toolbar" aria-label="View"><button id="contrast" type="button" aria-pressed="false" aria-label="High contrast (C)" title="High contrast (C)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path class="half" d="M8 2a6 6 0 0 1 0 12z"/></svg></button><button type="button" data-zoom="in" aria-label="Zoom in (+)" title="Zoom in (+)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 3v10M2 8h10"/></svg></button><button type="button" data-zoom="out" aria-label="Zoom out (-)" title="Zoom out (-)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h10"/></svg></button><button type="button" data-zoom="fit" aria-label="Fit the whole diagram (0)" title="Fit the whole diagram (0)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2v4H2M10 2v4h4M10 14v-4h4M6 14v-4H2"/></svg></button><button type="button" data-zoom="full" aria-label="Full screen (F)" title="Full screen (F)"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/><path class="leave" d="M6 2v4H2M10 2v4h4M10 14v-4h4M6 14v-4H2"/></svg></button></div></div>
+<div class="panel idle" id="panel"><div class="bar"><i id="fill"></i></div><div class="row"><div id="status" aria-live="polite">Press Run a query to follow one question.</div><div class="controls" role="toolbar" aria-label="Scenario" data-playing="0"><button type="button" class="reset" data-act="reset" aria-label="Reset (Home)" title="Reset (Home)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button><button type="button" class="back" data-act="back" aria-label="Previous step (Left)" title="Previous step (Left)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h2v12H2zM14 2v12L5 8z"/></svg></button><button type="button" class="play" data-act="play" aria-label="Play (Space)" title="Play (Space)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2v12l10-6z"/></svg></button><button type="button" class="pause" data-act="pause" aria-label="Pause (Space)" title="Pause (Space)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg></button><button type="button" class="next" data-act="next" aria-label="Next step (Right)" title="Next step (Right)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12 2h2v12h-2zM2 2v12l9-6z"/></svg></button><input id="scrub" type="range" min="0" max="15" step="1" value="0" aria-label="Position"><select id="speed" aria-label="Speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option></select></div></div><ol class="steps" data-scenario="query">
+<li data-s="1"><span class="num" aria-hidden="true">1</span><div><h3><button type="button" aria-label="Step 1: Open a dashboard">Open a dashboard</button></h3></div></li>
+<li data-s="2"><span class="num" aria-hidden="true">2</span><div><h3><button type="button" aria-label="Step 2: Check access">Check access</button></h3><p>The warehouse checks the analyst&#x27;s grants before running the query.</p></div></li>
+<li data-s="3"><span class="num" aria-hidden="true">3</span><div><h3><button type="button" aria-label="Step 3: Answer">Answer</button></h3></div></li>
+</ol></div>
+</div>
+<script>document.getElementById("toggle").addEventListener("click",function(){var r=document.documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{localStorage.setItem("diagr-theme",n)}catch(e){}});</script><script>(function(){var b=document.getElementById("contrast"),r=document.documentElement;if(!b)return;function sync(){b.setAttribute("aria-pressed",r.getAttribute("data-contrast")==="on"?"true":"false")}function flip(){var on=r.getAttribute("data-contrast")!=="on";if(on)r.setAttribute("data-contrast","on");else r.removeAttribute("data-contrast");try{localStorage.setItem("diagr-contrast",on?"on":"off")}catch(e){}sync()}b.addEventListener("click",flip);document.addEventListener("keydown",function(e){var g=(e.target&&e.target.tagName)||"";if(g==="INPUT"||g==="SELECT"||g==="TEXTAREA"||e.metaKey||e.ctrlKey||e.altKey)return;if(e.key==="c"||e.key==="C")flip()});sync()})();</script>
+<script>
+(function () {
+  "use strict";
+  // Zoom and pan by rewriting the viewBox, so text and lines stay sharp at any scale.
+  var svg = document.querySelector("svg.diagr"), stage = svg && svg.closest(".stage");
+  if (!svg || !stage) return;
+  var vb = svg.viewBox.baseVal, X = vb.x, Y = vb.y, W = vb.width, H = vb.height;
+  var MAX = 6, z = 1, cx = X + W / 2, cy = Y + H / 2;
+  var pointers = new Map(), drag = null, pinch = null;
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function apply() {
+    var w = W / z, h = H / z;
+    cx = clamp(cx, X + w / 2, X + W - w / 2);
+    cy = clamp(cy, Y + h / 2, Y + H - h / 2);
+    svg.setAttribute("viewBox", [cx - w / 2, cy - h / 2, w, h].join(" "));
+    var zoomed = z > 1.001;
+    stage.classList.toggle("zoomed", zoomed);
+    svg.style.touchAction = zoomed ? "none" : "pan-x pan-y";
+  }
+  // Zoom to nz keeping the diagram point under (px, py) on screen where it is.
+  function zoomAt(nz, px, py) {
+    var r = svg.getBoundingClientRect(), fx = (px - r.left) / r.width, fy = (py - r.top) / r.height;
+    var w = W / z, h = H / z, x = cx - w / 2 + fx * w, y = cy - h / 2 + fy * h;
+    z = clamp(nz, 1, MAX);
+    cx = x - (fx - 0.5) * (W / z);
+    cy = y - (fy - 0.5) * (H / z);
+    apply();
+  }
+  function zoomCenter(nz) {
+    var r = svg.getBoundingClientRect();
+    zoomAt(nz, r.left + r.width / 2, r.top + r.height / 2);
+  }
+  function fit() { z = 1; cx = X + W / 2; cy = Y + H / 2; apply(); }
+
+  svg.addEventListener("wheel", function (e) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    zoomAt(z * Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.002)), e.clientX, e.clientY);
+  }, { passive: false });
+
+  svg.addEventListener("pointerdown", function (e) {
+    if (e.button !== 0 || (e.target.closest && e.target.closest(".trigger"))) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) {
+      var p = Array.from(pointers.values());
+      pinch = { d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), z: z };
+      drag = null;
+    } else if (z > 1.001) {
+      drag = { x: e.clientX, y: e.clientY, moved: false };
+    }
+  });
+  svg.addEventListener("pointermove", function (e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pointers.size === 2) {
+      var p = Array.from(pointers.values());
+      zoomAt(pinch.z * Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) / pinch.d, (p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
+    } else if (drag) {
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) < 3) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        stage.classList.add("panning");
+        try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      var r = svg.getBoundingClientRect();
+      cx -= dx / r.width * (W / z);
+      cy -= dy / r.height * (H / z);
+      drag.x = e.clientX; drag.y = e.clientY;
+      apply();
+    }
+  });
+  function release(e) {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (pointers.size === 0) { drag = null; stage.classList.remove("panning"); }
+  }
+  svg.addEventListener("pointerup", release);
+  svg.addEventListener("pointercancel", release);
+
+  // Full screen shows the diagram and its player controls together; Esc or the button leaves it.
+  var page = stage.closest(".wrap") || stage, full = stage.querySelector('[data-zoom="full"]');
+  function toggleFull() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (page.requestFullscreen) page.requestFullscreen().catch(function () {});
+  }
+  if (full && !document.fullscreenEnabled) full.hidden = true;
+  document.addEventListener("fullscreenchange", function () {
+    var on = document.fullscreenElement === page;
+    if (full) {
+      full.setAttribute("aria-label", on ? "Leave full screen (F)" : "Full screen (F)");
+      full.title = full.getAttribute("aria-label");
+    }
+  });
+
+  stage.querySelectorAll(".zoom button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var act = b.getAttribute("data-zoom");
+      if (act === "in") zoomCenter(z * 1.5);
+      else if (act === "out") zoomCenter(z / 1.5);
+      else if (act === "fit") fit();
+      else if (act === "full") toggleFull();
+    });
+  });
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === "+" || e.key === "=") zoomCenter(z * 1.5);
+    else if (e.key === "-" || e.key === "_") zoomCenter(z / 1.5);
+    else if (e.key === "0") fit();
+    else if ((e.key === "f" || e.key === "F") && document.fullscreenEnabled) toggleFull();
+  });
+
+  window.diagrZoom = { zoom: function (nz) { if (nz) zoomCenter(nz); return z; }, fit: fit, fullscreen: toggleFull };
+  apply();
+})();
+</script>
+<script type="application/json" id="diagr-data">{"scenarios":[{"id":"query","loop":false,"ready":"Press Run a query to follow one question.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 3: Open a dashboard...","running":1,"n:analyst":"active"},"dur":0,"step":1},{"set":{"e:analyst->dashboards":"drawn"},"dur":1400,"step":1,"edges":{"analyst->dashboards":1400}},{"set":{"n:analyst":"done"},"dur":0,"step":1},{"set":{"n:dashboards":"active"},"dur":0,"step":1},{"set":{"e:dashboards->warehouse":"drawn"},"dur":1400,"step":1,"edges":{"dashboards->warehouse":1400}},{"set":{"n:dashboards":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 3: Check access...","focus":["warehouse","access"]},"dur":0,"step":2},{"set":{"e:access->warehouse":"drawn"},"dur":1400,"step":2,"edges":{"access->warehouse":1400}},{"set":{},"dur":1000,"step":2},{"set":{"focus":null},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 3: Answer...","n:warehouse":"active"},"dur":1200,"step":3},{"set":{"e:warehouse->dashboards":"drawn"},"dur":1400,"step":3,"edges":{"warehouse->dashboards":1400}},{"set":{"n:warehouse":"done","n:dashboards":"done"},"dur":0,"step":3},{"set":{"t:analyst:sub:0":"answer in 1.2 s"},"dur":0,"step":3},{"set":{"step":4,"status":"Answer on screen."},"dur":0,"step":3}],"steps":[{"first":1,"last":6},{"first":7,"last":10},{"first":11,"last":15}]}]}</script>
+<script>
+(function () {
+  "use strict";
+  var data = JSON.parse(document.getElementById("diagr-data").textContent);
+  var svg = document.querySelector("svg.diagr");
+  var scenarios = data.scenarios, byId = {};
+  scenarios.forEach(function (x) { byId[x.id] = x; });
+  var sc, frames, steps, N, states, items = [];
+  var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var K = reduced ? 0.35 : 1;
+
+  function index(sel, attr) {
+    var m = new Map();
+    svg.querySelectorAll(sel).forEach(function (el) { m.set(el.getAttribute(attr), el); });
+    return m;
+  }
+  var nodes = index(".node", "data-id"), edges = index(".edge", "data-id"),
+      labels = index(".elab", "data-edge"), groups = index(".grp", "data-id"), keyed = index("[data-key]", "data-key");
+  var panel = document.getElementById("panel"), statusEl = document.getElementById("status"),
+      fill = document.getElementById("fill"), lists = panel ? panel.querySelectorAll("ol.steps") : [],
+      picker = panel ? panel.querySelectorAll(".scenarios button") : [], controls = document.querySelector(".controls"), scrub = document.getElementById("scrub"),
+      speedEl = document.getElementById("speed"), triggers = svg.querySelectorAll(".trigger");
+
+  var k = 0, cur = {}, timer = null, playing = false, speed = 1;
+  // A looping scenario replays after holding its last frame; any input from the viewer stops the loop.
+  var HOLD = 2000, looping = false, hold = null, inView = true;
+
+  function attr(el, name, v) {
+    if (!el) return;
+    if (v === undefined || v === null) el.removeAttribute(name); else el.setAttribute(name, v);
+  }
+  function target(id) { return nodes.get(id) || edges.get(id) || groups.get(id); }
+
+  function setKey(key, v, frame, animate) {
+    var p = key.indexOf(":"), kind = p < 0 ? key : key.slice(0, p), rest = p < 0 ? "" : key.slice(p + 1);
+    switch (kind) {
+      case "n": attr(nodes.get(rest), "data-status", v); break;
+      case "e":
+        var el = edges.get(rest);
+        if (el && animate && frame.edges && frame.edges[rest] !== undefined)
+          el.style.setProperty("--dur", (frame.edges[rest] * K / speed) + "ms");
+        attr(el, "data-status", v); attr(labels.get(rest), "data-status", v); break;
+      case "c": attr(keyed.get(key), "data-status", v); break;
+      case "t": case "cap":
+        var t = keyed.get(key);
+        if (t) t.textContent = (v === undefined || v === null) ? t.getAttribute("data-default") : v;
+        break;
+      case "s": attr(nodes.get(rest), "data-spin", v); break;
+      case "v":
+        var x = target(rest), lab = labels.get(rest);
+        [x, lab].forEach(function (e) {
+          if (!e) return;
+          var start = e.getAttribute("data-hidden0");
+          if (v === "hidden") attr(e, "data-hidden", "1");
+          else if (v === "shown") attr(e, "data-hidden", null);
+          else attr(e, "data-hidden", start);
+        });
+        break;
+      case "focus":
+        svg.classList.toggle("focusing", !!v);
+        svg.querySelectorAll("[data-focused]").forEach(function (e) { e.removeAttribute("data-focused"); });
+        (v || []).forEach(function (id) {
+          [target(id), labels.get(id)].forEach(function (e) { if (e) e.setAttribute("data-focused", ""); });
+        });
+        break;
+      case "status": if (statusEl) statusEl.textContent = v === undefined ? sc.ready : v; break;
+      case "step":
+        var n = v || 0;
+        items.forEach(function (li, idx) {
+          li.classList.toggle("done", idx < n - 1 || n > steps.length);
+          li.classList.toggle("active", idx === n - 1);
+          attr(li, "aria-current", idx === n - 1 ? "step" : null);
+        });
+        if (panel) panel.classList.toggle("idle", !n);
+        break;
+      case "running": svg.classList.toggle("running", !!v); break;
+    }
+  }
+
+  function goTo(j, animate) {
+    j = Math.max(0, Math.min(N, j));
+    var next = states[j], frame = frames[j];
+    if (!animate) document.documentElement.classList.add("seeking");
+    var keys = new Set(Object.keys(cur).concat(Object.keys(next)));
+    keys.forEach(function (key) {
+      var a = cur[key], b = next[key];
+      if (JSON.stringify(a) !== JSON.stringify(b)) setKey(key, b, frame, animate);
+    });
+    cur = next; k = j;
+    if (fill) fill.style.width = (N ? k / N * 100 : 0) + "%";
+    if (scrub) scrub.value = String(k);
+    if (!animate) {
+      svg.getBoundingClientRect();
+      requestAnimationFrame(function () { document.documentElement.classList.remove("seeking"); });
+    }
+    svg.setAttribute("data-frame", String(k));
+  }
+
+  function setPlaying(on) {
+    playing = on;
+    if (controls) controls.setAttribute("data-playing", on ? "1" : "0");
+    triggers.forEach(function (t) { attr(t, "aria-disabled", on ? "true" : null); });
+  }
+  function tick() {
+    if (k >= N) {
+      halt();
+      if (looping) hold = setTimeout(function () { hold = null; if (visible()) start(); }, HOLD);
+      return;
+    }
+    goTo(k + 1, true);
+    timer = setTimeout(tick, frames[k].dur * K / speed);
+  }
+  function start() {
+    if (playing) return;
+    if (k >= N) goTo(0, false);
+    setPlaying(true);
+    timer = setTimeout(tick, k === 0 ? 30 : 0);
+  }
+  function halt() { clearTimeout(timer); timer = null; setPlaying(false); }
+  function play() { looping = !!sc.loop; start(); }
+  function pause() { looping = false; clearTimeout(hold); hold = null; halt(); }
+  function visible() { return inView && !document.hidden; }
+  // Off screen or in a background tab, a loop waits instead of running.
+  function onVisibility() {
+    if (!looping) return;
+    if (!visible()) halt();
+    else if (!playing && !hold) start();
+  }
+  function seek(j) { pause(); goTo(j, false); }
+  function stepOf(j) { return j === 0 ? 0 : frames[j].step; }
+  function back() {
+    var s = stepOf(k);
+    seek(s >= 2 ? steps[s - 2].last : 0);
+  }
+  function next() {
+    var s = stepOf(k);
+    if (s === 0) return seek(steps[0].last);
+    seek(k < steps[s - 1].last ? steps[s - 1].last : steps[Math.min(s, steps.length - 1)].last);
+  }
+  function run() { if (!playing) { goTo(0, false); play(); } }
+
+  // Each scenario has its own frames and step list; switching resets the diagram to its start.
+  function load(id) {
+    sc = byId[id] || scenarios[0];
+    frames = sc.frames; steps = sc.steps; N = frames.length - 1;
+    states = [{}];
+    for (var i = 1; i <= N; i++) {
+      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+      states.push(s);
+    }
+    lists.forEach(function (ol) {
+      var on = ol.getAttribute("data-scenario") === sc.id;
+      ol.hidden = !on;
+      if (on) items = ol.querySelectorAll("li");
+    });
+    picker.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-scenario") === sc.id)); });
+    svg.setAttribute("data-scenario", sc.id);
+    if (scrub) scrub.max = String(N);
+    api.frames = N;
+  }
+  function choose(id) {
+    if (!byId[id] || sc.id === id) return;
+    pause();
+    items.forEach(function (li) { li.classList.remove("done", "active"); li.removeAttribute("aria-current"); });
+    load(id);
+    goTo(0, false);
+    if (panel) panel.classList.add("idle");
+    if (statusEl) statusEl.textContent = sc.ready;
+  }
+  function trigger(t) {
+    if (playing && !looping) return;
+    pause();
+    var id = t.getAttribute("data-plays");
+    if (id) choose(id);
+    run();
+  }
+
+  var api = { play: play, pause: pause, seek: seek, back: back, next: next, run: run,
+              frame: function () { return k; }, frames: 0, state: function (j) { return states[j]; },
+              scenarios: scenarios.map(function (x) { return x.id; }),
+              scenario: function (id) { if (id) choose(id); return sc.id; },
+              looping: function () { return looping; } };
+  window.diagr = api;
+
+  triggers.forEach(function (t) {
+    t.addEventListener("click", function () { trigger(t); });
+    t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); trigger(t); } });
+  });
+  picker.forEach(function (b) { b.addEventListener("click", function () { choose(b.getAttribute("data-scenario")); }); });
+  if (controls) controls.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var act = b.getAttribute("data-act");
+    if (act === "play") play(); else if (act === "pause") pause(); else if (act === "back") back();
+    else if (act === "next") next(); else if (act === "reset") seek(0);
+  });
+  if (scrub) scrub.addEventListener("input", function () { seek(+scrub.value); });
+  if (speedEl) speedEl.addEventListener("change", function () { speed = +speedEl.value || 1; });
+  lists.forEach(function (ol) {
+    ol.querySelectorAll("li").forEach(function (li, idx) { li.addEventListener("click", function () { seek(steps[idx].last); }); });
+  });
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === " " && !(e.target.closest && e.target.closest(".trigger, button"))) {
+      e.preventDefault(); if (playing) pause(); else play();
+    } else if (e.key === "ArrowRight") { e.preventDefault(); if (e.shiftKey) seek(k + 1); else next(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); if (e.shiftKey) seek(k - 1); else back(); }
+    else if (e.key === "Home") { e.preventDefault(); seek(0); }
+    else if (e.key === "End") { e.preventDefault(); seek(N); }
+  });
+
+  svg.querySelectorAll("[data-hidden]").forEach(function (e) { e.setAttribute("data-hidden0", e.getAttribute("data-hidden")); });
+  load(svg.getAttribute("data-scenario") || scenarios[0].id);
+  if (statusEl) statusEl.textContent = sc.ready;
+  goTo(0, false);
+
+  document.addEventListener("visibilitychange", onVisibility);
+  if (window.IntersectionObserver) {
+    new IntersectionObserver(function (entries) { inView = entries[0].isIntersecting; onVisibility(); }).observe(svg);
+  }
+  var auto = scenarios.filter(function (x) { return x.loop; })[0];
+  if (auto && !reduced) { choose(auto.id); play(); }
+})();
+</script>
+</body>
+</html>
