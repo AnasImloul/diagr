@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from . import __version__
-from .build import build_files, prepare, write_files
+from .build import build_files, prepare, prepare_all, write_files
 from .icons import CORE, Icons
 from .parse import ID, json_schema, load_file
 from .source import DiagramError, Problem
@@ -37,8 +37,8 @@ def cmd_build(args) -> int:
                     ]
                 )
             built[d.id] = f
-            p = prepare(d, args.theme)
-            written = write_files(p, args.out, args.debug)
+            ps = prepare_all(d, args.theme)
+            written = [w for p in ps for w in write_files(p, args.out, args.debug)]
         except DiagramError as e:
             _report(e.problems)
             status = 1
@@ -46,7 +46,7 @@ def cmd_build(args) -> int:
         except OSError as e:
             print(f"error: cannot write to {args.out}: {e.strerror or e}", file=sys.stderr)
             return 1
-        _report(p.warnings)
+        _report([w for p in ps for w in p.warnings])
         for w in written:
             print(w)
     return status
@@ -68,7 +68,7 @@ def cmd_check(args) -> int:
     found: list[dict] = []
     for f in args.files:
         try:
-            problems = prepare(load_file(f), args.theme).warnings
+            problems = [w for p in prepare_all(load_file(f), args.theme) for w in p.warnings]
             if args.strict and problems:
                 status = 1
         except DiagramError as e:

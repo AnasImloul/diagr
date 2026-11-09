@@ -700,6 +700,44 @@
         "down"
       ],
       "description": "Which way automatically placed nodes flow"
+    },
+    "views": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the view's page and images; default: the diagram's"
+          },
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Group and node ids to show, groups with everything inside them"
+          },
+          "exclude": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Group and node ids to leave out of what include selects"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Scenarios the view keeps; default: none"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Parts of the diagram built as their own images and page, <id>-<view>"
     }
   },
   "additionalProperties": false,

@@ -9,7 +9,7 @@ before relying on a detail.
 
 | Tool | Source | Step through a story | Output | Layout |
 |---|---|---|---|---|
-| **diagr** | YAML in your repository | Scenarios: nodes go active, done or failed, edges draw, text changes, frame by frame | Static SVG for light and dark, and one self-contained HTML page with the player | Automatic on a grid, with any node pinned by hand |
+| **diagr** | YAML in your repository, with views of parts of one file | Scenarios: nodes go active, done or failed, edges draw, text changes, frame by frame | Static SVG for light and dark, and one self-contained HTML page with the player | Automatic on a grid, with any node pinned by hand |
 | [D2](https://d2lang.com/tour/composition/) | D2 language in your repository | Layers, scenarios and steps: whole diagrams that inherit from each other | SVG, PNG, PDF; an SVG that cycles through the steps | Automatic |
 | [Mermaid](https://mermaid.js.org/syntax/flowchart.html) | Mermaid syntax, often inline in Markdown | Not built in; edges can carry a continuous dash animation | Rendered in the page by a JavaScript library | Automatic |
 | [Structurizr](https://docs.structurizr.com/ui/diagrams/animation) | Structurizr DSL, one model with many views | Animation steps that reveal elements and relationships; dynamic views for a use case | Its own diagram viewer and exports | Automatic, with manual adjustment |
@@ -36,7 +36,7 @@ that something flows but not in what order. Step-by-step playback comes from sep
 **Structurizr** is architecture as code built on the C4 model: you describe the system once and generate many views
 from it. Views can have an [animation](https://docs.structurizr.com/ui/diagrams/animation) made of steps that reveal
 elements and relationships, and [dynamic views](https://docs.structurizr.com/ui/diagrams/dynamic-view) show how a
-use case works. Its strength is the shared model; diagr diagrams are independent files.
+use case works. Its strength is the shared model: diagr can cut one diagram into views, but each file stands alone.
 
 **LikeC4** is another open-source architecture-as-code tool with a model and several
 [view types](https://likec4-docs-astro.pages.dev/tooling/cli), including dynamic views with a walkthrough, and its
@@ -67,8 +67,8 @@ None of these is unique on its own; the combination is what diagr is for.
 - **Checks that point at the line.** Errors and warnings carry the file, line and column, with a suggestion for
   typos, and they cover layout problems you would otherwise only spot in the picture: edges through nodes, edges
   across a group's title, nodes over groups they are not in.
-- **Reuse within a file.** Components with text parameters, nested groups, several scenarios with their own
-  triggers, and looping for screens nobody touches.
+- **Reuse within a file.** Components with text parameters, nested groups, views that build parts of the diagram on
+  their own, several scenarios with their own triggers, and looping for screens nobody touches.
 - **In the docs build.** A ```` ```diagr ```` block in MkDocs becomes the picture or the player when the site is
   built, and a GitHub Actions workflow keeps committed SVGs in step with their diagrams.
 
@@ -77,7 +77,8 @@ None of these is unique on its own; the combination is what diagr is for.
 - **The diagram has dozens of densely connected nodes**: the layout engines behind D2, Mermaid and Graphviz minimise
   crossings far harder than diagr does. diagr places nodes in simple layers and expects you to pin the few that
   matter.
-- **You want one model of the whole system** and many views generated from it: Structurizr, LikeC4 or IcePanel.
+- **You want one model of the whole system** shared by many diagrams: Structurizr, LikeC4 or IcePanel. diagr's views
+  work within one file.
 - **The diagram lives in a Markdown file on a platform that renders Mermaid**, such as a GitHub README: Mermaid needs
   no build step, while diagr needs MkDocs or a CI job to turn the source into images.
 - **You only need a picture**, not a story: any of the diagram languages will do, and diagr's static SVGs are one

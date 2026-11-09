@@ -239,6 +239,30 @@ text itself contains `: ` (`"set nb.sub: stages 1 to 9: passed"`).
 Durations are `ms` or `s`. Generated tiles marked `spins` (the core `refresh` icon) rotate while their node is
 active.
 
+## Views
+
+A view is a part of the diagram built as its own images and page, for the slide or the doc section that only needs
+that part. The whole diagram is still built too.
+
+```yaml
+views:
+  ingestion: {title: Ingestion, include: [ingestion, bus], exclude: [quarantine]}
+  serving:   {include: [serving, analyst, access], scenarios: [query]}
+```
+
+- **Files.** Each view is written next to the diagram's files as `<id>-<view>-light.svg`, `<id>-<view>-dark.svg` and
+  `<id>-<view>.html`.
+- **`include`** lists group and node ids; a group brings everything inside it, nested groups included. Without
+  `include` the view starts from every node. **`exclude`** takes ids out again in the same way.
+- An edge is kept when both its ends are, and a group when it holds a kept node, so the parents of what you include
+  come along with it.
+- **Layout.** Nodes that were [placed automatically](#automatic-layout) are placed again for the view, so it closes
+  up. Pinned nodes keep their cells, which makes a view of a hand-placed diagram a crop of it.
+- **`scenarios`** lists the scenarios the view keeps; by default it keeps none, and a trigger that would play a dropped
+  scenario is left out. A kept scenario must only use what the view shows; if it does not, `diagr check` reports the
+  step, prefixed with the view's name.
+- `title` replaces the diagram's title on the view's page.
+
 ## Validation
 
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and

@@ -139,6 +139,16 @@ class Instance:
 
 
 @dataclass
+class View:
+    id: str
+    title: str = ""
+    include: list[str] | None = None
+    exclude: list[str] = field(default_factory=list)
+    scenarios: list[str] = field(default_factory=list)
+    loc: Loc | None = None
+
+
+@dataclass
 class Diagram:
     id: str
     title: str = ""
@@ -152,6 +162,7 @@ class Diagram:
     scenarios: dict[str, Scenario] = field(default_factory=dict)
     step_list: bool = True
     direction: str = "right"
+    views: dict[str, View] = field(default_factory=dict)
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
 

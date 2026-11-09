@@ -7,9 +7,10 @@ from . import fields as f
 from .components import expand
 from .effects import EFFECT_SCHEMA, parse_effects
 from .layout.auto import place
-from .model import Component, Diagram, Edge, Grid, Group, Instance, Move, Node, Port, Scenario, Step
+from .model import Component, Diagram, Edge, Grid, Group, Instance, Move, Node, Port, Scenario, Step, View
 from .scenario import walk_effects
 from .source import DiagramError, Problem, Y, YMap, YScalar, YSeq, did_you_mean, load
+from .views import check_views
 
 ID = r"[A-Za-z_][A-Za-z0-9_-]*"
 REF = rf"{ID}(?:/{ID})?"
@@ -203,6 +204,16 @@ INSTANCE = f.Obj(
     description="An instance of a component; its groups, nodes and edges are named '<instance>/<id>'",
 )
 
+VIEW = f.Obj(
+    "view",
+    {
+        "title": f.F(f.Str(description="Title of the view's page and images; default: the diagram's")),
+        "include": f.F(f.List(f.Str(), description="Group and node ids to show, groups with everything inside them")),
+        "exclude": f.F(f.List(f.Str(), description="Group and node ids to leave out of what include selects")),
+        "scenarios": f.F(f.List(f.Str(), description="Scenarios the view keeps; default: none")),
+    },
+)
+
 DIAGRAM = f.Obj(
     "diagram",
     {
@@ -224,6 +235,13 @@ DIAGRAM = f.Obj(
         ),
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
         "direction": f.F(f.Str(enum=("right", "down"), description="Which way automatically placed nodes flow")),
+        "views": f.F(
+            f.MapOf(
+                VIEW,
+                key_pattern=ID,
+                description="Parts of the diagram built as their own images and page, <id>-<view>",
+            )
+        ),
     },
 )
 
@@ -382,6 +400,13 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     for e in rec.get("scenarios") or []:
         d.scenarios[e.key] = _scenario(e.key, e.value, problems)
     _cell_names(d, problems)
+    for e in rec.get("views") or []:
+        v = e.value
+        d.views[e.key] = View(
+            e.key, v.get("title", ""), v.get("include"), v.get("exclude", []), v.get("scenarios", []), e.loc
+        )
+    problems += check_views(d)
+
     if problems:
         raise DiagramError(problems)
     return d

@@ -5,7 +5,8 @@ import textwrap
 import unittest
 from pathlib import Path
 
-from diagr import DiagramError, Problem, prepare
+from diagr import DiagramError, Problem
+from diagr.build import prepare_all
 from diagr.parse import from_tree
 from diagr.source import load
 
@@ -17,7 +18,7 @@ def problems(yml: str, base: Path | None = None, theme: str | None = None) -> li
     text = textwrap.dedent(yml)
     try:
         d = from_tree(load(text, "t.yml"), "t.yml", base or ROOT)
-        return prepare(d, theme).warnings
+        return [w for p in prepare_all(d, theme) for w in p.warnings]
     except DiagramError as e:
         return e.problems
 

@@ -43,11 +43,30 @@ def prepare(d: Diagram, theme: str | None = None) -> Prepared:
     return Prepared(d, t, icons, lay, comp, problems)
 
 
+def prepare_all(d: Diagram, theme: str | None = None) -> list[Prepared]:
+    """The diagram and each of its views, ready to render. A view's problems name the view."""
+    from .views import view
+
+    out = [prepare(d, theme)]
+    for vid in d.views:
+        try:
+            p = prepare(view(d, vid), theme)
+        except DiagramError as e:
+            raise DiagramError([_in_view(vid, x) for x in e.problems]) from None
+        p.warnings = [_in_view(vid, x) for x in p.warnings]
+        out.append(p)
+    return out
+
+
+def _in_view(vid: str, p: Problem) -> Problem:
+    return Problem(p.loc, f"in view '{vid}': {p.message}", p.level)
+
+
 def build_files(
     path: str | Path, out: str | Path, theme: str | None = None, debug: bool = False, live: bool = False
 ) -> tuple[list[Path], list[Problem]]:
-    p = prepare(load_file(path), theme)
-    return write_files(p, out, debug, live), p.warnings
+    ps = prepare_all(load_file(path), theme)
+    return [f for p in ps for f in write_files(p, out, debug, live)], [w for p in ps for w in p.warnings]
 
 
 def write_files(p: Prepared, out: str | Path, debug: bool = False, live: bool = False) -> list[Path]:
