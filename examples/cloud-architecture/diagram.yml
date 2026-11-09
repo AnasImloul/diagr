@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=../../schema/diagr.schema.json
+diagr: 1
+diagram: cloud-architecture
+title: Job pipeline
+description: >-
+  The API admits jobs into a fair backlog. A dispatcher releases them to queues and starts workers; jobs that keep
+  failing move to a dead-letter queue and can be redriven.
+grid: { col: 182, row: 175 }
+step_list: false
+
+nodes:
+  api: { at: [0, 1], icon: function, title: API, sub: admission }
+  backlog: { at: [1, 1], icon: database, title: Backlog, sub: fair order }
+  tick: { at: [2, 0], icon: clock, title: Scheduler, sub: every minute }
+  dispatcher: { at: [2, 1], icon: function, title: Dispatcher }
+  bus: { at: [2.55, 1], junction: true }
+  jobs: { at: [3, 0], icon: queue, title: Jobs queue }
+  transcode: { at: [4, 0], icon: server, title: Transcode workers, sub: one job per task, stack: 3 }
+  dlq: { at: [4, 1], icon: queue, title: Dead letters }
+  cq: { at: [3, 2], icon: queue, title: Captions queue }
+  captions: { at: [4, 2], icon: server, title: Captions workers, sub: speech to text }
+  llm: { at: [5, 2], icon: globe, title: Model API, sub: classification }
+
+edges:
+  api -> backlog: admit
+  backlog -> dispatcher: release fairly
+  tick -> dispatcher: { dashed: true }
+  api -> dispatcher as wake: { label: wake, route: [up 0.4, right, down], dashed: true }
+  dispatcher -> bus: {}
+  bus -> jobs: { label: send, route: [up, right] }
+  bus -> transcode: { label: start task, route: [up 1.55, right, down] }
+  bus -> captions: { label: start task, route: [down 0.6, right, down] }
+  jobs -> transcode: {}
+  transcode -> dlq: bad source, deadline
+  jobs@bottom+15 -> dlq: { label: three failures, route: [down, right] }
+  dlq -> jobs@bottom-15 as redrive:
+    { label: make redrive, route: [right 0.45, down 0.45, left, up], dashed: true }
+  api -> cq: { label: captions job, route: [down, right] }
+  cq -> captions: {}
+  captions -> llm: transcript
+
+scenario:
+  ready: Follow one job from admission to a dead-letter queue and back.
+  end: The job is back on the queue.
+  steps:
+    - title: Admit
+      do: [activate api 300ms, draw api->backlog, done api, activate backlog 300ms]
+    - title: Dispatch
+      do:
+        - draw backlog->dispatcher
+        - done backlog
+        - activate dispatcher 300ms
+        - draw dispatcher->bus 300ms
+        - parallel: [draw bus->jobs, draw bus->transcode]
+        - done dispatcher
+    - title: Fail three times
+      do:
+        - activate jobs
+        - draw jobs->transcode 400ms
+        - repeat: 3
+          do:
+            [
+              activate transcode 500ms,
+              fail transcode,
+              "set transcode.sub 400ms: attempt {i} of 3 failed",
+            ]
+        - draw jobs->dlq
+        - activate dlq 400ms
+        - done jobs
+    - title: Redrive
+      do: [draw redrive 900ms, done dlq, "status: An operator redrove the job.", wait 600ms]

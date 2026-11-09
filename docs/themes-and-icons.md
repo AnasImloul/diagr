@@ -1,0 +1,58 @@
+# Themes and icons
+
+## Themes
+
+A theme is a YAML file with a font, sizes, and two token sets of the same names: `light` and `dark`. The built-in
+theme is `src/diagr/themes/default.yml`.
+
+- Static SVGs bake the colours in, one file per scheme, so they work in slides, PDF tools and `<img>` tags.
+- The HTML page writes the tokens as CSS variables and switches between them with the theme toggle (or the
+  reader's system setting on first visit).
+
+A brand theme only needs the tokens it changes:
+
+```yaml
+extends: default
+name: acme
+light:
+  accent: "#d03801"
+  tones:
+    blue: {fill: "#eef4ff", stroke: "#1d4ed8"}
+dark:
+  accent: "#ff7a45"
+```
+
+Use it with `theme: ./acme.yml` in the diagram, or `diagr build --theme ./acme.yml` to recolour without editing
+the diagram.
+
+Tokens: `bg`, `text`, `muted`, `line`, `rule`, `hover`, `accent`, `on-accent`, `fail`, `new`, `changed`, `button`,
+`on-button`, `badge`, `on-badge`, `tones.<tone>.fill|stroke` for groups, and `tiles.<tone>: [from, to]` for the
+gradient of generated icon tiles.
+
+## Icons
+
+Icons are looked up by name: first in the diagram's `icons:` folders, in order, then in the core set
+(`src/diagr/iconsets/core/icons.yml`).
+
+The core set is neutral on purpose: `api`, `branch`, `browser`, `chart`, `check`, `clock`, `cloud`, `cube`,
+`database`, `file`, `folder`, `function`, `globe`, `lake`, `layers`, `lock`, `mail`, `notebook`, `pipeline`, `queue`,
+`refresh`, `server`, `settings`, `upload`, `user`.
+
+An icon folder holds either kind of icon:
+
+- **SVG files.** `name.svg` is inlined as a `<symbol>` with its ids prefixed, so several icons never clash and the
+  output stays one self-contained file.
+- **Generated tiles.** An `icons.yml` with tiles: a theme tone plus a white line glyph on a 64 by 64 grid.
+
+```yaml
+tiles:
+  ledger: {tone: green, glyph: '<path d="M18 12h28v40H18z"/><path d="M24 22h16M24 30h16"/>'}
+  sync: {tone: violet, spins: true, glyph: '<path d="..."/>'}
+recolour:
+  logo: text        # a monochrome logo.svg in this folder follows the theme's text colour
+```
+
+Vendor marks (cloud providers, products) belong in an icon folder next to the diagram, or in a separate kit, never
+in the core set. Check the vendor's terms before you redistribute their icons. Microsoft's Azure and Fabric icon
+terms, for example, allow them in diagrams and documentation but not cropped, flipped or rotated, so a diagram that
+uses them should not use `spin` on them.

@@ -1,0 +1,89 @@
+name: default
+font: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+
+sizes:
+  icon: 52
+  group_icon: 22
+  title: 14
+  sub: 12
+  line: 16
+  label: 12
+  group_title: 15
+  group_sub: 12.5
+  edge: 1.5
+  flow: 2.25
+  corner: 8
+  group_radius: 12
+  group_inset: 12
+  group_top: 40
+  group_bottom: 20
+  badge: 10
+  margin: 20
+
+light:
+  bg: "#ffffff"
+  text: "#1f2328"
+  muted: "#656d76"
+  line: "#57606a"
+  rule: "#d0d7de"
+  hover: "#f6f8fa"
+  accent: "#1a9e7e"
+  on-accent: "#ffffff"
+  fail: "#cf222e"
+  new: "#8250df"
+  changed: "#bf8700"
+  button: "#1f2328"
+  on-button: "#ffffff"
+  badge: "#1f2328"
+  on-badge: "#ffffff"
+  tones:
+    neutral: {fill: "#f6f8fa", stroke: "#afb8c1"}
+    blue: {fill: "#f1f6fd", stroke: "#2e8bf0"}
+    teal: {fill: "#f1fbf8", stroke: "#1fa38a"}
+    green: {fill: "#f1faf3", stroke: "#2da44e"}
+    violet: {fill: "#f7f3fe", stroke: "#8a63d2"}
+    amber: {fill: "#fefaf0", stroke: "#d4a72c"}
+    orange: {fill: "#fff8f1", stroke: "#f38020"}
+  tiles:
+    blue: ["#0a5cb8", "#2e8bf0"]
+    teal: ["#0f7b6c", "#2bb59a"]
+    green: ["#0b5f55", "#1fa38a"]
+    violet: ["#6a3fc4", "#a07be8"]
+    amber: ["#c9970a", "#f2c811"]
+    orange: ["#c2410c", "#f38020"]
+    slate: ["#475569", "#94a3b8"]
+    red: ["#b42318", "#ef4444"]
+
+dark:
+  bg: "#0d1117"
+  text: "#e6edf3"
+  muted: "#8d96a0"
+  line: "#8d96a0"
+  rule: "#30363d"
+  hover: "#151b23"
+  accent: "#2bb59a"
+  on-accent: "#ffffff"
+  fail: "#f85149"
+  new: "#a371f7"
+  changed: "#d29922"
+  button: "#e6edf3"
+  on-button: "#0d1117"
+  badge: "#e6edf3"
+  on-badge: "#0d1117"
+  tones:
+    neutral: {fill: "#151b23", stroke: "#3d444d"}
+    blue: {fill: "#0f1824", stroke: "#3a8dde"}
+    teal: {fill: "#0f1b19", stroke: "#2bb59a"}
+    green: {fill: "#0f1a12", stroke: "#3fb950"}
+    violet: {fill: "#16121f", stroke: "#8a63d2"}
+    amber: {fill: "#1a1608", stroke: "#d4a72c"}
+    orange: {fill: "#1c1410", stroke: "#f38020"}
+  tiles:
+    blue: ["#0a5cb8", "#2e8bf0"]
+    teal: ["#0f7b6c", "#2bb59a"]
+    green: ["#0b5f55", "#1fa38a"]
+    violet: ["#6a3fc4", "#a07be8"]
+    amber: ["#c9970a", "#f2c811"]
+    orange: ["#c2410c", "#f38020"]
+    slate: ["#475569", "#94a3b8"]
+    red: ["#b42318", "#ef4444"]

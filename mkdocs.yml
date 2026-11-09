@@ -1,0 +1,49 @@
+site_name: diagr
+site_description: Declarative diagrams in YAML. Static SVG in light and dark, and a self-contained interactive HTML page.
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+hooks:
+  - tools/docs_hooks.py
+
+extra_javascript:
+  - javascripts/embeds.js
+
+extra_css:
+  - stylesheets/embeds.css
+
+nav:
+  - Home: index.md
+  - Reference:
+      - Diagram format and effects: format.md
+      - Themes and icons: themes-and-icons.md
+  - Examples:
+      - examples/index.md
+      - Order processing: examples/order-flow.md
+      - Cloud architecture: examples/cloud-architecture.md
+      - Dashboard refresh: examples/dashboard-refresh.md

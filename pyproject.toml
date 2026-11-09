@@ -1,0 +1,29 @@
+[project]
+name = "diagr"
+version = "0.1.0"
+description = "Declarative diagrams in YAML: static SVG in light and dark, and a self-contained interactive HTML page."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["pyyaml>=6.0"]
+
+[project.scripts]
+diagr = "diagr.cli:main"
+
+[dependency-groups]
+dev = ["ruff", "pyright"]
+docs = ["mkdocs-material"]
+
+[build-system]
+requires = ["uv_build>=0.12,<0.13"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pyright]
+include = ["src", "tools"]
+pythonVersion = "3.12"

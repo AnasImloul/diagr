@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "diagr diagram",
+  "type": "object",
+  "properties": {
+    "diagr": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Format version"
+    },
+    "diagram": {
+      "type": "string",
+      "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$",
+      "description": "Diagram id, used for output file names"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "description": "Accessible description of the whole diagram"
+    },
+    "theme": {
+      "type": "string",
+      "description": "Theme name or path to a theme file"
+    },
+    "icons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Icon folders, relative to this file"
+    },
+    "grid": {
+      "type": "object",
+      "properties": {
+        "col": {
+          "type": "number",
+          "minimum": 1
+        },
+        "row": {
+          "type": "number",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false,
+      "description": "Cell size in px"
+    },
+    "groups": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Shown at the bottom left of the group"
+          },
+          "sub": {
+            "type": "string",
+            "description": "Muted text after the title"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon name, shown before the title"
+          },
+          "tone": {
+            "type": "string",
+            "description": "Theme tone: blue, teal, green, violet, amber, orange, neutral"
+          },
+          "at": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Top-left cell [col, row]; default: fit the member nodes"
+          },
+          "span": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Size in cells [cols, rows]"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ],
+        "description": "A titled, tinted container around nodes"
+      }
+    },
+    "nodes": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Grid cell [col, row]; fractions allowed"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sub": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Muted text under the title"
+          },
+          "icon": {
+            "type": "string",
+            "description": "Icon name from the diagram's icon folders or the core set"
+          },
+          "tone": {
+            "type": "string",
+            "description": "Tile colour for generated icons"
+          },
+          "in": {
+            "type": "string",
+            "description": "Group id"
+          },
+          "junction": {
+            "type": "boolean",
+            "description": "A dot where edges meet (a bus); has no icon or text"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Label of a button under the node that plays the scenario"
+          },
+          "cells": {
+            "oneOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ],
+            "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+          },
+          "stack": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Draw the icon as a stack of N"
+          },
+          "mark": {
+            "type": "string",
+            "enum": [
+              "new",
+              "removed",
+              "changed"
+            ]
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Start hidden; the scenario can show it"
+          },
+          "tooltip": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at"
+        ],
+        "description": "A node: icon, title and sub text, centred on a grid cell"
+      }
+    },
+    "edges": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*))?)$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "The label"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "route": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
+                  "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
+                },
+                "description": "Moves from the start node. Moves without a length on the same axis share what is left"
+              },
+              "via": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "description": "Explicit waypoints in grid cells (escape hatch)"
+              },
+              "dashed": {
+                "type": "boolean"
+              },
+              "mark": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "removed",
+                  "changed"
+                ]
+              },
+              "label_at": {
+                "type": "number",
+                "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
+              },
+              "hidden": {
+                "type": "boolean"
+              },
+              "tooltip": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        ],
+        "description": "An edge; the key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'"
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "properties": {
+        "ready": {
+          "type": "string",
+          "description": "Status line before the run"
+        },
+        "end": {
+          "type": "string",
+          "description": "Status line after the run"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string",
+                "description": "Longer explanation for the step list"
+              },
+              "at": {
+                "type": "string",
+                "description": "Node that carries the step's number badge"
+              },
+              "status": {
+                "type": "string",
+                "description": "Status line while the step plays; default: the title"
+              },
+              "do": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^(activate|done|fail|draw|set|cells|spin|show|hide|focus|wait|status)\\b",
+                      "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+                    },
+                    {
+                      "type": "object",
+                      "minProperties": 1,
+                      "maxProperties": 1,
+                      "propertyNames": {
+                        "pattern": "^(set|status)\\b"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "'verb target [duration]': text, for effects that carry free text"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "parallel"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "parallel": {
+                          "$ref": "#/$defs/effects"
+                        }
+                      },
+                      "description": "Effects that play together"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "repeat",
+                        "do"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "repeat": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "do": {
+                          "$ref": "#/$defs/effects"
+                        }
+                      },
+                      "description": "Repeat effects; '{i}' in text is replaced by the round number"
+                    }
+                  ]
+                },
+                "description": "Effects, in order"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "steps"
+      ]
+    },
+    "step_list": {
+      "type": "boolean",
+      "description": "Show numbered badges and the step list in static output (default true)"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "diagram",
+    "nodes"
+  ],
+  "$defs": {
+    "effects": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "pattern": "^(activate|done|fail|draw|set|cells|spin|show|hide|focus|wait|status)\\b",
+            "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+          },
+          {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "propertyNames": {
+              "pattern": "^(set|status)\\b"
+            },
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "'verb target [duration]': text, for effects that carry free text"
+          },
+          {
+            "type": "object",
+            "required": [
+              "parallel"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "parallel": {
+                "$ref": "#/$defs/effects"
+              }
+            },
+            "description": "Effects that play together"
+          },
+          {
+            "type": "object",
+            "required": [
+              "repeat",
+              "do"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "repeat": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "do": {
+                "$ref": "#/$defs/effects"
+              }
+            },
+            "description": "Repeat effects; '{i}' in text is replaced by the round number"
+          }
+        ]
+      }
+    }
+  }
+}
