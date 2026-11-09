@@ -170,6 +170,12 @@ nodes:
 A static SVG can only show one scenario, so it shows the first one's badges and step list. From a script,
 `diagr.scenario("failover")` switches and `diagr.scenarios` lists the ids.
 
+`loop: true` on a scenario makes it replay forever: it holds its last frame for two seconds, then starts again. The
+first looping scenario starts on its own when the page loads, which suits a diagram on a screen nobody touches. Any
+input from the viewer (pause, a step, the scrubber, the picker or a trigger) stops the loop, and Play starts it again.
+A loop does not start on its own for viewers who ask for reduced motion, and it waits while the diagram is scrolled
+out of view or the tab is in the background.
+
 ### Effects
 
 An effect is `verb targets [duration]`. The duration is how long the frame holds before the next one.

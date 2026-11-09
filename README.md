@@ -89,7 +89,7 @@ editors that support it.
 
 Space plays or pauses. Left and Right go to the previous or next step; with Shift they move one frame. Home resets,
 End jumps to the end. Clicking a step in the list jumps to it. With several scenarios, the buttons above the progress
-bar switch between them.
+bar switch between them. A scenario with `loop: true` plays on its own and replays until you pause it.
 
 Ctrl or ⌘ with the scroll wheel, or a pinch, zooms the diagram around the pointer; drag to pan once zoomed in. `+` and
 `-` zoom, `0` fits it back, and the buttons in the diagram's corner do the same.

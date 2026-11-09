@@ -41,6 +41,7 @@ class Compiled:
     end: str
     id: str = ""
     title: str = ""
+    loop: bool = False
 
 
 def fold(frames: list[Frame], start: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -219,4 +220,4 @@ def compile_scenario(d: Diagram, sc: Scenario, slots: dict[str, int]) -> Compile
         steps.append(StepInfo(s.title, s.text, s.at, first, len(frames) - 1))
     frames.append(Frame({"step": n + 1, "status": sc.end or "Done."}, 0, n))
     steps[-1].last = len(frames) - 1
-    return Compiled(frames, steps, sc.ready, sc.end, sc.id, sc.title)
+    return Compiled(frames, steps, sc.ready, sc.end, sc.id, sc.title, sc.loop)

@@ -18,12 +18,13 @@ SCRIPT = """<script>(function () {
     if (s && window.diagr) {
       if (s.scenario) diagr.scenario(s.scenario);
       diagr.seek(Math.min(s.frame, diagr.frames));
+      if (s.looping) diagr.play();
     }
     if (s) window.scrollTo(0, s.y);
   } catch (e) {}
   function save() {
     var s = { y: window.scrollY };
-    if (window.diagr) { s.scenario = diagr.scenario(); s.frame = diagr.frame(); }
+    if (window.diagr) { s.scenario = diagr.scenario(); s.frame = diagr.frame(); s.looping = diagr.looping(); }
     try { sessionStorage.setItem(key, JSON.stringify(s)); } catch (e) {}
   }
   function poll() {

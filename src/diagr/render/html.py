@@ -148,6 +148,7 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
             "scenarios": [
                 {
                     "id": c.id,
+                    "loop": c.loop,
                     "ready": c.ready,
                     "frames": [f.to_json() for f in c.frames],
                     "steps": [{"first": s.first, "last": s.last} for s in c.steps],

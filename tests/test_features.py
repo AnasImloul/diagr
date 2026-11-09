@@ -131,6 +131,19 @@ class Scenarios(Case):
         self.assertIn('data-badges="first"', static)
         self.assertNotIn('data-badges="second"', static)
 
+    def test_loop(self):
+        p = prepared(TWO.replace("    title: Second\n", "    title: Second\n    loop: true\n"))
+        self.assertFalse(p.scenarios["first"].loop)
+        self.assertTrue(p.scenarios["second"].loop)
+        html = render_html(p)
+        self.assertIn('{"id":"first","loop":false,', html)
+        self.assertIn('{"id":"second","loop":true,', html)
+
+    def test_loop_is_true_or_false(self):
+        self.assertReports(
+            problems(TWO.replace("    title: Second\n", "    title: Second\n    loop: yes please\n")), "true or false"
+        )
+
     def test_one_scenario_has_no_picker(self):
         html = render_html(prepared(TWO.split("  second:")[0].replace(", plays: second", "")))
         self.assertNotIn('class="scenarios"', html)

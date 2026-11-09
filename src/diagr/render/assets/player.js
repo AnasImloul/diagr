@@ -21,6 +21,8 @@
       speedEl = document.getElementById("speed"), triggers = svg.querySelectorAll(".trigger");
 
   var k = 0, cur = {}, timer = null, playing = false, speed = 1;
+  // A looping scenario replays after holding its last frame; any input from the viewer stops the loop.
+  var HOLD = 2000, looping = false, hold = null, inView = true;
 
   function attr(el, name, v) {
     if (!el) return;
@@ -99,17 +101,30 @@
     triggers.forEach(function (t) { attr(t, "aria-disabled", on ? "true" : null); });
   }
   function tick() {
-    if (k >= N) { pause(); return; }
+    if (k >= N) {
+      halt();
+      if (looping) hold = setTimeout(function () { hold = null; if (visible()) start(); }, HOLD);
+      return;
+    }
     goTo(k + 1, true);
     timer = setTimeout(tick, frames[k].dur * K / speed);
   }
-  function play() {
+  function start() {
     if (playing) return;
     if (k >= N) goTo(0, false);
     setPlaying(true);
     timer = setTimeout(tick, k === 0 ? 30 : 0);
   }
-  function pause() { clearTimeout(timer); timer = null; setPlaying(false); }
+  function halt() { clearTimeout(timer); timer = null; setPlaying(false); }
+  function play() { looping = !!sc.loop; start(); }
+  function pause() { looping = false; clearTimeout(hold); hold = null; halt(); }
+  function visible() { return inView && !document.hidden; }
+  // Off screen or in a background tab, a loop waits instead of running.
+  function onVisibility() {
+    if (!looping) return;
+    if (!visible()) halt();
+    else if (!playing && !hold) start();
+  }
   function seek(j) { pause(); goTo(j, false); }
   function stepOf(j) { return j === 0 ? 0 : frames[j].step; }
   function back() {
@@ -153,7 +168,8 @@
     if (statusEl) statusEl.textContent = sc.ready;
   }
   function trigger(t) {
-    if (playing) return;
+    if (playing && !looping) return;
+    pause();
     var id = t.getAttribute("data-plays");
     if (id) choose(id);
     run();
@@ -162,7 +178,8 @@
   var api = { play: play, pause: pause, seek: seek, back: back, next: next, run: run,
               frame: function () { return k; }, frames: 0, state: function (j) { return states[j]; },
               scenarios: scenarios.map(function (x) { return x.id; }),
-              scenario: function (id) { if (id) choose(id); return sc.id; } };
+              scenario: function (id) { if (id) choose(id); return sc.id; },
+              looping: function () { return looping; } };
   window.diagr = api;
 
   triggers.forEach(function (t) {
@@ -197,4 +214,11 @@
   load(svg.getAttribute("data-scenario") || scenarios[0].id);
   if (statusEl) statusEl.textContent = sc.ready;
   goTo(0, false);
+
+  document.addEventListener("visibilitychange", onVisibility);
+  if (window.IntersectionObserver) {
+    new IntersectionObserver(function (entries) { inView = entries[0].isIntersecting; onVisibility(); }).observe(svg);
+  }
+  var auto = scenarios.filter(function (x) { return x.loop; })[0];
+  if (auto && !reduced) { choose(auto.id); play(); }
 })();

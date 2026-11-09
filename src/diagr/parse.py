@@ -155,6 +155,9 @@ SCENARIO = f.Obj(
     "scenario",
     {
         "title": f.F(f.Str(description="Name in the player's scenario picker")),
+        "loop": f.F(
+            f.Bool(description="Replay forever; the first looping scenario starts on its own when the page loads")
+        ),
         "ready": f.F(f.Str(description="Status line before the run")),
         "end": f.F(f.Str(description="Status line after the run")),
         "steps": f.F(f.List(STEP, min_items=1), required=True),
@@ -247,7 +250,9 @@ def _scenario(sid: str, sc: f.Rec, problems: list[Problem]) -> Scenario:
     for s in sc.get("steps"):
         effects = parse_effects(s.get("do"), problems) if s.get("do") is not None else []
         steps.append(Step(s.get("title"), s.get("text", ""), s.get("at"), s.get("status"), effects, s.loc))
-    return Scenario(steps, sc.get("ready", ""), sc.get("end", ""), sc.loc, sid, sc.get("title", ""))
+    return Scenario(
+        steps, sc.get("ready", ""), sc.get("end", ""), sc.loc, sid, sc.get("title", ""), sc.get("loop", False)
+    )
 
 
 def _group(e: f.Entry) -> Group:

@@ -114,6 +114,7 @@ class Scenario:
     loc: Loc | None = None
     id: str = ""
     title: str = ""
+    loop: bool = False
 
 
 @dataclass

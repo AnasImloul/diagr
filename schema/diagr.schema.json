@@ -590,6 +590,10 @@
             "type": "string",
             "description": "Name in the player's scenario picker"
           },
+          "loop": {
+            "type": "boolean",
+            "description": "Replay forever; the first looping scenario starts on its own when the page loads"
+          },
           "ready": {
             "type": "string",
             "description": "Status line before the run"
