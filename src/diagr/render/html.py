@@ -37,14 +37,21 @@ THEME_BOOT = (
 ZOOM_ICONS = {
     "in": '<path d="M7 3v10M2 8h10"/>',
     "out": '<path d="M2 8h10"/>',
-    "fit": '<path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/>',
+    "fit": '<path d="M6 2v4H2M10 2v4h4M10 14v-4h4M6 14v-4H2"/>',
+    "full": '<path class="enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/>'
+    '<path class="leave" d="M6 2v4H2M10 2v4h4M10 14v-4h4M6 14v-4H2"/>',
 }
 ZOOM = (
     '<div class="zoom" role="toolbar" aria-label="Zoom">'
     + "".join(
         f'<button type="button" data-zoom="{act}" aria-label="{label}" title="{label}">'
         f'<svg viewBox="0 0 16 16" aria-hidden="true">{ZOOM_ICONS[act]}</svg></button>'
-        for act, label in (("in", "Zoom in (+)"), ("out", "Zoom out (-)"), ("fit", "Fit (0)"))
+        for act, label in (
+            ("in", "Zoom in (+)"),
+            ("out", "Zoom out (-)"),
+            ("fit", "Fit the whole diagram (0)"),
+            ("full", "Full screen (F)"),
+        )
     )
     + "</div>"
 )

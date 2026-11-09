@@ -113,6 +113,7 @@ class Authoring(Case):
         html = render_html(prepared(BASE))
         self.assertIn('<div class="stage"><svg class="diagr"', html)
         self.assertIn('data-zoom="fit"', html)
+        self.assertIn('data-zoom="full"', html)
         self.assertIn("window.diagrZoom", html)
 
     def test_live_script_only_when_serving(self):

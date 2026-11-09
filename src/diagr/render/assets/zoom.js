@@ -78,10 +78,28 @@
   svg.addEventListener("pointerup", release);
   svg.addEventListener("pointercancel", release);
 
+  // Full screen shows the diagram and its player controls together; Esc or the button leaves it.
+  var page = stage.closest(".wrap") || stage, full = stage.querySelector('[data-zoom="full"]');
+  function toggleFull() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (page.requestFullscreen) page.requestFullscreen().catch(function () {});
+  }
+  if (full && !document.fullscreenEnabled) full.hidden = true;
+  document.addEventListener("fullscreenchange", function () {
+    var on = document.fullscreenElement === page;
+    if (full) {
+      full.setAttribute("aria-label", on ? "Leave full screen (F)" : "Full screen (F)");
+      full.title = full.getAttribute("aria-label");
+    }
+  });
+
   stage.querySelectorAll(".zoom button").forEach(function (b) {
     b.addEventListener("click", function () {
       var act = b.getAttribute("data-zoom");
-      if (act === "in") zoomCenter(z * 1.5); else if (act === "out") zoomCenter(z / 1.5); else fit();
+      if (act === "in") zoomCenter(z * 1.5);
+      else if (act === "out") zoomCenter(z / 1.5);
+      else if (act === "fit") fit();
+      else if (act === "full") toggleFull();
     });
   });
   document.addEventListener("keydown", function (e) {
@@ -90,8 +108,9 @@
     if (e.key === "+" || e.key === "=") zoomCenter(z * 1.5);
     else if (e.key === "-" || e.key === "_") zoomCenter(z / 1.5);
     else if (e.key === "0") fit();
+    else if ((e.key === "f" || e.key === "F") && document.fullscreenEnabled) toggleFull();
   });
 
-  window.diagrZoom = { zoom: function (nz) { if (nz) zoomCenter(nz); return z; }, fit: fit };
+  window.diagrZoom = { zoom: function (nz) { if (nz) zoomCenter(nz); return z; }, fit: fit, fullscreen: toggleFull };
   apply();
 })();

@@ -17,7 +17,7 @@ PAGE = """# {title}
 {description}
 {{ .dg-lead }}
 
-<iframe class="diagr-embed" src="{id}.html" title="{title}" loading="lazy"></iframe>
+<iframe class="diagr-embed" src="{id}.html" title="{title}" loading="lazy" allowfullscreen></iframe>
 
 ## Static images
 

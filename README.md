@@ -92,7 +92,8 @@ End jumps to the end. Clicking a step in the list jumps to it. With several scen
 bar switch between them. A scenario with `loop: true` plays on its own and replays until you pause it.
 
 Ctrl or ⌘ with the scroll wheel, or a pinch, zooms the diagram around the pointer; drag to pan once zoomed in. `+` and
-`-` zoom, `0` fits it back, and the buttons in the diagram's corner do the same.
+`-` zoom, `0` fits it back, `F` shows the diagram and its controls full screen, and the buttons in the diagram's corner
+do the same.
 
 ## Development
 

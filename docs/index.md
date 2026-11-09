@@ -69,4 +69,5 @@ move one frame. ++home++ resets, ++end++ jumps to the end. Clicking a step in th
 scenarios, the buttons above the progress bar switch between them.
 
 ++ctrl++ or ++cmd++ with the scroll wheel, or a pinch, zooms the diagram around the pointer; drag to pan once zoomed
-in. ++plus++ and ++minus++ zoom, ++0++ fits it back, and the buttons in the diagram's corner do the same.
+in. ++plus++ and ++minus++ zoom, ++0++ fits it back, ++f++ shows the diagram and its controls full screen, and the
+buttons in the diagram's corner do the same.

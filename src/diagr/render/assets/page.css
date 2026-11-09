@@ -19,6 +19,11 @@ svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y
 .zoom button:hover { background: var(--hover); }
 .zoom button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .zoom svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.stage:not(.zoomed) [data-zoom="fit"] { display: none; }
+.zoom .leave, .wrap:fullscreen .zoom .enter { display: none; }
+.wrap:fullscreen .zoom .leave { display: inline; }
+.wrap:fullscreen { max-width: none; height: 100vh; overflow: auto; padding: 24px 32px; background: var(--bg); }
+.wrap:fullscreen svg.diagr { max-height: calc(100vh - 220px); }
 @media (hover: hover) {
   .zoom { opacity: .5; }
   .stage:hover .zoom, .stage:focus-within .zoom, .stage.zoomed .zoom { opacity: 1; }
