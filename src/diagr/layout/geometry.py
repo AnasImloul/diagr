@@ -88,12 +88,12 @@ class Layout:
 
 
 def sub_slots(d: Diagram) -> dict[str, int]:
-    """How many sub lines each node needs: its own, or more if the scenario sets a later line."""
-    slots = {k: len(n.sub) for k, n in d.nodes.items()}
-    if d.scenario:
-        from ..scenario import walk_effects
+    """How many sub lines each node needs: its own, or more if a scenario sets a later line."""
+    from ..scenario import walk_effects
 
-        for e in walk_effects(d.scenario):
+    slots = {k: len(n.sub) for k, n in d.nodes.items()}
+    for sc in d.scenarios.values():
+        for e in walk_effects(sc):
             if e.verb == "set" and e.targets:
                 parts = e.targets[0].split(".")
                 if len(parts) >= 2 and parts[0] in slots and parts[1] == "sub":
@@ -140,6 +140,21 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
         Rect(x - half_w, top, 2 * half_w, bottom - top),
         half + 4,
     )
+
+
+def _title_width(g: Group, t: Theme) -> float:
+    w = text_width(g.title, t.size("group_title"), 600)
+    if g.icon:
+        w += t.size("group_icon") + 8
+    if g.sub:
+        w += 8 + text_width(g.sub, t.size("group_sub"))
+    return w
+
+
+def group_title_box(g: Group, r: Rect, t: Theme) -> Rect:
+    """Where the title (with icon and sub text) is drawn: bottom left, baseline 16px above the bottom edge."""
+    h = max(t.size("group_title"), t.size("group_icon") if g.icon else 0)
+    return Rect(r.x + 16, r.y1 - 16 - h, _title_width(g, t), h + 4)
 
 
 def group_depth(d: Diagram, gid: str) -> int:
@@ -190,12 +205,7 @@ def group_rect(
         for c in children:
             x0, x1 = min(x0, c.x - inset), max(x1, c.x1 + inset)
             y0, y1 = min(y0, c.y - inset), max(y1, c.y1 + 2 * t.size("group_bottom"))
-    need = 32 + text_width(g.title, t.size("group_title"), 600)
-    if g.icon:
-        need += t.size("group_icon") + 8
-    if g.sub:
-        need += 8 + text_width(g.sub, t.size("group_sub"))
-    x1 = max(x1, x0 + need)
+    x1 = max(x1, x0 + 32 + _title_width(g, t))
     return Rect(x0, y0, x1 - x0, y1 - y0)
 
 

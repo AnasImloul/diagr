@@ -7,7 +7,7 @@ from .icons import Icons
 from .layout.geometry import Layout, layout, sub_slots
 from .model import Diagram
 from .parse import load_file
-from .scenario import Compiled, compile_scenario
+from .scenario import Compiled, compile_scenarios
 from .scene import SceneBuilder
 from .source import DiagramError, Problem
 from .theme import SCHEMES, Theme, load_theme
@@ -20,11 +20,16 @@ class Prepared:
     theme: Theme
     icons: Icons
     layout: Layout
-    compiled: Compiled | None
+    scenarios: dict[str, Compiled]
     warnings: list[Problem] = field(default_factory=list)
 
+    @property
+    def compiled(self) -> Compiled | None:
+        """The first scenario, which static output shows."""
+        return next(iter(self.scenarios.values()), None)
+
     def scene(self) -> SceneBuilder:
-        return SceneBuilder(self.diagram, self.theme, self.layout, self.icons, self.compiled)
+        return SceneBuilder(self.diagram, self.theme, self.layout, self.icons, self.scenarios)
 
 
 def prepare(d: Diagram, theme: str | None = None) -> Prepared:
@@ -34,10 +39,10 @@ def prepare(d: Diagram, theme: str | None = None) -> Prepared:
     if any(p.level == "error" for p in problems):
         raise DiagramError(problems)
     lay = layout(d, t)
-    problems += check_layout(d, lay)
+    problems += check_layout(d, lay, t)
     if any(p.level == "error" for p in problems):
         raise DiagramError(problems)
-    comp = compile_scenario(d, sub_slots(d))
+    comp = compile_scenarios(d, sub_slots(d))
     return Prepared(d, t, icons, lay, comp, problems)
 
 

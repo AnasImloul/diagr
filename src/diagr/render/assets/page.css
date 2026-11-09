@@ -52,6 +52,12 @@ svg.focusing .node:not([data-focused]), svg.focusing .edge:not([data-focused]), 
 @keyframes dg-rotate { to { transform: rotate(360deg); } }
 
 .panel { padding: 0 20px; }
+.scenarios { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.scenarios button { height: 32px; padding: 0 12px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.scenarios button:hover { color: var(--text); background: var(--hover); }
+.scenarios button[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+.scenarios button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .bar { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 400ms ease; }
 .row { display: flex; align-items: center; gap: 16px; margin: 10px 0 24px; flex-wrap: wrap; }
@@ -67,6 +73,7 @@ svg.focusing .node:not([data-focused]), svg.focusing .edge:not([data-focused]), 
 #speed { height: 32px; color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; padding: 0 6px; }
 
 ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 56px; }
+ol.steps[hidden] { display: none; }
 ol.steps li { display: flex; gap: 12px; align-items: flex-start; opacity: .55; transition: opacity 300ms; cursor: pointer; }
 ol.steps li.active, ol.steps li.done, .idle ol.steps li { opacity: 1; }
 ol.steps h3 { margin: 0 0 3px; font-size: 14px; }

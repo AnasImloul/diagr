@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from .icons import Icons, SvgIcon, Tile
-from .layout.geometry import Layout, Rect
-from .model import Diagram, Effect, Loc
+from .layout.geometry import Layout, Point, Rect, group_title_box
+from .model import Diagram, Effect, Loc, Scenario
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem
 from .theme import Theme
@@ -60,6 +60,11 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         if n.at in seen:
             p.append(Problem(n.loc, f"node '{n.id}' sits on the same cell as '{seen[n.at]}'"))
         seen[n.at] = n.id
+        if n.plays and n.plays not in d.scenarios:
+            names = ", ".join(d.scenarios) or "none"
+            p.append(Problem(n.loc, f"node '{n.id}': 'plays' names unknown scenario '{n.plays}' (scenarios: {names})"))
+        elif n.plays and not n.trigger:
+            _warn(p, n.loc, f"node '{n.id}' has 'plays' but no 'trigger' button")
     for e in d.edges.values():
         for end in (e.src, e.dst):
             if end.node not in d.nodes:
@@ -76,8 +81,8 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
                     _warn(
                         p, e.loc, f"edge '{e.id}' is visible but node '{end}' starts hidden; mark the edge hidden too"
                     )
-    if d.scenario:
-        p += check_scenario(d)
+    for sc in d.scenarios.values():
+        p += check_scenario(d, sc)
     _check_hidden(d, p)
     return p
 
@@ -93,7 +98,7 @@ def _in_loop(d: Diagram, gid: str) -> bool:
 
 
 def _check_hidden(d: Diagram, p: list[Problem]) -> None:
-    effects = walk_effects(d.scenario) if d.scenario else []
+    effects = [e for sc in d.scenarios.values() for e in walk_effects(sc)]
     shown = {resolve_edge(d, x) or x for e in effects if e.verb == "show" for x in e.targets}
     for n in d.nodes.values():
         if n.hidden and n.id not in shown:
@@ -146,10 +151,8 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
         _check_effect(d, c, p)
 
 
-def check_scenario(d: Diagram) -> list[Problem]:
+def check_scenario(d: Diagram, sc: Scenario) -> list[Problem]:
     p: list[Problem] = []
-    sc = d.scenario
-    assert sc
     for s in sc.steps:
         if s.at and s.at not in d.nodes:
             p.append(Problem(s.loc, f"step '{s.title}': unknown node '{s.at}'"))
@@ -158,7 +161,7 @@ def check_scenario(d: Diagram) -> list[Problem]:
     return p
 
 
-def check_layout(d: Diagram, lay: Layout) -> list[Problem]:
+def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
     p: list[Problem] = []
     for k, path in lay.edges.items():
         for msg in path.problems:
@@ -183,12 +186,30 @@ def check_layout(d: Diagram, lay: Layout) -> list[Problem]:
                 continue
             if box.overlaps(b.box):
                 _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps node '{n}'")
+    titles = {k: group_title_box(d.groups[k], r, t) for k, r in lay.groups.items()}
+    for k, path in lay.edges.items():
+        e = d.edges[k]
+        segments = list(zip(path.points, path.points[1:], strict=False))
+        for n, b in lay.nodes.items():
+            if n not in (e.src.node, e.dst.node) and not b.node.junction and _crosses(segments, b.box):
+                _warn(p, e.loc, f"edge '{k}' passes through node '{n}'")
+        for g, box in titles.items():
+            if _crosses(segments, box):
+                _warn(p, e.loc, f"edge '{k}' crosses the title of group '{g}'")
     gl = list(lay.groups.items())
     for i, (a, ra) in enumerate(gl):
         for b, rb in gl[i + 1 :]:
             if ra.overlaps(rb) and not (_inside(rb, ra) or _inside(ra, rb)):
                 _warn(p, d.groups[b].loc, f"group '{b}' overlaps group '{a}'")
     return p
+
+
+def _crosses(segments: list[tuple[Point, Point]], r: Rect) -> bool:
+    for (ax, ay), (bx, by) in segments:
+        lo_x, hi_x, lo_y, hi_y = min(ax, bx), max(ax, bx), min(ay, by), max(ay, by)
+        if lo_x < r.x1 and hi_x > r.x and lo_y < r.y1 and hi_y > r.y:
+            return True
+    return False
 
 
 def _inside(inner: Rect, outer: Rect) -> bool:

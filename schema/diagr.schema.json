@@ -154,7 +154,11 @@
           },
           "trigger": {
             "type": "string",
-            "description": "Label of a button under the node that plays the scenario"
+            "description": "Label of a button under the node that plays a scenario"
+          },
+          "plays": {
+            "type": "string",
+            "description": "Scenario id the trigger plays; default: the first scenario"
           },
           "cells": {
             "oneOf": [
@@ -186,7 +190,7 @@
           },
           "hidden": {
             "type": "boolean",
-            "description": "Start hidden; the scenario can show it"
+            "description": "Start hidden; a scenario can show it"
           },
           "tooltip": {
             "type": "string"
@@ -271,6 +275,10 @@
     "scenario": {
       "type": "object",
       "properties": {
+        "title": {
+          "type": "string",
+          "description": "Name in the player's scenario picker"
+        },
         "ready": {
           "type": "string",
           "description": "Status line before the run"
@@ -368,6 +376,119 @@
       "required": [
         "steps"
       ]
+    },
+    "scenarios": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Name in the player's scenario picker"
+          },
+          "ready": {
+            "type": "string",
+            "description": "Status line before the run"
+          },
+          "end": {
+            "type": "string",
+            "description": "Status line after the run"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Longer explanation for the step list"
+                },
+                "at": {
+                  "type": "string",
+                  "description": "Node that carries the step's number badge"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Status line while the step plays; default: the title"
+                },
+                "do": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(activate|done|fail|draw|set|cells|spin|show|hide|focus|wait|status)\\b",
+                        "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+                      },
+                      {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "propertyNames": {
+                          "pattern": "^(set|status)\\b"
+                        },
+                        "additionalProperties": {
+                          "type": "string"
+                        },
+                        "description": "'verb target [duration]': text, for effects that carry free text"
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "parallel"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "parallel": {
+                            "$ref": "#/$defs/effects"
+                          }
+                        },
+                        "description": "Effects that play together"
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "repeat",
+                          "do"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "repeat": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "do": {
+                            "$ref": "#/$defs/effects"
+                          }
+                        },
+                        "description": "Repeat effects; '{i}' in text is replaced by the round number"
+                      }
+                    ]
+                  },
+                  "description": "Effects, in order"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "title"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "steps"
+        ]
+      },
+      "minProperties": 1,
+      "description": "Several scenarios by id; the first is the default"
     },
     "step_list": {
       "type": "boolean",

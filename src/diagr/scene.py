@@ -48,8 +48,9 @@ def safe_id(s: str) -> str:
 
 
 class SceneBuilder:
-    def __init__(self, d: Diagram, t: Theme, lay: Layout, icons: Icons, comp: Compiled | None):
-        self.d, self.t, self.lay, self.icons, self.comp = d, t, lay, icons, comp
+    def __init__(self, d: Diagram, t: Theme, lay: Layout, icons: Icons, scenarios: dict[str, Compiled]):
+        self.d, self.t, self.lay, self.icons, self.scenarios = d, t, lay, icons, scenarios
+        self.comp = next(iter(scenarios.values()), None)
         self.tiles_used: set[str] = set()
         self.symbols: dict[str, SvgIcon] = {}
 
@@ -147,12 +148,14 @@ class SceneBuilder:
             defs.add(El("symbol", {"id": sid, "viewBox": ic.view_box}, [inner]))
         return defs
 
-    def badge_numbers(self) -> dict[str, list[int]]:
-        out: dict[str, list[int]] = {}
-        if self.comp and self.d.step_list:
-            for i, s in enumerate(self.comp.steps, 1):
-                if s.at:
-                    out.setdefault(s.at, []).append(i)
+    def badge_numbers(self) -> dict[str, dict[str, list[int]]]:
+        """node -> scenario -> the step numbers its badge shows."""
+        out: dict[str, dict[str, list[int]]] = {}
+        if self.d.step_list:
+            for sid, comp in self.scenarios.items():
+                for i, s in enumerate(comp.steps, 1):
+                    if s.at:
+                        out.setdefault(s.at, {}).setdefault(sid, []).append(i)
         return out
 
     def build(self) -> tuple[El, Rect]:
@@ -286,10 +289,10 @@ class SceneBuilder:
 
         badges = self.badge_numbers()
         for k, nb in lay.nodes.items():
-            body.add(self.node(k, nb, badges.get(k, [])))
+            body.add(self.node(k, nb, badges.get(k, {})))
         return body, b
 
-    def node(self, k: str, nb: NodeBox, badges: list[int]) -> El:
+    def node(self, k: str, nb: NodeBox, badges: dict[str, list[int]]) -> El:
         t, n = self.t, nb.node
         x, y = nb.x, nb.y
         el = El("g", {"class": "node" + (" junction" if n.junction else ""), "id": f"n-{safe_id(k)}", "data-id": k})
@@ -432,11 +435,12 @@ class SceneBuilder:
         if nb.button:
             el.add(self.button(k, nb.button, n.trigger or ""))
         r = t.size("badge")
-        if badges:
-            label = ",".join(str(i) for i in badges)
+        first = next(iter(self.scenarios), None)
+        for sid, numbers in badges.items():
+            label = ",".join(str(i) for i in numbers)
             w = max(2 * r, text_width(label, 11, 600) + 10)
             bx = x - half - 8
-            el.add(
+            parts: list[El | Raw | str] = [
                 El(
                     "rect",
                     {
@@ -448,9 +452,7 @@ class SceneBuilder:
                         "rx": num(r),
                     },
                     paint={"fill": "badge"},
-                )
-            )
-            el.add(
+                ),
                 El(
                     "text",
                     {
@@ -463,8 +465,13 @@ class SceneBuilder:
                     },
                     [label],
                     paint={"fill": "on-badge"},
-                )
-            )
+                ),
+            ]
+            if len(self.scenarios) == 1:
+                el.add(*parts)
+            else:
+                # The player shows one scenario's badges at a time; static output has only the first's.
+                el.add(El("g", {"data-badges": sid}, parts, only=None if sid == first else "html"))
         cx, cy = x + half + 8, y - half - 4
         spin = El("g", {"class": "st st-spin"}, only="html")
         spin.add(El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "accent"}))
@@ -548,6 +555,10 @@ class SceneBuilder:
                 "aria-label": f"{label}: play the scenario",
             },
         )
+        plays = self.d.nodes[k].plays or next(iter(self.scenarios), None)
+        if len(self.scenarios) > 1 and plays in self.scenarios:
+            g.attrs["data-plays"] = plays
+            g.attrs["aria-label"] = f"{label}: play {self.scenarios[plays].title or plays}"
         g.add(
             El(
                 "rect",

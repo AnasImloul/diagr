@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import textwrap
 import unittest
 
-from tests.support import Case, problems
+from diagr.model import Scenario
+from diagr.parse import from_tree
+from diagr.render.html import render_html
+from diagr.render.svg import render_static
+from diagr.source import load
+from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
 NESTED = """
@@ -15,6 +21,25 @@ nodes:
   b: {in: outer, at: [2, 0], icon: database, title: B}
 edges:
   a -> b: writes
+"""
+
+TWO = """
+diagram: t
+nodes:
+  a: {at: [0, 0], icon: server, title: A, trigger: Go, plays: second}
+  b: {at: [1, 0], icon: database, title: B}
+edges:
+  a -> b: writes
+scenarios:
+  first:
+    title: First
+    steps:
+      - {title: one, at: a, do: [done a]}
+  second:
+    title: Second
+    ready: second ready
+    steps:
+      - {title: two, at: b, do: [draw a->b, done b]}
 """
 
 
@@ -66,6 +91,94 @@ class NestedGroups(Case):
         ).replace("  a: {in: inner, at: [0, 0]", "  a: {in: inner, at: [5, 3]")
         yml = yml.replace("  outer: {title: Outer, tone: neutral}", "  outer: {title: Outer, at: [0, 0], span: [3, 1]}")
         self.assertReports(problems(yml), "group 'inner' is outside its parent group 'outer'", "error")
+
+
+class Scenarios(Case):
+    def test_each_scenario_is_compiled(self):
+        p = prepared(TWO)
+        self.assertEqual(list(p.scenarios), ["first", "second"])
+        self.assertIs(p.compiled, p.scenarios["first"])
+        self.assertEqual(p.scenarios["second"].ready, "second ready")
+
+    def test_scenario_is_the_first_one(self):
+        d = from_tree(load(textwrap.dedent(TWO), "t.yml"), "t.yml", ROOT)
+        assert d.scenario
+        self.assertEqual(d.scenario.id, "first")
+        d.scenario = Scenario([], id="only")
+        self.assertEqual(list(d.scenarios), ["only"])
+
+    def test_single_scenario_key_still_works(self):
+        p = prepared(
+            TWO.split("scenarios:")[0].replace(", plays: second", "") + "scenario:\n  steps:\n    - {title: x}\n"
+        )
+        self.assertEqual(list(p.scenarios), ["main"])
+
+    def test_not_both_keys(self):
+        self.assertReports(
+            problems(TWO + "scenario:\n  steps:\n    - {title: x}\n"), "either 'scenario' or 'scenarios'"
+        )
+
+    def test_empty_scenarios(self):
+        yml = TWO.split("scenarios:")[0].replace(", plays: second", "") + "scenarios: {}\n"
+        self.assertReports(problems(yml), "must not be empty")
+
+    def test_unknown_plays(self):
+        self.assertReports(problems(TWO.replace("plays: second", "plays: third")), "unknown scenario 'third'", "error")
+
+    def test_plays_without_trigger(self):
+        self.assertReports(problems(TWO.replace("trigger: Go, ", "")), "has 'plays' but no 'trigger'", "warning")
+
+    def test_effects_are_checked_in_every_scenario(self):
+        self.assertReports(problems(TWO.replace("draw a->b, done b", "done nope")), "unknown node 'nope'")
+
+    def test_shown_by_any_scenario(self):
+        yml = TWO.replace("title: B}", "title: B, hidden: true}").replace("a -> b: writes", "a -> b: {hidden: true}")
+        yml = yml.replace("[draw a->b, done b]", "[show b a->b, done b]")
+        self.assertClean(problems(yml))
+
+    def test_player_has_a_picker_and_a_list_per_scenario(self):
+        html = render_html(prepared(TWO))
+        self.assertIn('<button type="button" data-scenario="first" aria-pressed="true">First</button>', html)
+        self.assertIn('<button type="button" data-scenario="second" aria-pressed="false">Second</button>', html)
+        self.assertIn('<ol class="steps" data-scenario="first">', html)
+        self.assertIn('<ol class="steps" data-scenario="second" hidden>', html)
+        self.assertIn('data-plays="second"', html)
+        self.assertIn('<svg class="diagr" data-scenario="first" ', html)
+
+    def test_badges_per_scenario(self):
+        p = prepared(TWO)
+        html = render_html(p)
+        self.assertIn('data-badges="first"', html)
+        self.assertIn('data-badges="second"', html)
+        static = render_static(p.scene(), p.theme, "light")
+        self.assertIn('data-badges="first"', static)
+        self.assertNotIn('data-badges="second"', static)
+
+    def test_one_scenario_has_no_picker(self):
+        html = render_html(prepared(TWO.split("  second:")[0].replace(", plays: second", "")))
+        self.assertNotIn('class="scenarios"', html)
+        self.assertNotIn("data-badges", html)
+
+
+class LayoutWarnings(Case):
+    def test_edge_through_a_node(self):
+        yml = NESTED.replace("  b: {in: outer, at: [2, 0]", "  b: {in: outer, at: [3, 0]")
+        yml = yml.replace("nodes:\n", "nodes:\n  c: {in: outer, at: [2, 0], icon: cube, title: C}\n")
+        self.assertReports(problems(yml), "edge 'a->b' passes through node 'c'", "warning")
+
+    def test_edge_across_a_group_title(self):
+        yml = """
+diagram: t
+groups:
+  g: {title: A long group title, tone: blue}
+nodes:
+  a: {at: [-0.28, -1], icon: server, title: A}
+  in: {in: g, at: [0, 0], icon: cube, title: In}
+  b: {at: [-0.28, 1.3], icon: database, title: B}
+edges:
+  a -> b: {}
+"""
+        self.assertReports(problems(yml), "crosses the title of group 'g'", "warning")
 
 
 if __name__ == "__main__":

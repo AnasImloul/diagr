@@ -79,3 +79,4 @@ nav:
       - Order processing: examples/order-flow.md
       - Cloud architecture: examples/cloud-architecture.md
       - Dashboard refresh: examples/dashboard-refresh.md
+      - Multi-region platform: examples/multi-region.md

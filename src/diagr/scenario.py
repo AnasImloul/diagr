@@ -39,6 +39,8 @@ class Compiled:
     steps: list[StepInfo]
     ready: str
     end: str
+    id: str = "main"
+    title: str = ""
 
     def state(self, k: int) -> dict[str, Any]:
         return fold(self.frames[1 : k + 1])
@@ -134,6 +136,11 @@ class _Compiler:
                 f = Frame({f"c:{t}:{k}": "act"}, e.ms or CELL_MS, step)
                 if k > lo - 1:
                     f.set[f"c:{t}:{k - 1}"] = "ok"
+                else:
+                    # A range continues an earlier one: the cell that range left active is now done.
+                    for j in range(lo - 1):
+                        if self.state.get(f"c:{t}:{j}") == "act":
+                            f.set[f"c:{t}:{j}"] = "ok"
                 if names[k]:
                     f.set[f"cap:{t}"] = names[k]
                 out.append(f)
@@ -175,10 +182,11 @@ class _Compiler:
         return out
 
 
-def compile_scenario(d: Diagram, slots: dict[str, int]) -> Compiled | None:
-    sc = d.scenario
-    if sc is None:
-        return None
+def compile_scenarios(d: Diagram, slots: dict[str, int]) -> dict[str, Compiled]:
+    return {k: compile_scenario(d, sc, slots) for k, sc in d.scenarios.items()}
+
+
+def compile_scenario(d: Diagram, sc: Scenario, slots: dict[str, int]) -> Compiled:
     c = _Compiler(d, slots)
     frames = [Frame()]
     steps: list[StepInfo] = []
@@ -198,4 +206,4 @@ def compile_scenario(d: Diagram, slots: dict[str, int]) -> Compiled | None:
         steps.append(StepInfo(s.title, s.text, s.at, first, len(frames) - 1))
     frames.append(Frame({"step": n + 1, "status": sc.end or "Done."}, 0, n))
     steps[-1].last = len(frames) - 1
-    return Compiled(frames, steps, sc.ready, sc.end)
+    return Compiled(frames, steps, sc.ready, sc.end, sc.id, sc.title)

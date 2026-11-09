@@ -60,11 +60,12 @@ NODE = f.Obj(
         "tone": f.F(f.Str(description="Tile colour for generated icons")),
         "in": f.F(f.Str(description="Group id")),
         "junction": f.F(f.Bool(description="A dot where edges meet (a bus); has no icon or text")),
-        "trigger": f.F(f.Str(description="Label of a button under the node that plays the scenario")),
+        "trigger": f.F(f.Str(description="Label of a button under the node that plays a scenario")),
+        "plays": f.F(f.Str(description="Scenario id the trigger plays; default: the first scenario")),
         "cells": f.F(Cells()),
         "stack": f.F(f.Num(integer=True, minimum=1, description="Draw the icon as a stack of N")),
         "mark": f.F(f.Str(enum=MARKS)),
-        "hidden": f.F(f.Bool(description="Start hidden; the scenario can show it")),
+        "hidden": f.F(f.Bool(description="Start hidden; a scenario can show it")),
         "tooltip": f.F(f.Str()),
     },
     description="A node: icon, title and sub text, centred on a grid cell",
@@ -116,6 +117,7 @@ STEP = f.Obj(
 SCENARIO = f.Obj(
     "scenario",
     {
+        "title": f.F(f.Str(description="Name in the player's scenario picker")),
         "ready": f.F(f.Str(description="Status line before the run")),
         "end": f.F(f.Str(description="Status line after the run")),
         "steps": f.F(f.List(STEP, min_items=1), required=True),
@@ -138,6 +140,9 @@ DIAGRAM = f.Obj(
         "nodes": f.F(f.MapOf(NODE, min_items=1), required=True),
         "edges": f.F(f.MapOf(EDGE, key_pattern=EDGE_KEY, key_description="an edge key like 'a -> b'")),
         "scenario": f.F(SCENARIO),
+        "scenarios": f.F(
+            f.MapOf(SCENARIO, min_items=1, description="Several scenarios by id; the first is the default")
+        ),
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
     },
 )
@@ -160,6 +165,14 @@ def _moves(items: list[str]) -> list[Move]:
         assert m
         out.append(Move(m.group(1), float(m.group(2)) if m.group(2) else None, "px" if m.group(3) else "cells"))
     return out
+
+
+def _scenario(sid: str, sc: f.Rec, problems: list[Problem]) -> Scenario:
+    steps = []
+    for s in sc.get("steps"):
+        effects = parse_effects(s.get("do"), problems) if s.get("do") is not None else []
+        steps.append(Step(s.get("title"), s.get("text", ""), s.get("at"), s.get("status"), effects, s.loc))
+    return Scenario(steps, sc.get("ready", ""), sc.get("end", ""), sc.loc, sid, sc.get("title", ""))
 
 
 def from_tree(tree: Y, file: str, base: Path) -> Diagram:
@@ -211,6 +224,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
             hidden=n.get("hidden", False),
             tooltip=n.get("tooltip"),
             loc=e.loc,
+            plays=n.get("plays"),
         )
     for e in rec.get("edges", []):
         m = re.fullmatch(EDGE_KEY, e.key)
@@ -237,13 +251,12 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
             loc=e.loc,
         )
 
-    sc = rec.get("scenario")
-    if sc is not None:
-        steps = []
-        for s in sc.get("steps"):
-            effects = parse_effects(s.get("do"), problems) if s.get("do") is not None else []
-            steps.append(Step(s.get("title"), s.get("text", ""), s.get("at"), s.get("status"), effects, s.loc))
-        d.scenario = Scenario(steps, sc.get("ready", ""), sc.get("end", ""), sc.loc)
+    if rec.get("scenario") is not None and rec.get("scenarios") is not None:
+        problems.append(Problem(rec.at("scenarios"), "use either 'scenario' or 'scenarios', not both"))
+    elif rec.get("scenario") is not None:
+        d.scenario = _scenario("main", rec.get("scenario"), problems)
+    for e in rec.get("scenarios") or []:
+        d.scenarios[e.key] = _scenario(e.key, e.value, problems)
 
     if problems:
         raise DiagramError(problems)

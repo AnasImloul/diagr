@@ -2,7 +2,9 @@
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
   var svg = document.querySelector("svg.diagr");
-  var frames = data.frames, steps = data.steps, N = frames.length - 1;
+  var scenarios = data.scenarios, byId = {};
+  scenarios.forEach(function (x) { byId[x.id] = x; });
+  var sc, frames, steps, N, states, items = [];
   var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   var K = reduced ? 0.35 : 1;
 
@@ -14,16 +16,9 @@
   var nodes = index(".node", "data-id"), edges = index(".edge", "data-id"),
       labels = index(".elab", "data-edge"), groups = index(".grp", "data-id"), keyed = index("[data-key]", "data-key");
   var panel = document.getElementById("panel"), statusEl = document.getElementById("status"),
-      fill = document.getElementById("fill"), items = panel ? panel.querySelectorAll("ol.steps li") : [],
-      controls = document.querySelector(".controls"), scrub = document.getElementById("scrub"),
+      fill = document.getElementById("fill"), lists = panel ? panel.querySelectorAll("ol.steps") : [],
+      picker = panel ? panel.querySelectorAll(".scenarios button") : [], controls = document.querySelector(".controls"), scrub = document.getElementById("scrub"),
       speedEl = document.getElementById("speed"), triggers = svg.querySelectorAll(".trigger");
-
-  var states = [{}];
-  for (var i = 1; i <= N; i++) {
-    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-    states.push(s);
-  }
 
   var k = 0, cur = {}, timer = null, playing = false, speed = 1;
 
@@ -65,7 +60,7 @@
           [target(id), labels.get(id)].forEach(function (e) { if (e) e.setAttribute("data-focused", ""); });
         });
         break;
-      case "status": if (statusEl) statusEl.textContent = v === undefined ? data.ready : v; break;
+      case "status": if (statusEl) statusEl.textContent = v === undefined ? sc.ready : v; break;
       case "step":
         var n = v || 0;
         items.forEach(function (li, idx) {
@@ -128,14 +123,53 @@
   }
   function run() { if (!playing) { goTo(0, false); play(); } }
 
+  // Each scenario has its own frames and step list; switching resets the diagram to its start.
+  function load(id) {
+    sc = byId[id] || scenarios[0];
+    frames = sc.frames; steps = sc.steps; N = frames.length - 1;
+    states = [{}];
+    for (var i = 1; i <= N; i++) {
+      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+      states.push(s);
+    }
+    lists.forEach(function (ol) {
+      var on = !ol.hasAttribute("data-scenario") || ol.getAttribute("data-scenario") === sc.id;
+      ol.hidden = !on;
+      if (on) items = ol.querySelectorAll("li");
+    });
+    picker.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-scenario") === sc.id)); });
+    if (scenarios.length > 1) svg.setAttribute("data-scenario", sc.id);
+    if (scrub) scrub.max = String(N);
+    api.frames = N;
+  }
+  function choose(id) {
+    if (!byId[id] || sc.id === id) return;
+    pause();
+    items.forEach(function (li) { li.classList.remove("done", "active"); li.removeAttribute("aria-current"); });
+    load(id);
+    goTo(0, false);
+    if (panel) panel.classList.add("idle");
+    if (statusEl) statusEl.textContent = sc.ready;
+  }
+  function trigger(t) {
+    if (playing) return;
+    var id = t.getAttribute("data-plays");
+    if (id) choose(id);
+    run();
+  }
+
   var api = { play: play, pause: pause, seek: seek, back: back, next: next, run: run,
-              frame: function () { return k; }, frames: N, state: function (j) { return states[j]; } };
+              frame: function () { return k; }, frames: 0, state: function (j) { return states[j]; },
+              scenarios: scenarios.map(function (x) { return x.id; }),
+              scenario: function (id) { if (id) choose(id); return sc.id; } };
   window.diagr = api;
 
   triggers.forEach(function (t) {
-    t.addEventListener("click", run);
-    t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(); } });
+    t.addEventListener("click", function () { trigger(t); });
+    t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); trigger(t); } });
   });
+  picker.forEach(function (b) { b.addEventListener("click", function () { choose(b.getAttribute("data-scenario")); }); });
   if (controls) controls.addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
@@ -143,9 +177,11 @@
     if (act === "play") play(); else if (act === "pause") pause(); else if (act === "back") back();
     else if (act === "next") next(); else if (act === "reset") seek(0);
   });
-  if (scrub) { scrub.max = String(N); scrub.addEventListener("input", function () { seek(+scrub.value); }); }
+  if (scrub) scrub.addEventListener("input", function () { seek(+scrub.value); });
   if (speedEl) speedEl.addEventListener("change", function () { speed = +speedEl.value || 1; });
-  items.forEach(function (li, idx) { li.addEventListener("click", function () { seek(steps[idx].last); }); });
+  lists.forEach(function (ol) {
+    ol.querySelectorAll("li").forEach(function (li, idx) { li.addEventListener("click", function () { seek(steps[idx].last); }); });
+  });
   document.addEventListener("keydown", function (e) {
     var tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -158,7 +194,8 @@
   });
 
   svg.querySelectorAll("[data-hidden]").forEach(function (e) { e.setAttribute("data-hidden0", e.getAttribute("data-hidden")); });
-  if (statusEl) statusEl.textContent = data.ready;
+  load(svg.getAttribute("data-scenario") || scenarios[0].id);
+  if (statusEl) statusEl.textContent = sc.ready;
   goTo(0, false);
   if (data.autoplay) play();
 })();

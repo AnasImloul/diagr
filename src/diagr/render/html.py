@@ -5,6 +5,7 @@ from html import escape
 from pathlib import Path
 
 from ..build import Prepared
+from ..scenario import Compiled
 from ..scene import num, serialise
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -44,6 +45,18 @@ def _button(act: str, label: str) -> str:
     )
 
 
+def _steps(c: Compiled, hidden: bool, tagged: bool) -> str:
+    items = "\n".join(
+        f'<li data-s="{i}"><span class="num" aria-hidden="true">{i}</span><div><h3><button type="button" '
+        f'aria-label="Step {i}: {escape(s.title, quote=True)}">{escape(s.title)}</button></h3>'
+        + (f"<p>{escape(s.text)}</p>" if s.text else "")
+        + "</div></li>"
+        for i, s in enumerate(c.steps, 1)
+    )
+    attrs = (f' data-scenario="{escape(c.id, quote=True)}"' if tagged else "") + (" hidden" if hidden else "")
+    return f'<ol class="steps"{attrs}>\n{items}\n</ol>'
+
+
 def _json(obj: object) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
@@ -62,8 +75,10 @@ def render_html(p: Prepared) -> str:
     label = escape(d.description or d.title or d.id, quote=True)
     # role=img would hide the trigger buttons inside from assistive tech.
     role = "group" if any(n.trigger for n in d.nodes.values()) else "img"
+    comps = list(p.scenarios.values())
+    current = f'data-scenario="{escape(comps[0].id)}" ' if len(comps) > 1 else ""
     svg = (
-        f'<svg class="diagr" id="dg-{escape(d.id)}" xmlns="http://www.w3.org/2000/svg" '
+        f'<svg class="diagr" {current}id="dg-{escape(d.id)}" xmlns="http://www.w3.org/2000/svg" '
         f'viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(b.h)}" font-family="{escape(t.font, quote=True)}" '
         f'role="{role}" aria-label="{label}">'
         + serialise(defs, "html", paint)
@@ -80,15 +95,20 @@ def render_html(p: Prepared) -> str:
 
     panel = ""
     script = ""
-    comp = p.compiled
-    if comp:
-        items = "\n".join(
-            f'<li data-s="{i}"><span class="num" aria-hidden="true">{i}</span><div><h3><button type="button" '
-            f'aria-label="Step {i}: {escape(s.title, quote=True)}">{escape(s.title)}</button></h3>'
-            + (f"<p>{escape(s.text)}</p>" if s.text else "")
-            + "</div></li>"
-            for i, s in enumerate(comp.steps, 1)
-        )
+    if comps:
+        first = comps[0]
+        lists = "\n".join(_steps(c, hidden=c is not first, tagged=len(comps) > 1) for c in comps)
+        picker = ""
+        if len(comps) > 1:
+            picker = (
+                '<div class="scenarios" role="group" aria-label="Scenario">'
+                + "".join(
+                    f'<button type="button" data-scenario="{escape(c.id, quote=True)}" '
+                    f'aria-pressed="{"true" if c is first else "false"}">{escape(c.title or c.id)}</button>'
+                    for c in comps
+                )
+                + "</div>"
+            )
         controls = (
             '<div class="controls" role="toolbar" aria-label="Scenario" data-playing="0">'
             + _button("reset", "Reset (Home)")
@@ -96,24 +116,35 @@ def render_html(p: Prepared) -> str:
             + _button("play", "Play (Space)")
             + _button("pause", "Pause (Space)")
             + _button("next", "Next step (Right)")
-            + f'<input id="scrub" type="range" min="0" max="{len(comp.frames) - 1}" step="1" value="0" '
+            + f'<input id="scrub" type="range" min="0" max="{len(first.frames) - 1}" step="1" value="0" '
             'aria-label="Position">' + '<select id="speed" aria-label="Speed"><option value="0.5">0.5x</option>'
             '<option value="1" selected>1x</option><option value="2">2x</option></select></div>'
         )
         panel = (
-            f'<div class="panel idle" id="panel"><div class="bar"><i id="fill"></i></div>'
-            f'<div class="row"><div id="status" aria-live="polite">{escape(comp.ready)}</div>{controls}</div>'
-            f'<ol class="steps">\n{items}\n</ol></div>'
+            f'<div class="panel idle" id="panel">{picker}<div class="bar"><i id="fill"></i></div>'
+            f'<div class="row"><div id="status" aria-live="polite">{escape(first.ready)}</div>{controls}</div>'
+            f"{lists}</div>"
         )
         payload = {
-            "ready": comp.ready,
-            "frames": [f.to_json() for f in comp.frames],
-            "steps": [{"first": s.first, "last": s.last} for s in comp.steps],
+            "scenarios": [
+                {
+                    "id": c.id,
+                    "ready": c.ready,
+                    "frames": [f.to_json() for f in c.frames],
+                    "steps": [{"first": s.first, "last": s.last} for s in c.steps],
+                }
+                for c in comps
+            ]
         }
         script = (
             f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
             f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>"
         )
+        if len(comps) > 1:
+            css += "\n" + "\n".join(
+                f'svg.diagr[data-scenario="{c.id}"] [data-badges]:not([data-badges="{c.id}"]) {{ display: none; }}'
+                for c in comps
+            )
 
     title = escape(d.title or d.id)
     return f"""<!doctype html>

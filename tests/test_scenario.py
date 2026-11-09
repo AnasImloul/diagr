@@ -27,6 +27,15 @@ class Compile(unittest.TestCase):
         c = self.compiled("    - title: one\n      do:\n        - repeat: 3\n          do: ['status: round {i}']\n")
         self.assertEqual([f.set.get("status") for f in c.frames[2:4]], ["round 2", "round 3"])
 
+    def test_cell_ranges_continue(self):
+        p = prepared(
+            BASE.replace("title: A}", "title: A, cells: [x, y, z]}") + "scenario:\n  steps:\n"
+            "    - {title: one, do: [cells a 1..1]}\n    - {title: two, do: [cells a 2..3]}\n"
+        )
+        assert p.compiled
+        s = fold(p.compiled.frames)
+        self.assertEqual([s.get(f"c:a:{i}") for i in range(3)], ["ok", "ok", "ok"])
+
     def test_parallel_is_one_frame(self):
         c = self.compiled("    - title: one\n      do:\n        - parallel: [activate a, 'draw a->b 300ms']\n")
         self.assertEqual(len(c.frames), 3)

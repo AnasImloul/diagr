@@ -61,6 +61,12 @@ svg.focusing .node:not([data-focused]), svg.focusing .edge:not([data-focused]), 
 @keyframes dg-rotate { to { transform: rotate(360deg); } }
 
 .panel { padding: 0 20px; }
+.scenarios { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.scenarios button { height: 32px; padding: 0 12px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--muted); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.scenarios button:hover { color: var(--text); background: var(--hover); }
+.scenarios button[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+.scenarios button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .bar { height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 400ms ease; }
 .row { display: flex; align-items: center; gap: 16px; margin: 10px 0 24px; flex-wrap: wrap; }
@@ -76,6 +82,7 @@ svg.focusing .node:not([data-focused]), svg.focusing .edge:not([data-focused]), 
 #speed { height: 32px; color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; padding: 0 6px; }
 
 ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 56px; }
+ol.steps[hidden] { display: none; }
 ol.steps li { display: flex; gap: 12px; align-items: flex-start; opacity: .55; transition: opacity 300ms; cursor: pointer; }
 ol.steps li.active, ol.steps li.done, .idle ol.steps li { opacity: 1; }
 ol.steps h3 { margin: 0 0 3px; font-size: 14px; }
@@ -135,13 +142,15 @@ ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
 </ol></div>
 </div>
 <script>document.getElementById("toggle").addEventListener("click",function(){var r=document.documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);try{localStorage.setItem("diagr-theme",n)}catch(e){}});</script>
-<script type="application/json" id="diagr-data">{"ready":"Press Place order to follow one order.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 4: Submit...","running":1,"n:web":"active"},"dur":300,"step":1},{"set":{"e:web->api":"drawn"},"dur":700,"step":1,"edges":{"web->api":700}},{"set":{"n:web":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 4: Validate and queue...","n:api":"active"},"dur":400,"step":2},{"set":{"t:api:sub:0":"order is valid"},"dur":0,"step":2},{"set":{"e:api->queue":"drawn"},"dur":700,"step":2,"edges":{"api->queue":700}},{"set":{"n:api":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 4: Process...","n:queue":"active"},"dur":0,"step":3},{"set":{"e:queue->worker":"drawn"},"dur":700,"step":3,"edges":{"queue->worker":700}},{"set":{"n:queue":"done"},"dur":0,"step":3},{"set":{"n:worker":"active"},"dur":600,"step":3},{"set":{"e:worker->db":"drawn"},"dur":700,"step":3,"edges":{"worker->db":700}},{"set":{"n:db":"active"},"dur":300,"step":3},{"set":{"n:worker":"done","n:db":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Step 4 of 4: Confirm...","v:mail":"shown","v:worker->mail":"shown"},"dur":0,"step":4},{"set":{"focus":["worker","mail","worker->mail"]},"dur":0,"step":4},{"set":{"e:worker->mail":"drawn"},"dur":700,"step":4,"edges":{"worker->mail":700}},{"set":{"n:mail":"active"},"dur":500,"step":4},{"set":{"n:mail":"done"},"dur":0,"step":4},{"set":{"focus":null},"dur":0,"step":4},{"set":{"step":5,"status":"Order stored and confirmed."},"dur":0,"step":4}],"steps":[{"first":1,"last":3},{"first":4,"last":7},{"first":8,"last":14},{"first":15,"last":21}]}</script>
+<script type="application/json" id="diagr-data">{"scenarios":[{"id":"main","ready":"Press Place order to follow one order.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 4: Submit...","running":1,"n:web":"active"},"dur":300,"step":1},{"set":{"e:web->api":"drawn"},"dur":700,"step":1,"edges":{"web->api":700}},{"set":{"n:web":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 4: Validate and queue...","n:api":"active"},"dur":400,"step":2},{"set":{"t:api:sub:0":"order is valid"},"dur":0,"step":2},{"set":{"e:api->queue":"drawn"},"dur":700,"step":2,"edges":{"api->queue":700}},{"set":{"n:api":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 4: Process...","n:queue":"active"},"dur":0,"step":3},{"set":{"e:queue->worker":"drawn"},"dur":700,"step":3,"edges":{"queue->worker":700}},{"set":{"n:queue":"done"},"dur":0,"step":3},{"set":{"n:worker":"active"},"dur":600,"step":3},{"set":{"e:worker->db":"drawn"},"dur":700,"step":3,"edges":{"worker->db":700}},{"set":{"n:db":"active"},"dur":300,"step":3},{"set":{"n:worker":"done","n:db":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Step 4 of 4: Confirm...","v:mail":"shown","v:worker->mail":"shown"},"dur":0,"step":4},{"set":{"focus":["worker","mail","worker->mail"]},"dur":0,"step":4},{"set":{"e:worker->mail":"drawn"},"dur":700,"step":4,"edges":{"worker->mail":700}},{"set":{"n:mail":"active"},"dur":500,"step":4},{"set":{"n:mail":"done"},"dur":0,"step":4},{"set":{"focus":null},"dur":0,"step":4},{"set":{"step":5,"status":"Order stored and confirmed."},"dur":0,"step":4}],"steps":[{"first":1,"last":3},{"first":4,"last":7},{"first":8,"last":14},{"first":15,"last":21}]}]}</script>
 <script>
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
   var svg = document.querySelector("svg.diagr");
-  var frames = data.frames, steps = data.steps, N = frames.length - 1;
+  var scenarios = data.scenarios, byId = {};
+  scenarios.forEach(function (x) { byId[x.id] = x; });
+  var sc, frames, steps, N, states, items = [];
   var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   var K = reduced ? 0.35 : 1;
 
@@ -153,16 +162,9 @@ ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
   var nodes = index(".node", "data-id"), edges = index(".edge", "data-id"),
       labels = index(".elab", "data-edge"), groups = index(".grp", "data-id"), keyed = index("[data-key]", "data-key");
   var panel = document.getElementById("panel"), statusEl = document.getElementById("status"),
-      fill = document.getElementById("fill"), items = panel ? panel.querySelectorAll("ol.steps li") : [],
-      controls = document.querySelector(".controls"), scrub = document.getElementById("scrub"),
+      fill = document.getElementById("fill"), lists = panel ? panel.querySelectorAll("ol.steps") : [],
+      picker = panel ? panel.querySelectorAll(".scenarios button") : [], controls = document.querySelector(".controls"), scrub = document.getElementById("scrub"),
       speedEl = document.getElementById("speed"), triggers = svg.querySelectorAll(".trigger");
-
-  var states = [{}];
-  for (var i = 1; i <= N; i++) {
-    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-    states.push(s);
-  }
 
   var k = 0, cur = {}, timer = null, playing = false, speed = 1;
 
@@ -204,7 +206,7 @@ ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
           [target(id), labels.get(id)].forEach(function (e) { if (e) e.setAttribute("data-focused", ""); });
         });
         break;
-      case "status": if (statusEl) statusEl.textContent = v === undefined ? data.ready : v; break;
+      case "status": if (statusEl) statusEl.textContent = v === undefined ? sc.ready : v; break;
       case "step":
         var n = v || 0;
         items.forEach(function (li, idx) {
@@ -267,14 +269,53 @@ ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
   }
   function run() { if (!playing) { goTo(0, false); play(); } }
 
+  // Each scenario has its own frames and step list; switching resets the diagram to its start.
+  function load(id) {
+    sc = byId[id] || scenarios[0];
+    frames = sc.frames; steps = sc.steps; N = frames.length - 1;
+    states = [{}];
+    for (var i = 1; i <= N; i++) {
+      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+      states.push(s);
+    }
+    lists.forEach(function (ol) {
+      var on = !ol.hasAttribute("data-scenario") || ol.getAttribute("data-scenario") === sc.id;
+      ol.hidden = !on;
+      if (on) items = ol.querySelectorAll("li");
+    });
+    picker.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-scenario") === sc.id)); });
+    if (scenarios.length > 1) svg.setAttribute("data-scenario", sc.id);
+    if (scrub) scrub.max = String(N);
+    api.frames = N;
+  }
+  function choose(id) {
+    if (!byId[id] || sc.id === id) return;
+    pause();
+    items.forEach(function (li) { li.classList.remove("done", "active"); li.removeAttribute("aria-current"); });
+    load(id);
+    goTo(0, false);
+    if (panel) panel.classList.add("idle");
+    if (statusEl) statusEl.textContent = sc.ready;
+  }
+  function trigger(t) {
+    if (playing) return;
+    var id = t.getAttribute("data-plays");
+    if (id) choose(id);
+    run();
+  }
+
   var api = { play: play, pause: pause, seek: seek, back: back, next: next, run: run,
-              frame: function () { return k; }, frames: N, state: function (j) { return states[j]; } };
+              frame: function () { return k; }, frames: 0, state: function (j) { return states[j]; },
+              scenarios: scenarios.map(function (x) { return x.id; }),
+              scenario: function (id) { if (id) choose(id); return sc.id; } };
   window.diagr = api;
 
   triggers.forEach(function (t) {
-    t.addEventListener("click", run);
-    t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); run(); } });
+    t.addEventListener("click", function () { trigger(t); });
+    t.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); trigger(t); } });
   });
+  picker.forEach(function (b) { b.addEventListener("click", function () { choose(b.getAttribute("data-scenario")); }); });
   if (controls) controls.addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
@@ -282,9 +323,11 @@ ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
     if (act === "play") play(); else if (act === "pause") pause(); else if (act === "back") back();
     else if (act === "next") next(); else if (act === "reset") seek(0);
   });
-  if (scrub) { scrub.max = String(N); scrub.addEventListener("input", function () { seek(+scrub.value); }); }
+  if (scrub) scrub.addEventListener("input", function () { seek(+scrub.value); });
   if (speedEl) speedEl.addEventListener("change", function () { speed = +speedEl.value || 1; });
-  items.forEach(function (li, idx) { li.addEventListener("click", function () { seek(steps[idx].last); }); });
+  lists.forEach(function (ol) {
+    ol.querySelectorAll("li").forEach(function (li, idx) { li.addEventListener("click", function () { seek(steps[idx].last); }); });
+  });
   document.addEventListener("keydown", function (e) {
     var tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -297,7 +340,8 @@ ol.steps li.done .num { background: var(--accent); color: var(--on-accent); }
   });
 
   svg.querySelectorAll("[data-hidden]").forEach(function (e) { e.setAttribute("data-hidden0", e.getAttribute("data-hidden")); });
-  if (statusEl) statusEl.textContent = data.ready;
+  load(svg.getAttribute("data-scenario") || scenarios[0].id);
+  if (statusEl) statusEl.textContent = sc.ready;
   goTo(0, false);
   if (data.autoplay) play();
 })();

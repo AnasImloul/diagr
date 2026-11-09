@@ -57,11 +57,12 @@ nodes:
 | `icon`, `tone` | Icon name; `tone` recolours a generated tile (`blue`, `teal`, `green`, `violet`, `amber`, `orange`, `slate`, `red`). |
 | `in` | Group id. |
 | `junction` | A dot where edges meet, for a bus or fan-out. No icon or text. |
-| `trigger` | A button under the node that plays the scenario, e.g. `trigger: Run`. |
+| `trigger` | A button under the node that plays a scenario, e.g. `trigger: Run`. |
+| `plays` | The scenario id the trigger plays, when there are several; default: the first. |
 | `cells` | A strip of progress squares. A list of names (each shows as the caption while active) or a count. |
 | `stack` | Draw the icon as a stack of N, for "N workers". |
 | `mark` | `new`, `removed` or `changed`, for as-is versus to-be diagrams. |
-| `hidden` | Start hidden; the scenario can `show` it. Hidden elements are left out of static SVGs. |
+| `hidden` | Start hidden; a scenario can `show` it. Hidden elements are left out of static SVGs. |
 | `tooltip` | Hover text. |
 
 ## Edges
@@ -114,6 +115,27 @@ drawn, a text is replaced), and the state at frame k is all assignments up to k.
 scrub and replay exact: the player jumps to any frame and the page shows the same thing it shows when playing up to
 it.
 
+### Several scenarios
+
+```yaml
+scenarios:
+  checkout:
+    title: Checkout request          # name in the player's scenario picker
+    steps: [...]
+  failover:
+    title: Region failover
+    ready: Press Fail region A to see region B take over.
+    steps: [...]
+
+nodes:
+  health: {at: [0, 0], icon: clock, title: Health checks, trigger: Fail region A, plays: failover}
+```
+
+`scenarios` maps ids to scenarios; use it instead of `scenario`, not as well. The HTML page gets a picker; switching
+resets the diagram and shows that scenario's steps and badges, and a trigger with `plays` switches to its scenario
+before playing it. A static SVG can only show one, so it shows the first scenario's badges and step list. From a
+script, `diagr.scenario("failover")` switches and `diagr.scenarios` lists the ids.
+
 ### Effects
 
 An effect is `verb targets [duration]`. The duration is how long the frame holds before the next one.
@@ -145,9 +167,10 @@ active.
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys (with a suggestion), duplicate
 keys and ids, unknown nodes, groups, icons and tones, edges to nowhere, edges from a node to itself without a
 `route` or `via`, routes that cannot reach their target, diagonal segments, two nodes on one cell, nodes outside their
-group, groups outside their parent or inside themselves, effects that reference nothing, a format version newer than this diagr, and broken theme or `icons.yml` files.
-Overlapping nodes, labels over nodes, overlapping groups, hidden nodes or edges that no `show` reveals, and visible
-edges into hidden nodes are warnings; `--strict` makes them fail.
+group, groups outside their parent or inside themselves, triggers that play an unknown scenario, effects that reference
+nothing, a format version newer than this diagr, and broken theme or `icons.yml` files. Overlapping nodes, labels
+over nodes, overlapping groups, edges through a node they do not connect or across a group's title, hidden nodes or
+edges that no `show` reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
 
 ## Python
 

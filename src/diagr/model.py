@@ -50,6 +50,7 @@ class Node:
     hidden: bool = False
     tooltip: str | None = None
     loc: Loc | None = None
+    plays: str | None = None
 
 
 @dataclass
@@ -110,6 +111,8 @@ class Scenario:
     ready: str = ""
     end: str = ""
     loc: Loc | None = None
+    id: str = "main"
+    title: str = ""
 
 
 @dataclass
@@ -123,10 +126,19 @@ class Diagram:
     groups: dict[str, Group] = field(default_factory=dict)
     nodes: dict[str, Node] = field(default_factory=dict)
     edges: dict[str, Edge] = field(default_factory=dict)
-    scenario: Scenario | None = None
+    scenarios: dict[str, Scenario] = field(default_factory=dict)
     step_list: bool = True
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
+
+    @property
+    def scenario(self) -> Scenario | None:
+        """The first scenario: the one static output shows and an untargeted trigger plays."""
+        return next(iter(self.scenarios.values()), None)
+
+    @scenario.setter
+    def scenario(self, sc: Scenario | None) -> None:
+        self.scenarios = {} if sc is None else {sc.id: sc}
 
     @staticmethod
     def from_yaml(path: str | Path) -> Diagram:
