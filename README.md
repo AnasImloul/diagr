@@ -94,6 +94,7 @@ End jumps to the end. Clicking a step in the list jumps to it.
 ```sh
 uv sync
 uv run ruff check .
+uv run ruff format --check .   # or: uv run ruff format .
 uv run pyright
 uv run python -m unittest discover -s tests -t .
 ```
