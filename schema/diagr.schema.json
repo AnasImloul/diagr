@@ -6,6 +6,7 @@
     "diagr": {
       "type": "integer",
       "minimum": 1,
+      "maximum": 1,
       "description": "Format version"
     },
     "diagram": {
@@ -82,7 +83,8 @@
           "span": {
             "type": "array",
             "items": {
-              "type": "number"
+              "type": "number",
+              "minimum": 1
             },
             "minItems": 2,
             "maxItems": 2,
@@ -191,7 +193,8 @@
           "at"
         ],
         "description": "A node: icon, title and sub text, centred on a grid cell"
-      }
+      },
+      "minProperties": 1
     },
     "edges": {
       "type": "object",
@@ -244,6 +247,8 @@
               },
               "label_at": {
                 "type": "number",
+                "minimum": 0,
+                "maximum": 1,
                 "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
               },
               "hidden": {
@@ -351,7 +356,8 @@
             "required": [
               "title"
             ]
-          }
+          },
+          "minItems": 1
         }
       },
       "additionalProperties": false,

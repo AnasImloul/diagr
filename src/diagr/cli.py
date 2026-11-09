@@ -6,7 +6,8 @@ import sys
 import time
 from pathlib import Path
 
-from .build import build_files, prepare
+from . import __version__
+from .build import build_files, prepare, write_files
 from .parse import json_schema, load_file
 from .source import DiagramError, Problem
 
@@ -18,14 +19,24 @@ def _report(problems: list[Problem]) -> None:
 
 def cmd_build(args) -> int:
     status = 0
+    built: dict[str, str] = {}
     for f in args.files:
         try:
-            written, warnings = build_files(f, args.out, args.theme)
+            d = load_file(f)
+            if d.id in built:
+                raise DiagramError([Problem(None, f"{f}: diagram id '{d.id}' is also used by {built[d.id]}; "
+                                                 "their output files would overwrite each other")])
+            built[d.id] = f
+            p = prepare(d, args.theme)
+            written = write_files(p, args.out)
         except DiagramError as e:
             _report(e.problems)
             status = 1
             continue
-        _report(warnings)
+        except OSError as e:
+            print(f"error: cannot write to {args.out}: {e.strerror or e}", file=sys.stderr)
+            return 1
+        _report(p.warnings)
         for w in written:
             print(w)
     return status
@@ -57,13 +68,13 @@ def cmd_schema(args) -> int:
     return 0
 
 
-def _watched(f: Path) -> list[Path]:
+def _watched(f: Path, theme_override: str | None) -> list[Path]:
     paths = [f]
     try:
         d = load_file(f)
         for folder in d.icons:
             paths += sorted((d.base / folder).glob("*"))
-        theme = d.base / d.theme
+        theme = Path(theme_override) if theme_override else d.base / d.theme
         if theme.is_file():
             paths.append(theme)
     except DiagramError:
@@ -88,7 +99,7 @@ def cmd_watch(args) -> int:
     try:
         while True:
             for f in files:
-                s = _stamp(_watched(f))
+                s = _stamp(_watched(f, args.theme))
                 if stamps.get(f) != s:
                     stamps[f] = s
                     try:
@@ -97,6 +108,8 @@ def cmd_watch(args) -> int:
                         print(f"{time.strftime('%H:%M:%S')} built {', '.join(w.name for w in written)}")
                     except DiagramError as e:
                         _report(e.problems)
+                    except OSError as e:
+                        print(f"error: cannot write to {args.out}: {e.strerror or e}", file=sys.stderr)
             time.sleep(args.interval)
     except KeyboardInterrupt:
         return 0
@@ -104,6 +117,7 @@ def cmd_watch(args) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="diagr", description="Declarative diagrams: static SVG and interactive HTML.")
+    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     b = sub.add_parser("build", help="write <id>-light.svg, <id>-dark.svg and <id>.html")

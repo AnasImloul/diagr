@@ -121,7 +121,8 @@ def parse_effects(y: Y, problems: list[Problem], depth: int = 0) -> list[Effect]
             elif sorted(keys) == ["do", "repeat"]:
                 vals = dict((k.value, v) for k, v in item.pairs)
                 count = vals["repeat"]
-                if not (isinstance(count, YScalar) and count.value.isdigit() and int(count.value) >= 1):
+                if not (isinstance(count, YScalar) and not count.quoted and count.value.isdigit()
+                        and int(count.value) >= 1):
                     problems.append(Problem(count.loc, "'repeat' needs a whole number"))
                     continue
                 children = parse_effects(vals["do"], problems, depth + 1)

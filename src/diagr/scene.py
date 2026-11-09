@@ -139,12 +139,14 @@ class SceneBuilder:
         for eid, p in lay.edges.items():
             e = p.edge
             dash = {"stroke-dasharray": "5 4"} if e.dashed else {}
-            stroke = {"new": "new", "changed": "changed"}.get(e.mark or "", "line")
+            stroke = {"new": "new", "changed": "changed", "removed": "fail"}.get(e.mark or "", "line")
             path = rounded(p.points, t.size("corner"))
             el = El("g", {"class": "edge", "id": f"e-{safe_id(eid)}", "data-id": eid, "data-from": e.src.node,
                           "data-to": e.dst.node})
             if e.mark:
                 el.attrs["data-mark"] = e.mark
+                if e.mark == "removed":
+                    el.attrs["opacity"] = ".45"
             if e.hidden:
                 el.attrs["data-hidden"] = "1"
             el.add(El("path", {"class": "base", "d": path, "fill": "none", "stroke-width": num(t.size("edge")), **dash},

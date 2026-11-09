@@ -28,10 +28,7 @@ class Prepared:
 
 
 def prepare(d: Diagram, theme: str | None = None) -> Prepared:
-    try:
-        t = load_theme(theme, Path.cwd()) if theme else load_theme(d.theme, d.base)
-    except (FileNotFoundError, KeyError) as e:
-        raise DiagramError([Problem(None, f"theme: {e}")]) from None
+    t = load_theme(theme, Path.cwd()) if theme else load_theme(d.theme, d.base)
     icons = Icons([(d.base / f).resolve() for f in d.icons])
     problems = check_model(d, t, icons)
     if any(p.level == "error" for p in problems):
@@ -45,10 +42,14 @@ def prepare(d: Diagram, theme: str | None = None) -> Prepared:
 
 
 def build_files(path: str | Path, out: str | Path, theme: str | None = None) -> tuple[list[Path], list[Problem]]:
+    p = prepare(load_file(path), theme)
+    return write_files(p, out), p.warnings
+
+
+def write_files(p: Prepared, out: str | Path) -> list[Path]:
     from .render.html import render_html
     from .render.svg import render_static
 
-    p = prepare(load_file(path), theme)
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     written = []
@@ -59,4 +60,4 @@ def build_files(path: str | Path, out: str | Path, theme: str | None = None) -> 
     f = out / f"{p.diagram.id}.html"
     f.write_text(render_html(p), encoding="utf-8")
     written.append(f)
-    return written, p.warnings
+    return written

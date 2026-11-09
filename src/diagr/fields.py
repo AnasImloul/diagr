@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import difflib
+import math
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -51,6 +52,10 @@ class T:
         raise Invalid
 
 
+def _too_few(n: int) -> str:
+    return "must not be empty" if n == 1 else f"needs at least {n} items"
+
+
 def _describe(s: dict, description: str) -> dict:
     if description:
         s["description"] = description
@@ -89,6 +94,7 @@ class Num(T):
     description: str = ""
     integer: bool = False
     minimum: float | None = None
+    maximum: float | None = None
 
     def kind(self) -> str:
         return "a whole number" if self.integer else "a number"
@@ -100,14 +106,20 @@ class Num(T):
             v = int(y.value) if self.integer else float(y.value)
         except ValueError:
             return self._fail(y, problems, f"'{y.value}' is not {self.kind()}")
+        if not math.isfinite(v):
+            return self._fail(y, problems, f"'{y.value}' is not {self.kind()}")
         if self.minimum is not None and v < self.minimum:
             return self._fail(y, problems, f"must be at least {self.minimum:g}")
+        if self.maximum is not None and v > self.maximum:
+            return self._fail(y, problems, f"must be at most {self.maximum:g}")
         return v
 
     def schema(self):
         s: dict = {"type": "integer" if self.integer else "number"}
         if self.minimum is not None:
             s["minimum"] = self.minimum
+        if self.maximum is not None:
+            s["maximum"] = self.maximum
         return _describe(s, self.description)
 
 
@@ -130,6 +142,7 @@ class Bool(T):
 @dataclass
 class Pair(T):
     description: str = ""
+    minimum: float | None = None
 
     def kind(self) -> str:
         return "a pair like [2, 1]"
@@ -137,18 +150,19 @@ class Pair(T):
     def check(self, y, problems):
         if not isinstance(y, YSeq) or len(y.items) != 2:
             return self._fail(y, problems)
-        a, b = (Num().check(i, problems) for i in y.items)
+        a, b = (Num(minimum=self.minimum).check(i, problems) for i in y.items)
         return (a, b)
 
     def schema(self):
-        return _describe({"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
-                         self.description)
+        return _describe({"type": "array", "items": Num(minimum=self.minimum).schema(), "minItems": 2,
+                          "maxItems": 2}, self.description)
 
 
 @dataclass
 class List(T):
     item: T
     description: str = ""
+    min_items: int = 0
 
     def kind(self) -> str:
         return "a list"
@@ -156,6 +170,8 @@ class List(T):
     def check(self, y, problems):
         if not isinstance(y, YSeq):
             return self._fail(y, problems)
+        if len(y.items) < self.min_items:
+            return self._fail(y, problems, _too_few(self.min_items))
         out, bad = [], False
         for i in y.items:
             try:
@@ -167,7 +183,10 @@ class List(T):
         return out
 
     def schema(self):
-        return _describe({"type": "array", "items": self.item.schema()}, self.description)
+        s: dict = {"type": "array", "items": self.item.schema()}
+        if self.min_items:
+            s["minItems"] = self.min_items
+        return _describe(s, self.description)
 
 
 @dataclass
@@ -265,6 +284,7 @@ class MapOf(T):
     key_pattern: str = r"[A-Za-z_][A-Za-z0-9_-]*"
     key_description: str = "an id: letters, digits, _ and -"
     description: str = ""
+    min_items: int = 0
 
     def kind(self) -> str:
         return "a mapping"
@@ -272,6 +292,8 @@ class MapOf(T):
     def check(self, y, problems):
         if not isinstance(y, YMap):
             return self._fail(y, problems)
+        if len(y.pairs) < self.min_items:
+            return self._fail(y, problems, _too_few(self.min_items))
         out, bad = [], False
         for k, v in y.pairs:
             if not re.fullmatch(self.key_pattern, k.value):
@@ -287,8 +309,11 @@ class MapOf(T):
         return out
 
     def schema(self):
-        return _describe({"type": "object", "propertyNames": {"pattern": f"^(?:{self.key_pattern})$"},
-                          "additionalProperties": self.value.schema()}, self.description)
+        s: dict = {"type": "object", "propertyNames": {"pattern": f"^(?:{self.key_pattern})$"},
+                   "additionalProperties": self.value.schema()}
+        if self.min_items:
+            s["minProperties"] = self.min_items
+        return _describe(s, self.description)
 
 
 def check(t: T, y: Y, problems: list[Problem]) -> Any:

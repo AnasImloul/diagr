@@ -66,6 +66,7 @@ In a README, use both static files so the image follows the reader's theme:
 | `diagr watch FILE... [-o DIR]` | Rebuild when the file, its icon folders or its theme file change |
 | `diagr check FILE... [--strict]` | Validate; errors and warnings are printed as `file:line:col` |
 | `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |
+| `diagr --version` | Print the installed version |
 
 Add `# yaml-language-server: $schema=<path>/diagr.schema.json` at the top of a diagram for autocomplete in
 editors that support it.

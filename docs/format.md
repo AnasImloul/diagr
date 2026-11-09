@@ -129,9 +129,11 @@ active.
 ## Validation
 
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys (with a suggestion), duplicate
-keys and ids, unknown nodes, groups, icons and tones, edges to nowhere, routes that cannot reach their target,
-diagonal segments, two nodes on one cell, nodes outside their group, effects that reference nothing. Overlapping
-nodes, labels over nodes and overlapping groups are warnings; `--strict` makes them fail.
+keys and ids, unknown nodes, groups, icons and tones, edges to nowhere, edges from a node to itself without a
+`route` or `via`, routes that cannot reach their target, diagonal segments, two nodes on one cell, nodes outside their
+group, effects that reference nothing, a format version newer than this diagr, and broken theme or `icons.yml` files.
+Overlapping nodes, labels over nodes, overlapping groups, hidden nodes or edges that no `show` reveals, and visible
+edges into hidden nodes are warnings; `--strict` makes them fail.
 
 ## Python
 

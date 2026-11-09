@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .icons import Icons
+from .icons import Icons, SvgIcon, Tile
 from .layout.geometry import Layout
 from .model import Diagram, Effect, Loc
 from .scenario import resolve_edge, text_key, walk_effects
@@ -12,8 +12,20 @@ def _warn(problems: list[Problem], loc: Loc | None, msg: str) -> None:
     problems.append(Problem(loc, msg, "warning"))
 
 
+def _icon(p: list[Problem], loc: Loc | None, who: str, name: str, tone: str | None, t: Theme, icons: Icons) -> None:
+    ic = icons.get(name)
+    if ic is None:
+        why = icons.errors.get(name)
+        p.append(Problem(loc, f"{who}: icon '{name}' " + (f"cannot be read ({why})" if why else "not found")))
+    elif isinstance(ic, Tile) and not tone and ic.tone not in t.tiles:
+        p.append(Problem(loc, f"{who}: icon '{name}' uses tile tone '{ic.tone}', which the theme does not have "
+                              f"(theme has {', '.join(t.tiles)})"))
+    elif isinstance(ic, SvgIcon) and ic.recolour and ic.recolour not in t.tokens["light"]:
+        p.append(Problem(loc, f"{who}: icon '{name}' is recoloured with unknown theme token '{ic.recolour}'"))
+
+
 def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
-    p: list[Problem] = []
+    p: list[Problem] = list(icons.problems)
     for folder in icons.missing:
         p.append(Problem(Loc(d.file, 1, 1), f"icon folder not found: {folder}"))
     for k in d.groups:
@@ -22,16 +34,16 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
     for g in d.groups.values():
         if g.tone not in t.tones:
             p.append(Problem(g.loc, f"group '{g.id}': unknown tone '{g.tone}' (theme has {', '.join(t.tones)})"))
-        if g.icon and icons.get(g.icon) is None:
-            p.append(Problem(g.loc, f"group '{g.id}': icon '{g.icon}' not found"))
+        if g.icon:
+            _icon(p, g.loc, f"group '{g.id}'", g.icon, None, t, icons)
         if g.span and g.at is None:
             p.append(Problem(g.loc, f"group '{g.id}': 'span' needs 'at'"))
     seen: dict[tuple[float, float], str] = {}
     for n in d.nodes.values():
         if n.group and n.group not in d.groups:
             p.append(Problem(n.loc, f"node '{n.id}': unknown group '{n.group}'"))
-        if n.icon and icons.get(n.icon) is None:
-            p.append(Problem(n.loc, f"node '{n.id}': icon '{n.icon}' not found"))
+        if n.icon:
+            _icon(p, n.loc, f"node '{n.id}'", n.icon, n.tone, t, icons)
         if not n.junction and not n.icon:
             _warn(p, n.loc, f"node '{n.id}' has no icon")
         if n.tone and n.tone not in t.tiles:
@@ -47,9 +59,28 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             p.append(Problem(e.loc, f"edge id '{e.id}' is also a node or group id"))
         if e.route is not None and e.via is not None:
             p.append(Problem(e.loc, f"edge '{e.id}': use either 'route' or 'via', not both"))
+        if e.src.node == e.dst.node and e.route is None and e.via is None:
+            p.append(Problem(e.loc, f"edge '{e.id}' starts and ends at '{e.src.node}'; give it a 'route' or 'via'"))
+        if not e.hidden:
+            for end in (e.src.node, e.dst.node):
+                if end in d.nodes and d.nodes[end].hidden:
+                    _warn(p, e.loc, f"edge '{e.id}' is visible but node '{end}' starts hidden; "
+                                    "mark the edge hidden too")
     if d.scenario:
         p += check_scenario(d)
+    _check_hidden(d, p)
     return p
+
+
+def _check_hidden(d: Diagram, p: list[Problem]) -> None:
+    effects = walk_effects(d.scenario) if d.scenario else []
+    shown = {resolve_edge(d, x) or x for e in effects if e.verb == "show" for x in e.targets}
+    for n in d.nodes.values():
+        if n.hidden and n.id not in shown:
+            _warn(p, n.loc, f"node '{n.id}' is hidden and nothing shows it")
+    for e in d.edges.values():
+        if e.hidden and e.id not in shown:
+            _warn(p, e.loc, f"edge '{e.id}' is hidden and nothing shows it")
 
 
 def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
@@ -101,10 +132,6 @@ def check_scenario(d: Diagram) -> list[Problem]:
             p.append(Problem(s.loc, f"step '{s.title}': unknown node '{s.at}'"))
         for e in s.effects:
             _check_effect(d, e, p)
-    used = {x for e in walk_effects(sc) for x in e.targets}
-    for n in d.nodes.values():
-        if n.hidden and n.id not in used:
-            _warn(p, n.loc, f"node '{n.id}' is hidden and nothing shows it")
     return p
 
 

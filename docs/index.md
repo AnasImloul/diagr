@@ -32,6 +32,7 @@ See the [examples](examples/index.md) for rendered diagrams with their source, a
 | `diagr watch FILE... [-o DIR]` | Rebuild when the file, its icon folders or its theme file change |
 | `diagr check FILE... [--strict]` | Validate; errors and warnings are printed as `file:line:col` |
 | `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |
+| `diagr --version` | Print the installed version |
 
 ## Player keys
 

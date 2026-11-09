@@ -14,6 +14,7 @@ PORT = rf"({ID})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
 EDGE_KEY = rf"{PORT}\s*->\s*{PORT}(?:\s+as\s+({ID}))?"
 MOVE = r"(up|down|left|right)(?:\s+(\d+(?:\.\d+)?)(px)?)?"
 MARKS = ("new", "removed", "changed")
+FORMAT_VERSION = 1
 
 
 class Cells(f.T):
@@ -39,7 +40,7 @@ GROUP = f.Obj("group", {
     "icon": f.F(f.Str(description="Icon name, shown before the title")),
     "tone": f.F(f.Str(description="Theme tone: blue, teal, green, violet, amber, orange, neutral")),
     "at": f.F(f.Pair(description="Top-left cell [col, row]; default: fit the member nodes")),
-    "span": f.F(f.Pair(description="Size in cells [cols, rows]")),
+    "span": f.F(f.Pair(minimum=1, description="Size in cells [cols, rows]")),
 }, description="A titled, tinted container around nodes")
 
 NODE = f.Obj("node", {
@@ -67,7 +68,8 @@ EDGE = f.Obj("edge", {
     "via": f.F(f.List(f.Pair(), description="Explicit waypoints in grid cells (escape hatch)")),
     "dashed": f.F(f.Bool()),
     "mark": f.F(f.Str(enum=MARKS)),
-    "label_at": f.F(f.Num(description="Label position along the path, 0 to 1; default: middle of the longest segment")),
+    "label_at": f.F(f.Num(minimum=0, maximum=1,
+                          description="Label position along the path, 0 to 1; default: middle of the longest segment")),
     "hidden": f.F(f.Bool()),
     "tooltip": f.F(f.Str()),
 }, shorthand=f.Str(description="The label"), shorthand_field="label",
@@ -84,11 +86,11 @@ STEP = f.Obj("step", {
 SCENARIO = f.Obj("scenario", {
     "ready": f.F(f.Str(description="Status line before the run")),
     "end": f.F(f.Str(description="Status line after the run")),
-    "steps": f.F(f.List(STEP), required=True),
+    "steps": f.F(f.List(STEP, min_items=1), required=True),
 })
 
 DIAGRAM = f.Obj("diagram", {
-    "diagr": f.F(f.Num(integer=True, minimum=1, description="Format version")),
+    "diagr": f.F(f.Num(integer=True, minimum=1, maximum=FORMAT_VERSION, description="Format version")),
     "diagram": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),
     "title": f.F(f.Str()),
     "description": f.F(f.Str(description="Accessible description of the whole diagram")),
@@ -97,7 +99,7 @@ DIAGRAM = f.Obj("diagram", {
     "grid": f.F(f.Obj("grid", {"col": f.F(f.Num(minimum=1)), "row": f.F(f.Num(minimum=1))},
                       description="Cell size in px")),
     "groups": f.F(f.MapOf(GROUP)),
-    "nodes": f.F(f.MapOf(NODE), required=True),
+    "nodes": f.F(f.MapOf(NODE, min_items=1), required=True),
     "edges": f.F(f.MapOf(EDGE, key_pattern=EDGE_KEY, key_description="an edge key like 'a -> b'")),
     "scenario": f.F(SCENARIO),
     "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
@@ -179,5 +181,10 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
 
 def load_file(path: str | Path) -> Diagram:
     path = Path(path)
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as e:
+        raise DiagramError([Problem(None, f"cannot read {path}: {e.strerror or e}")]) from None
+    except UnicodeDecodeError:
+        raise DiagramError([Problem(None, f"cannot read {path}: not UTF-8 text")]) from None
     return from_tree(load(text, str(path)), str(path), path.resolve().parent)

@@ -55,11 +55,12 @@ class NodeBox:
     button: Rect | None
     bottom: float
     box: Rect
+    reach: float = 0
 
     def port(self, side: str, offset: float = 0.0) -> Point:
         if self.node.junction:
             return (self.x, self.y)
-        half = 30
+        half = self.reach
         if side == "left":
             return (self.x - half, self.y + offset)
         if side == "right":
@@ -126,7 +127,7 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
     half_w = max([half + 4] + [w / 2 for w in widths])
     top = y - half - 14
     return NodeBox(n, x, y, title_y, sub_ys, strip, caption_y, button, bottom,
-                   Rect(x - half_w, top, 2 * half_w, bottom - top))
+                   Rect(x - half_w, top, 2 * half_w, bottom - top), half + 4)
 
 
 def group_rect(g: Group, d: Diagram, t: Theme, boxes: dict[str, NodeBox]) -> Rect | None:
