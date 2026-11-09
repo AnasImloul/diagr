@@ -19,7 +19,15 @@ uv sync
 uv run diagr build examples/order-flow/diagram.yml -o dist
 ```
 
-This writes `dist/order-flow-light.svg`, `dist/order-flow-dark.svg` and `dist/order-flow.html`.
+This writes `dist/order-flow-light.svg`, `dist/order-flow-dark.svg` and `dist/order-flow.html`:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="tests/golden/order-flow-dark.svg">
+  <img alt="A web app posts an order to the API, which queues it for workers that write it to the orders database." src="tests/golden/order-flow-light.svg">
+</picture>
+
+To start your own, `uv run diagr init my-flow.yml` writes this starter diagram (a shorter order flow than the
+example above):
 
 ```yaml
 diagr: 1
@@ -62,11 +70,16 @@ In a README, use both static files so the image follows the reader's theme:
 
 | Command | What it does |
 |---|---|
+| `diagr init [FILE] [--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
 | `diagr build FILE... [-o DIR] [--theme T]` | Write the two SVGs and the HTML page for each file |
-| `diagr watch FILE... [-o DIR]` | Rebuild when the file, its icon folders or its theme file change |
-| `diagr check FILE... [--strict]` | Validate; errors and warnings are printed as `file:line:col` |
+| `diagr watch FILE... [-o DIR] [--theme T] [--interval S]` | Rebuild when the file, its icon folders or its theme file change; polls every 0.5 s by default |
+| `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout |
+| `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |
 | `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |
 | `diagr --version` | Print the installed version |
+
+`--theme` on the command line is resolved against the current folder; `theme:` in a diagram against the diagram's
+folder.
 
 Add `# yaml-language-server: $schema=<path>/diagr.schema.json` at the top of a diagram for autocomplete in
 editors that support it.
