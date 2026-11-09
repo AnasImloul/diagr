@@ -76,6 +76,20 @@ editors that support it.
 Space plays or pauses. Left and Right go to the previous or next step; with Shift they move one frame. Home resets,
 End jumps to the end. Clicking a step in the list jumps to it.
 
+## Development
+
+```sh
+uv sync
+uv run ruff check .
+uv run pyright
+uv run python -m unittest discover -s tests -t .
+```
+
+`tests/golden/` holds the expected output of every example. After a change that is meant to alter the output, run
+`DIAGR_UPDATE_GOLDEN=1 uv run python -m unittest tests.test_examples` and review the diff. After changing the format,
+regenerate the schema with `uv run diagr schema -o schema/diagr.schema.json`; a test fails if it is out of date.
+`.github/workflows/ci.yml` runs all of this on every push and pull request.
+
 ## Docs
 
 The docs site is built with MkDocs Material and deployed to GitHub Pages by `.github/workflows/docs.yml`. The
@@ -99,4 +113,5 @@ uv run mkdocs build --strict # writes site/
 | `src/diagr/` | The package: parser, validator, layout, scenario compiler, renderers, themes, core icons |
 | `examples/` | Example diagrams |
 | `schema/` | Generated JSON Schema |
+| `tests/` | Unit tests and golden files for the examples |
 | `tools/measure_text.py` | Regenerates the text width table from installed fonts (needs Chrome) |
