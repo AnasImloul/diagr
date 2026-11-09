@@ -197,5 +197,4 @@
   load(svg.getAttribute("data-scenario") || scenarios[0].id);
   if (statusEl) statusEl.textContent = sc.ready;
   goTo(0, false);
-  if (data.autoplay) play();
 })();

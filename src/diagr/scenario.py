@@ -42,9 +42,6 @@ class Compiled:
     id: str = ""
     title: str = ""
 
-    def state(self, k: int) -> dict[str, Any]:
-        return fold(self.frames[1 : k + 1])
-
 
 def fold(frames: list[Frame], start: dict[str, Any] | None = None) -> dict[str, Any]:
     s = dict(start or {})

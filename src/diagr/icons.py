@@ -212,10 +212,3 @@ class Icons:
             for path in sorted(src.folder.glob("*.svg")):
                 found.setdefault(path.stem, (path.stem, "svg", src.folder))
         return sorted(found.values())
-
-    def names(self) -> list[str]:
-        out: set[str] = set()
-        for src in self.sources:
-            out.update(src.tiles)
-            out.update(p.stem for p in src.folder.glob("*.svg"))
-        return sorted(out)
