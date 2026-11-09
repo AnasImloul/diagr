@@ -74,6 +74,7 @@ nav:
   - Reference:
       - Diagram format and effects: format.md
       - Themes and icons: themes-and-icons.md
+      - How diagr compares: comparison.md
   - Examples:
       - examples/index.md
       - Order processing: examples/order-flow.md

@@ -123,6 +123,7 @@ uv run mkdocs build --strict # writes site/
 
 - [Diagram format and effects](docs/format.md)
 - [Themes and icons](docs/themes-and-icons.md)
+- [How diagr compares](docs/comparison.md) with D2, Mermaid, Structurizr, LikeC4, Ilograph and IcePanel
 - [Examples](examples/): `order-flow`, `cloud-architecture` (pull-based workers, dead-letter queue, retries, a
   parallel captions path), `multi-region` (nested groups, a component used twice, three scenarios), `data-platform`
   (a three-instance component, three-level nesting, a merge junction, four scenarios)
