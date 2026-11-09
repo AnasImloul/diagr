@@ -67,6 +67,7 @@ hooks:
 extra_javascript:
   - javascripts/embeds.js
   - javascripts/anchors.js
+  - javascripts/scheme-tabs.js
 
 extra_css:
   - stylesheets/diagr.css
