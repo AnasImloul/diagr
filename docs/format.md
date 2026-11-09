@@ -73,7 +73,7 @@ edges:
   web -> api: POST /orders
   queue -> dlq: {label: after 3 tries, dashed: true}
   pipe -> refresh: {label: last step, route: [down, right]}
-  bus -> transcode: {label: launch worker, route: [up 1.5, right, down]}
+  dispatcher -> jobs: {label: send, route: [right 70px, up, right]}
   jobs@bottom+15 -> dlq: {label: three failures, route: [down, right]}
   dlq -> jobs@bottom-15 as redrive: {route: [right 0.45, down 0.45, left, up], dashed: true}
 ```

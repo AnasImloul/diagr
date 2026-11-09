@@ -2,8 +2,8 @@
 id: cloud-architecture
 title: Job pipeline
 description: >-
-  The API admits jobs into a fair backlog. A dispatcher releases them to queues and starts workers; jobs that keep
-  failing move to a dead-letter queue and can be redriven.
+  The API admits jobs into a fair backlog. A dispatcher releases them to the jobs queue, where workers pick them up;
+  jobs that keep failing move to a dead-letter queue and can be redriven.
 grid: { col: 182, row: 175 }
 step_list: false
 
@@ -12,9 +12,8 @@ nodes:
   backlog: { at: [1, 1], icon: database, title: Backlog, sub: fair order }
   tick: { at: [2, 0], icon: clock, title: Scheduler, sub: every minute }
   dispatcher: { at: [2, 1], icon: function, title: Dispatcher }
-  bus: { at: [2.55, 1], junction: true }
   jobs: { at: [3, 0], icon: queue, title: Jobs queue }
-  transcode: { at: [4, 0], icon: server, title: Transcode workers, sub: one job per task, stack: 3 }
+  transcode: { at: [4, 0], icon: server, title: Transcode workers, sub: pull one job at a time, stack: 3 }
   dlq: { at: [4, 1], icon: queue, title: Dead letters }
   cq: { at: [3, 2], icon: queue, title: Captions queue }
   captions: { at: [4, 2], icon: server, title: Captions workers, sub: speech to text }
@@ -25,10 +24,7 @@ edges:
   backlog -> dispatcher: release fairly
   tick -> dispatcher: { dashed: true }
   api -> dispatcher as wake: { label: wake, route: [up 0.4, right, down], dashed: true }
-  dispatcher -> bus: {}
-  bus -> jobs: { label: send, route: [up, right] }
-  bus -> transcode: { label: launch worker, route: [up 1.55, right, down] }
-  bus -> captions: { label: launch worker, route: [down 0.6, right, down] }
+  dispatcher -> jobs: { label: send, route: [right 70px, up, right] }
   jobs -> transcode: {}
   transcode -> dlq: bad source, deadline
   jobs@bottom+15 -> dlq: { label: three failures, route: [down, right] }
@@ -54,8 +50,7 @@ scenarios:
           - draw backlog->dispatcher
           - done backlog
           - activate dispatcher 300ms
-          - draw dispatcher->bus 300ms
-          - parallel: [draw bus->jobs, draw bus->transcode]
+          - draw dispatcher->jobs
           - done dispatcher
       - title: Fail three times
         do:
