@@ -67,3 +67,6 @@ folder.
 ++space++ plays or pauses. ++arrow-left++ and ++arrow-right++ go to the previous or next step; with ++shift++ they
 move one frame. ++home++ resets, ++end++ jumps to the end. Clicking a step in the list jumps to it. With several
 scenarios, the buttons above the progress bar switch between them.
+
+++ctrl++ or ++cmd++ with the scroll wheel, or a pinch, zooms the diagram around the pointer; drag to pan once zoomed
+in. ++plus++ and ++minus++ zoom, ++0++ fits it back, and the buttons in the diagram's corner do the same.

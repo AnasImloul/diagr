@@ -9,7 +9,20 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 
 :root[data-theme="light"] #toggle .sun, :root[data-theme="dark"] #toggle .moon { display: none; }
 #toggle:focus-visible, .controls button:focus-visible, .trigger:focus-visible .btnbg { outline: 2px solid var(--text); outline-offset: 2px; }
 
-svg.diagr { display: block; width: 100%; height: auto; }
+svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y; }
+.stage { position: relative; }
+.stage.zoomed svg.diagr { cursor: grab; }
+.stage.panning svg.diagr { cursor: grabbing; }
+.zoom { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 4px; transition: opacity 150ms; }
+.zoom button { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  color: var(--text); background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+.zoom button:hover { background: var(--hover); }
+.zoom button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.zoom svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+@media (hover: hover) {
+  .zoom { opacity: .5; }
+  .stage:hover .zoom, .stage:focus-within .zoom, .stage.zoomed .zoom { opacity: 1; }
+}
 svg.diagr .rot, svg.diagr .glyph { transform-box: fill-box; transform-origin: center; }
 svg.diagr .node, svg.diagr .edge, svg.diagr .elab, svg.diagr .grp { transition: opacity 300ms; }
 svg.diagr [data-hidden="1"] { opacity: 0; pointer-events: none; }

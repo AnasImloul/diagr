@@ -109,6 +109,12 @@ class Authoring(Case):
         self.assertIn("a [0, 0]", html)
         self.assertIn("a-&gt;b: point 1 of 2", html)
 
+    def test_every_page_can_zoom(self):
+        html = render_html(prepared(BASE))
+        self.assertIn('<div class="stage"><svg class="diagr"', html)
+        self.assertIn('data-zoom="fit"', html)
+        self.assertIn("window.diagrZoom", html)
+
     def test_live_script_only_when_serving(self):
         p = prepared(BASE)
         self.assertNotIn("/__diagr/version", render_html(p))

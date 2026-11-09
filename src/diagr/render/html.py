@@ -34,6 +34,21 @@ THEME_BOOT = (
     'if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches'
     '?"dark":"light";document.documentElement.setAttribute("data-theme",t)})();</script>'
 )
+ZOOM_ICONS = {
+    "in": '<path d="M7 3v10M2 8h10"/>',
+    "out": '<path d="M2 8h10"/>',
+    "fit": '<path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/>',
+}
+ZOOM = (
+    '<div class="zoom" role="toolbar" aria-label="Zoom">'
+    + "".join(
+        f'<button type="button" data-zoom="{act}" aria-label="{label}" title="{label}">'
+        f'<svg viewBox="0 0 16 16" aria-hidden="true">{ZOOM_ICONS[act]}</svg></button>'
+        for act, label in (("in", "Zoom in (+)"), ("out", "Zoom out (-)"), ("fit", "Fit (0)"))
+    )
+    + "</div>"
+)
+
 THEME_TOGGLE = (
     '<script>document.getElementById("toggle").addEventListener("click",function(){var r=document.'
     'documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);'
@@ -164,10 +179,12 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
 <body>
 {TOGGLE}
 <div class="wrap">
-{svg}
+<div class="stage">{svg}{ZOOM}</div>
 {panel}
 </div>
 {THEME_TOGGLE}{DEBUG_TOGGLE if debug else ""}
+<script>
+{(ASSETS / "zoom.js").read_text(encoding="utf-8")}</script>
 {script}{LIVE if live else ""}
 </body>
 </html>
