@@ -88,6 +88,16 @@ class Watch(Case):
         self.assertIn((base / "t.yml").resolve(), _watched(base / "d.yml", str(base / "t.yml")))
 
 
+class Authoring(Case):
+    def test_debug_overlay_only_when_asked(self):
+        p = prepared(BASE)
+        self.assertNotIn("dg-debug", render_html(p))
+        html = render_html(p, debug=True)
+        self.assertIn('class="dg-debug"', html)
+        self.assertIn("a [0, 0]", html)
+        self.assertIn("a-&gt;b: point 1 of 2", html)
+
+
 class Accessibility(Case):
     def test_svg_with_triggers_is_a_group(self):
         html = render_html(

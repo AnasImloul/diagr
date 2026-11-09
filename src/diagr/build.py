@@ -46,12 +46,15 @@ def prepare(d: Diagram, theme: str | None = None) -> Prepared:
     return Prepared(d, t, icons, lay, comp, problems)
 
 
-def build_files(path: str | Path, out: str | Path, theme: str | None = None) -> tuple[list[Path], list[Problem]]:
+def build_files(
+    path: str | Path, out: str | Path, theme: str | None = None, debug: bool = False
+) -> tuple[list[Path], list[Problem]]:
     p = prepare(load_file(path), theme)
-    return write_files(p, out), p.warnings
+    return write_files(p, out, debug), p.warnings
 
 
-def write_files(p: Prepared, out: str | Path) -> list[Path]:
+def write_files(p: Prepared, out: str | Path, debug: bool = False) -> list[Path]:
+    """The two static SVGs and the HTML page; debug adds the authoring overlay to the page."""
     from .render.html import render_html
     from .render.svg import render_static
 
@@ -63,6 +66,6 @@ def write_files(p: Prepared, out: str | Path) -> list[Path]:
         f.write_text(render_static(p.scene(), p.theme, scheme), encoding="utf-8")
         written.append(f)
     f = out / f"{p.diagram.id}.html"
-    f.write_text(render_html(p), encoding="utf-8")
+    f.write_text(render_html(p, debug), encoding="utf-8")
     written.append(f)
     return written

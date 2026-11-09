@@ -38,7 +38,7 @@ def cmd_build(args) -> int:
                 )
             built[d.id] = f
             p = prepare(d, args.theme)
-            written = write_files(p, args.out)
+            written = write_files(p, args.out, args.debug)
         except DiagramError as e:
             _report(e.problems)
             status = 1
@@ -174,7 +174,7 @@ def cmd_watch(args) -> int:
                 if stamps.get(f) != s:
                     stamps[f] = s
                     try:
-                        written, warnings = build_files(f, args.out, args.theme)
+                        written, warnings = build_files(f, args.out, args.theme, args.debug)
                         _report(warnings)
                         print(f"{time.strftime('%H:%M:%S')} built {', '.join(w.name for w in written)}")
                     except DiagramError as e:
@@ -195,12 +195,14 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("files", nargs="+")
     b.add_argument("--out", "-o", default="dist")
     b.add_argument("--theme", help="override the diagram's theme")
+    b.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
     b.set_defaults(fn=cmd_build)
 
     w = sub.add_parser("watch", help="rebuild when the file, its icons or its theme change")
     w.add_argument("files", nargs="+")
     w.add_argument("--out", "-o", default="dist")
     w.add_argument("--theme")
+    w.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
     w.add_argument("--interval", type=float, default=0.5)
     w.set_defaults(fn=cmd_watch)
 

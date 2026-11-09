@@ -51,8 +51,8 @@ See the [examples](examples/index.md) for rendered diagrams with their source, a
 | Command | What it does |
 |---|---|
 | `diagr init [FILE] [--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
-| `diagr build FILE... [-o DIR] [--theme T]` | Write the two SVGs and the HTML page for each file |
-| `diagr watch FILE... [-o DIR] [--theme T] [--interval S]` | Rebuild when the file, its icon folders or its theme file change; polls every 0.5 s by default |
+| `diagr build FILE... [-o DIR] [--theme T] [--debug]` | Write the two SVGs and the HTML page for each file; `--debug` adds the grid and route overlay to the page (G toggles it) |
+| `diagr watch FILE... [-o DIR] [--theme T] [--interval S] [--debug]` | Rebuild when the file, its icon folders or its theme file change; polls every 0.5 s by default |
 | `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout |
 | `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |
 | `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |

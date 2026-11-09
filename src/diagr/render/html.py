@@ -7,6 +7,8 @@ from pathlib import Path
 from ..build import Prepared
 from ..scenario import Compiled
 from ..scene import num, serialise
+from .debug import TOGGLE as DEBUG_TOGGLE
+from .debug import overlay
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 PROPS = {"fill": "fill", "stroke": "stroke", "stop-color": "stop-color"}
@@ -61,7 +63,7 @@ def _json(obj: object) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
-def render_html(p: Prepared) -> str:
+def render_html(p: Prepared, debug: bool = False) -> str:
     d, t = p.diagram, p.theme
     sb = p.scene()
     body, b = sb.build()
@@ -83,6 +85,7 @@ def render_html(p: Prepared) -> str:
         f'role="{role}" aria-label="{label}">'
         + serialise(defs, "html", paint)
         + serialise(body, "html", paint)
+        + (overlay(p) if debug else "")
         + "</svg>"
     )
 
@@ -164,7 +167,7 @@ def render_html(p: Prepared) -> str:
 {svg}
 {panel}
 </div>
-{THEME_TOGGLE}
+{THEME_TOGGLE}{DEBUG_TOGGLE if debug else ""}
 {script}
 </body>
 </html>
