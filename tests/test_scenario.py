@@ -83,7 +83,7 @@ class Compile(unittest.TestCase):
         self.assertEqual(frames[2].set["c:a:1"], "act")
         self.assertEqual(frames[2].set["e:a->b"], "drawn")
         self.assertEqual(frames[2].set["status"], "round 2")
-        self.assertEqual(frames[2].dur, 700)
+        self.assertEqual(frames[2].dur, 1400)
         self.assertEqual(frames[3].set, {"c:a:1": "ok", "cap:a": None, "n:a": "done"})
 
     def test_nested_parallel_is_one_lane(self):

@@ -42,29 +42,29 @@ scenarios:
       - title: Admit
         text: The API admits the job to the backlog and, at the same time, sends its captions job down the captions pipeline.
         do:
-          - parallel: [flow api -> backlog 300ms, flow api -> cq -> captions -> llm]
+          - parallel: [flow api -> backlog 600ms, flow api -> cq -> captions -> llm]
           - done llm
-          - activate backlog 300ms
+          - activate backlog 600ms
       - title: Dispatch
         do:
           - draw backlog->dispatcher
           - done backlog
-          - activate dispatcher 300ms
+          - activate dispatcher 600ms
           - draw dispatcher->jobs
           - done dispatcher
       - title: Fail three times
         do:
           - activate jobs
-          - draw jobs->transcode 400ms
+          - draw jobs->transcode 800ms
           - repeat: 3
             do:
               [
-                activate transcode 500ms,
+                activate transcode 1000ms,
                 fail transcode,
-                "set transcode.sub 400ms: attempt {i} of 3 failed",
+                "set transcode.sub 800ms: attempt {i} of 3 failed",
               ]
           - draw jobs->dlq
-          - activate dlq 400ms
+          - activate dlq 800ms
           - done jobs
       - title: Redrive
-        do: [draw redrive 900ms, done dlq, "status: An operator redrove the job.", wait 600ms]
+        do: [draw redrive 1800ms, done dlq, "status: An operator redrove the job.", wait 1200ms]

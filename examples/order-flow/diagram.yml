@@ -34,11 +34,11 @@ scenarios:
       - title: Submit
         at: web
         text: The customer places the order from the checkout page.
-        do: [flow web -> api 300ms]
+        do: [flow web -> api 600ms]
       - title: Validate and queue
         at: api
         text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.
-        do: [activate api 400ms, "set api.sub: order is valid", draw api->queue, done api]
+        do: [activate api 800ms, "set api.sub: order is valid", draw api->queue, done api]
       - title: Process
         at: worker
         text: A worker takes the order off the queue and writes it to the database.
@@ -46,9 +46,9 @@ scenarios:
           - activate queue
           - draw queue->worker
           - done queue
-          - activate worker 600ms
+          - activate worker 1200ms
           - draw worker->db
-          - activate db 300ms
+          - activate db 600ms
           - done worker db
       - title: Confirm
         at: mail
@@ -57,6 +57,6 @@ scenarios:
           - show mail worker->mail
           - focus worker mail worker->mail
           - draw worker->mail
-          - activate mail 500ms
+          - activate mail 1000ms
           - done mail
           - focus none

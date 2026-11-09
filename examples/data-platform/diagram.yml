@@ -96,7 +96,7 @@ scenarios:
         text: Each feed checks its records against the feed's schema.
         do:
           - parallel: [flow orders/ingest -> orders/check, flow clicks/ingest -> clicks/check, flow stock/ingest -> stock/check]
-          - activate orders/check clicks/check stock/check 400ms
+          - activate orders/check clicks/check stock/check 800ms
           - done orders/check clicks/check stock/check
       - title: Land in bronze
         at: raw
@@ -132,14 +132,14 @@ scenarios:
         do: [show quarantine clicks/check->quarantine quarantine->oncall, draw clicks/check->quarantine, "set quarantine.sub: 1 record"]
       - title: Page on-call
         at: oncall
-        do: [draw quarantine->oncall, activate oncall 600ms, done oncall]
+        do: [draw quarantine->oncall, activate oncall 1200ms, done oncall]
       - title: Fix and retry
         at: clicks/check
         text: The fixed record goes through validation again.
         do:
           - activate clicks/check
           - repeat: 2
-            do: ["set clicks/check.sub: retry {i} of 2", wait 400ms]
+            do: ["set clicks/check.sub: retry {i} of 2", wait 800ms]
           - "set clicks/check.sub: schema v3"
           - done clicks/check
           - draw clicks/check->bus
@@ -156,10 +156,10 @@ scenarios:
       - title: Check access
         at: access
         text: The warehouse checks the analyst's grants before running the query.
-        do: [focus warehouse access, draw access->warehouse, wait 500ms, focus none]
+        do: [focus warehouse access, draw access->warehouse, wait 1000ms, focus none]
       - title: Answer
         at: warehouse
-        do: [activate warehouse 600ms, draw warehouse->dashboards, done warehouse dashboards, "set analyst.sub: answer in 1.2 s"]
+        do: [activate warehouse 1200ms, draw warehouse->dashboards, done warehouse dashboards, "set analyst.sub: answer in 1.2 s"]
 
   backfill:
     title: Backfill

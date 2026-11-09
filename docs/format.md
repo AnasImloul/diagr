@@ -185,10 +185,10 @@ An effect is `verb targets [duration]`. The duration is how long the frame holds
 | `activate a [b ...]` | Node starts working: pulsing ring, spinner badge | 0 ms |
 | `done a [b ...]` | Node finished: check badge | 0 ms |
 | `fail a` | Node failed: red ring and cross. An active cell fails too | 0 ms |
-| `draw a->b` | The accent line draws along the edge, then its arrow turns accent | 700 ms |
+| `draw a->b` | The accent line draws along the edge, then its arrow turns accent | 1400 ms |
 | `flow a -> b -> c [ms]` | Follow a path: `activate a`, `draw a->b`, `done a`, then the same from `b`. The last node is left as it is, so the next step can pick it up. A duration applies to each `activate` | |
 | `set n.title: text`, `set n.sub: text`, `set n.sub.1: text`, `set a->b.label: text` | Replace text. `n.sub` replaces every line | 0 ms |
-| `cells n [2..4] [ms]` | Fill the cells one by one. A range by position (`2..4`, or `3` for one cell) or by name (`build..test`, `canary`) fills only those; a range that stops early leaves its last cell active, and the next range completes it | 520 ms per cell |
+| `cells n [2..4] [ms]` | Fill the cells one by one. A range by position (`2..4`, or `3` for one cell) or by name (`build..test`, `canary`) fills only those; a range that stops early leaves its last cell active, and the next range completes it | 1040 ms per cell |
 | `spin n`, `spin n off` | Rotate the node's glyph | 0 ms |
 | `show x`, `hide x` | Reveal or hide a node, edge or group | 0 ms |
 | `focus x y`, `focus none` | Dim everything except the targets | 0 ms |

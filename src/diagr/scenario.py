@@ -6,8 +6,8 @@ from typing import Any
 
 from .model import Diagram, Effect, Scenario
 
-DRAW_MS = 700
-CELL_MS = 520
+DRAW_MS = 1400
+CELL_MS = 1040
 
 
 @dataclass
