@@ -1,0 +1,443 @@
+/* Docs theme: the same neutrals, accent and font stack as the diagrams diagr renders. */
+
+:root {
+  --md-text-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --md-code-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --dg-radius: 12px;
+}
+
+body[data-md-color-scheme="default"] {
+  --dg-bg: #ffffff;
+  --dg-text: #1f2328;
+  --dg-muted: #656d76;
+  --dg-rule: #d0d7de;
+  --dg-hover: #f6f8fa;
+  --dg-link: #0f7b6c;
+  --dg-link-hover: #0b5f55;
+  --dg-shadow: 0 1px 2px rgb(31 35 40 / 6%), 0 12px 28px -16px rgb(31 35 40 / 22%);
+
+  --md-primary-bg-color: #ffffff;
+  --md-accent-bg-color: #ffffff;
+}
+
+body[data-md-color-scheme="slate"] {
+  --dg-bg: #0d1117;
+  --dg-text: #e6edf3;
+  --dg-muted: #8d96a0;
+  --dg-rule: #30363d;
+  --dg-hover: #151b23;
+  --dg-link: #2bb59a;
+  --dg-link-hover: #5fd4b9;
+  --dg-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 28px -16px rgb(0 0 0 / 70%);
+
+  --md-primary-bg-color: #0d1117;
+  --md-accent-bg-color: #0d1117;
+}
+
+body[data-md-color-scheme] {
+  --md-default-bg-color: var(--dg-bg);
+  --md-default-fg-color: var(--dg-text);
+  --md-default-fg-color--light: var(--dg-muted);
+  --md-default-fg-color--lighter: color-mix(in srgb, var(--dg-muted) 70%, transparent);
+  --md-default-fg-color--lightest: color-mix(in srgb, var(--dg-muted) 22%, transparent);
+  --md-primary-fg-color: var(--dg-link);
+  --md-primary-fg-color--light: var(--dg-link-hover);
+  --md-primary-fg-color--dark: var(--dg-link-hover);
+  --md-accent-fg-color: var(--dg-link-hover);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--dg-link) 12%, transparent);
+  --md-typeset-color: var(--dg-text);
+  --md-typeset-a-color: var(--dg-link);
+  --md-typeset-table-color: var(--dg-rule);
+  --md-typeset-table-color--light: var(--dg-hover);
+  --md-code-bg-color: var(--dg-hover);
+  --md-code-fg-color: var(--dg-text);
+  --md-footer-bg-color: var(--dg-bg);
+  --md-footer-bg-color--dark: var(--dg-bg);
+  --md-footer-fg-color: var(--dg-text);
+  --md-footer-fg-color--light: var(--dg-muted);
+  --md-footer-fg-color--lighter: var(--dg-muted);
+  background-color: var(--dg-bg);
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--dg-link) 26%, transparent);
+}
+
+html {
+  scrollbar-color: var(--dg-rule) transparent;
+}
+
+:focus-visible {
+  outline-color: var(--dg-link);
+}
+
+/* Header: page-coloured with a hairline, like the diagram canvas, instead of a coloured bar. */
+
+.md-header,
+.md-header--shadow {
+  color: var(--dg-text);
+  background-color: var(--dg-bg);
+  box-shadow: inset 0 -1px 0 var(--dg-rule);
+}
+
+.md-header__button.md-logo img {
+  height: 1.5rem;
+  border-radius: 6px;
+}
+
+.md-header__topic:first-child {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+@media screen and (min-width: 60em) {
+  .md-search__form {
+    background-color: var(--dg-hover);
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px var(--dg-rule);
+  }
+
+  .md-search__form:hover {
+    background-color: var(--dg-hover);
+    box-shadow: inset 0 0 0 1px var(--dg-muted);
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .md-search__output {
+    border-radius: 0 0 8px 8px;
+  }
+}
+
+.md-search__input::placeholder,
+.md-search__input ~ .md-search__icon {
+  color: var(--dg-muted);
+}
+
+.md-progress {
+  background-color: var(--dg-link);
+}
+
+/* Navigation */
+
+.md-nav__title,
+.md-nav__item--section > .md-nav__link {
+  color: var(--dg-text);
+  font-weight: 650;
+}
+
+.md-nav__link {
+  color: var(--dg-muted);
+}
+
+.md-nav__link:is(:hover, :focus-visible),
+.md-nav__item .md-nav__link--active {
+  color: var(--dg-link);
+}
+
+.md-nav__item .md-nav__link--active {
+  font-weight: 600;
+}
+
+/* Page sections, listed under the active page: a hairline rail with a marker on the section in view. */
+
+[dir] .md-nav--integrated > .md-nav__list > .md-nav__item--active .md-nav--secondary {
+  margin: 0.3rem 0 0.9rem;
+  border-left: 1px solid var(--dg-rule);
+}
+
+.md-nav--primary .md-nav--secondary .md-nav__link {
+  margin: 0 0 0 -1px;
+  padding: 0.28rem 0 0.28rem 0.7rem;
+  font-size: 0.68rem;
+}
+
+[dir] .md-nav--primary .md-nav--secondary :is(.md-nav, .md-nav__list, .md-nav__item) {
+  margin-left: 0;
+  padding-left: 0;
+}
+
+[dir] .md-nav--primary .md-nav--secondary .md-nav .md-nav__link {
+  padding-left: 1.4rem;
+}
+
+.md-nav--primary .md-nav--secondary .md-nav__link--active {
+  box-shadow: inset 2px 0 0 var(--dg-link);
+  color: var(--dg-text);
+  font-weight: 500;
+}
+
+.md-footer {
+  box-shadow: inset 0 1px 0 var(--dg-rule);
+}
+
+.md-footer-meta {
+  box-shadow: inset 0 1px 0 var(--dg-rule);
+}
+
+/* Type */
+
+.md-typeset h1 {
+  margin-bottom: 0.6em;
+  color: var(--dg-text);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.md-typeset h2 {
+  margin-top: 2.2em;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.md-typeset h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Prose keeps a reading measure; code, tables and diagrams use the full column. */
+.md-typeset > :is(p, ul, ol, dl, blockquote, h1, h2, h3, h4, h5, h6) {
+  max-width: 42em;
+}
+
+.md-typeset a {
+  text-underline-offset: 0.2em;
+}
+
+.md-typeset a:is(:hover, :focus-visible) {
+  text-decoration: underline;
+}
+
+.md-typeset .headerlink {
+  text-decoration: none;
+}
+
+.md-typeset table:not([class]) td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Code */
+
+.md-typeset code {
+  border-radius: 6px;
+}
+
+.md-typeset pre > code {
+  border-radius: var(--dg-radius);
+  box-shadow: inset 0 0 0 1px var(--dg-rule);
+}
+
+.md-typeset :not(pre) > code {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dg-rule) 70%, transparent);
+}
+
+/* Tables */
+
+.md-typeset table:not([class]) {
+  border: 1px solid var(--dg-rule);
+  border-radius: var(--dg-radius);
+  box-shadow: none;
+  font-size: 0.72rem;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--dg-hover);
+  font-weight: 600;
+}
+
+.md-typeset table:not([class]) td:first-child > code {
+  white-space: nowrap;
+}
+
+/* Buttons */
+
+.md-typeset .md-button {
+  padding: 0.55em 1.15em;
+  border: 1px solid var(--dg-rule);
+  border-radius: 8px;
+  color: var(--dg-text);
+  font-weight: 600;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+}
+
+.md-typeset .md-button:is(:hover, :focus-visible) {
+  border-color: var(--dg-muted);
+  background-color: var(--dg-hover);
+  color: var(--dg-text);
+  text-decoration: none;
+}
+
+.md-typeset .md-button--primary {
+  border-color: var(--dg-link);
+  background-color: var(--dg-link);
+  color: var(--md-primary-bg-color);
+}
+
+.md-typeset .md-button--primary:is(:hover, :focus-visible) {
+  border-color: var(--dg-link-hover);
+  background-color: var(--dg-link-hover);
+  color: var(--md-primary-bg-color);
+}
+
+/* Diagrams: a framed canvas wherever a rendered diagram appears. */
+
+.md-typeset .dg-frame,
+.md-typeset img.dg-shot,
+iframe.diagr-embed {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--dg-rule);
+  border-radius: var(--dg-radius);
+  background-color: var(--dg-bg);
+  box-shadow: var(--dg-shadow);
+}
+
+.md-typeset .dg-frame {
+  overflow: hidden;
+}
+
+.md-typeset .dg-frame > p {
+  margin: 0;
+  line-height: 0;
+}
+
+.md-typeset .dg-frame img {
+  width: 100%;
+  height: auto;
+  vertical-align: top;
+}
+
+iframe.diagr-embed {
+  min-height: 480px;
+  margin: 1.5em 0 0.5em;
+}
+
+.md-typeset .dg-lead {
+  max-width: 40em;
+  color: var(--dg-muted);
+  font-size: 1.15em;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+/* Home */
+
+.md-typeset .dg-hero {
+  margin-bottom: 2.4em;
+}
+
+.md-typeset .dg-hero h1 {
+  margin: 0.15em 0 0.3em;
+  font-size: clamp(2.4rem, 5vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.md-typeset .dg-hero .dg-lead {
+  margin: 0 0 1.4em;
+}
+
+.md-typeset .dg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin: 0 0 2.2em;
+}
+
+.md-typeset .dg-hero figure {
+  margin: 0;
+  max-width: none;
+}
+
+.md-typeset .dg-hero figcaption {
+  max-width: none;
+  margin-top: 0.9em;
+  color: var(--dg-muted);
+  font-size: 0.85em;
+  font-style: normal;
+  text-align: left;
+}
+
+.md-typeset .dg-points ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.8em 2.6em;
+  margin: 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+
+.md-typeset .dg-points ul > li {
+  margin: 0;
+  padding-top: 1em;
+  border-top: 1px solid var(--dg-rule);
+  color: var(--dg-muted);
+}
+
+.md-typeset .dg-points ul > li strong {
+  display: block;
+  margin-bottom: 0.3em;
+  color: var(--dg-text);
+  font-size: 1.05em;
+}
+
+@media screen and (max-width: 44.9375em) {
+  .md-typeset .dg-points ul {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.2em;
+  }
+}
+
+/* Examples index */
+
+.md-typeset .dg-example {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1.8em;
+  align-items: center;
+  padding: 2em 0;
+  border-top: 1px solid var(--dg-rule);
+}
+
+.md-typeset .dg-example > :first-child {
+  margin: 0;
+}
+
+.md-typeset .dg-example a.dg-frame {
+  transition: border-color 150ms ease-out, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.md-typeset .dg-example a.dg-frame:is(:hover, :focus-visible) {
+  border-color: var(--dg-link);
+  transform: translateY(-2px);
+}
+
+.md-typeset .dg-example h2 {
+  margin: 0 0 0.4em;
+}
+
+.md-typeset .dg-example p {
+  margin: 0;
+  color: var(--dg-muted);
+}
+
+@media screen and (max-width: 59.9375em) {
+  .md-typeset .dg-example {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .dg-example a.dg-frame {
+    transition: none;
+  }
+
+  .md-typeset .dg-example a.dg-frame:is(:hover, :focus-visible) {
+    transform: none;
+  }
+}

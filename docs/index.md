@@ -1,7 +1,27 @@
+<div class="dg-hero" markdown>
+
 # diagr
 
 Clean diagrams from a YAML file. One file in; out come a static SVG for light mode, one for dark mode, and a
 self-contained HTML page where the diagram can play a scenario step by step.
+{ .dg-lead }
+
+<div class="dg-actions" markdown>
+[Quick start](#quick-start){ .md-button .md-button--primary }
+[Examples](examples/index.md){ .md-button }
+</div>
+
+<figure markdown>
+<div class="dg-frame" markdown>
+![A web app posts an order to the API, which queues it for workers that write it to the orders database.](examples/order-flow/order-flow-light.svg#only-light)
+![A web app posts an order to the API, which queues it for workers that write it to the orders database.](examples/order-flow/order-flow-dark.svg#only-dark)
+</div>
+<figcaption markdown>The [order processing](examples/order-flow.md) example, as `diagr build` writes it.</figcaption>
+</figure>
+
+</div>
+
+<div class="dg-points" markdown>
 
 - **Static first.** The SVGs are hand-laid-out on a grid, with rounded orthogonal edges, label pills and tinted
   groups. Icons are inlined and colours are baked in, so they work in READMEs, docs and slides.
@@ -11,6 +31,8 @@ self-contained HTML page where the diagram can play a scenario step by step.
 - **One HTML file.** Inline SVG, CSS and JavaScript. No CDN, no framework, nothing to load at runtime.
 - **Domain-neutral.** Nothing in the format assumes pipelines or a vendor. Vendor icons go in an icon folder next to
   the diagram.
+
+</div>
 
 ## Quick start
 
@@ -41,5 +63,5 @@ folder.
 
 ## Player keys
 
-Space plays or pauses. Left and Right go to the previous or next step; with Shift they move one frame. Home resets,
-End jumps to the end. Clicking a step in the list jumps to it.
+++space++ plays or pauses. ++arrow-left++ and ++arrow-right++ go to the previous or next step; with ++shift++ they
+move one frame. ++home++ resets, ++end++ jumps to the end. Clicking a step in the list jumps to it.

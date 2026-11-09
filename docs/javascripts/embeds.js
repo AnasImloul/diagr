@@ -16,7 +16,8 @@
     } catch (e) {
       return;
     }
-    if (!doc || !doc.documentElement) return;
+    if (!doc || !doc.documentElement || doc.URL === "about:blank" || frame._diagrDoc === doc) return;
+    frame._diagrDoc = doc;
     var toggle = doc.getElementById("toggle");
     if (toggle) toggle.style.display = "none";
     theme(frame);
@@ -25,15 +26,26 @@
     }).observe(doc.documentElement);
   }
 
-  var frames = document.querySelectorAll("iframe.diagr-embed");
-  frames.forEach(function (frame) {
-    frame.addEventListener("load", function () {
-      setup(frame);
+  function frames() {
+    return document.querySelectorAll("iframe.diagr-embed");
+  }
+
+  function init() {
+    frames().forEach(function (frame) {
+      if (frame._diagrBound) return;
+      frame._diagrBound = true;
+      frame.addEventListener("load", function () {
+        setup(frame);
+      });
+      if (frame.contentDocument && frame.contentDocument.readyState === "complete") setup(frame);
     });
-    if (frame.contentDocument && frame.contentDocument.readyState === "complete") setup(frame);
-  });
+  }
+
+  // With navigation.instant, Material swaps pages without rerunning this script; document$ fires on each swap.
+  init();
+  if (window.document$ && typeof window.document$.subscribe === "function") window.document$.subscribe(init);
 
   new MutationObserver(function () {
-    frames.forEach(theme);
+    frames().forEach(theme);
   }).observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
 })();

@@ -15,6 +15,7 @@ EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 PAGE = """# {title}
 
 {description}
+{{ .dg-lead }}
 
 <iframe class="diagr-embed" src="{id}.html" title="{title}" loading="lazy"></iframe>
 
@@ -22,11 +23,11 @@ PAGE = """# {title}
 
 === "Light"
 
-    ![{title}, light]({id}/{id}-light.svg)
+    ![{title}, light]({id}/{id}-light.svg){{ .dg-shot }}
 
 === "Dark"
 
-    ![{title}, dark]({id}/{id}-dark.svg)
+    ![{title}, dark]({id}/{id}-dark.svg){{ .dg-shot }}
 
 ## Source
 
@@ -35,12 +36,28 @@ PAGE = """# {title}
 ```
 """
 
-INDEX = """# Examples
+INDEX = """---
+hide: [toc]
+---
+
+# Examples
 
 Each example is built from its `diagram.yml` when the docs are built. The embedded player is the same self-contained
 HTML page that `diagr build` writes.
+{{ .dg-lead }}
 
 {items}
+"""
+
+ITEM = """<div class="dg-example" markdown>
+[![{title}]({id}/{id}-light.svg#only-light)![{title}]({id}/{id}-dark.svg#only-dark)]({id}.md){{ .dg-frame }}
+
+<div markdown>
+## [{title}]({id}.md)
+
+{description}
+</div>
+</div>
 """
 
 
@@ -61,6 +78,6 @@ def on_files(files, config):
         lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
         page = PAGE.format(id=id_, title=title, description=description, source="\n".join(lines).strip())
         files.append(File.generated(config, f"examples/{id_}.md", content=page))
-        items.append(f"- [{title}]({id_}.md): {description}")
+        items.append(ITEM.format(id=id_, title=title, description=description))
     files.append(File.generated(config, "examples/index.md", content=INDEX.format(items="\n".join(items))))
     return files
