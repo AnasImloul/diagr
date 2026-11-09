@@ -11,7 +11,7 @@ sizes:
   group_title: 15
   group_sub: 12.5
   edge: 1.5
-  flow: 2.25
+  flow: 3.5
   corner: 8
   group_radius: 12
   group_inset: 12
@@ -27,7 +27,7 @@ light:
   line: "#57606a"
   rule: "#d0d7de"
   hover: "#f6f8fa"
-  accent: "#1a9e7e"
+  accent: "#16a34a"
   on-accent: "#ffffff"
   fail: "#cf222e"
   new: "#8250df"
@@ -61,7 +61,7 @@ dark:
   line: "#8d96a0"
   rule: "#30363d"
   hover: "#151b23"
-  accent: "#2bb59a"
+  accent: "#3fb950"
   on-accent: "#ffffff"
   fail: "#f85149"
   new: "#a371f7"
