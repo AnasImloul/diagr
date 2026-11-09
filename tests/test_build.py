@@ -8,11 +8,12 @@ import textwrap
 import unittest
 
 from diagr import prepare
-from diagr.cli import STARTER, main
+from diagr.cli import STARTER, _watched, main
 from diagr.parse import from_tree
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
 from diagr.source import load
+from diagr.theme import BUILTIN, theme_files
 from tests.support import ROOT, Case
 
 BASE = """
@@ -61,6 +62,30 @@ class Render(Case):
         svg = render_static(prepared(yml).scene(), prepared(yml).theme, "light")
         self.assertNotIn('data-id="b"', svg)
         self.assertNotIn('data-id="a->b"', svg)
+
+
+class Watch(Case):
+    def test_watches_the_whole_extends_chain(self):
+        base = self.tmp()
+        (base / "a.yml").write_text("extends: ./b.yml\n", encoding="utf-8")
+        (base / "b.yml").write_text("extends: default\n", encoding="utf-8")
+        (base / "d.yml").write_text(textwrap.dedent(BASE) + "theme: ./a.yml\n", encoding="utf-8")
+        files = _watched(base / "d.yml", None)
+        self.assertIn((base / "a.yml").resolve(), files)
+        self.assertIn((base / "b.yml").resolve(), files)
+        self.assertIn(BUILTIN / "default.yml", files)
+
+    def test_keeps_watching_a_broken_theme(self):
+        base = self.tmp()
+        (base / "a.yml").write_text("extends: ./b.yml\n", encoding="utf-8")
+        (base / "b.yml").write_text("light: [\n", encoding="utf-8")
+        self.assertEqual(theme_files("./a.yml", base), [(base / "a.yml").resolve(), (base / "b.yml").resolve()])
+
+    def test_theme_override(self):
+        base = self.tmp()
+        (base / "t.yml").write_text("extends: default\n", encoding="utf-8")
+        (base / "d.yml").write_text(textwrap.dedent(BASE), encoding="utf-8")
+        self.assertIn((base / "t.yml").resolve(), _watched(base / "d.yml", str(base / "t.yml")))
 
 
 class Accessibility(Case):

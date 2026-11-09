@@ -62,10 +62,31 @@ def _error(path: Path, msg: str) -> DiagramError:
     return DiagramError([Problem(None, f"theme {path}: {msg}")])
 
 
-def _read(ref: str, base: Path, seen: tuple[Path, ...] = ()) -> tuple[dict, Path]:
+def _locate(ref: str, base: Path) -> Path:
     path = BUILTIN / f"{ref}.yml"
-    if not path.exists():
-        path = (base / ref).resolve()
+    return path if path.exists() else (base / ref).resolve()
+
+
+def theme_files(ref: str, base: Path) -> list[Path]:
+    """The theme file and the files it extends, as far as they can be read."""
+    files: list[Path] = []
+    while True:
+        path = _locate(ref, base)
+        if not path.is_file() or path in files:
+            return files
+        files.append(path)
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, yaml.YAMLError):
+            return files
+        parent = data.get("extends") if isinstance(data, dict) else None
+        if not isinstance(parent, str):
+            return files
+        ref, base = parent, path.parent
+
+
+def _read(ref: str, base: Path, seen: tuple[Path, ...] = ()) -> tuple[dict, Path]:
+    path = _locate(ref, base)
     if not path.is_file():
         raise DiagramError([Problem(None, f"theme '{ref}' not found (looked in the built-in themes and {base})")])
     if path in seen:

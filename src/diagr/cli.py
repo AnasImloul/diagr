@@ -12,6 +12,7 @@ from .build import build_files, prepare, write_files
 from .icons import CORE, Icons
 from .parse import ID, json_schema, load_file
 from .source import DiagramError, Problem
+from .theme import theme_files
 
 
 def _report(problems: list[Problem]) -> None:
@@ -131,9 +132,10 @@ def _watched(f: Path, theme_override: str | None) -> list[Path]:
         d = load_file(f)
         for folder in d.icons:
             paths += sorted((d.base / folder).glob("*"))
-        theme = Path(theme_override) if theme_override else d.base / d.theme
-        if theme.is_file():
-            paths.append(theme)
+        if theme_override:
+            paths += theme_files(theme_override, Path.cwd())
+        else:
+            paths += theme_files(d.theme, d.base)
     except DiagramError:
         pass
     return paths
