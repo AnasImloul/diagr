@@ -216,6 +216,15 @@ html {
   text-decoration: none;
 }
 
+/* Material only offsets :target for the sticky header; anchors.js scrolls without changing :target. */
+.md-typeset :is(h1, h2, h3, h4, h5, h6)[id] {
+  scroll-margin-top: 3.6rem;
+}
+
+.md-typeset [tabindex="-1"]:focus {
+  outline: none;
+}
+
 .md-typeset table:not([class]) td {
   font-variant-numeric: tabular-nums;
 }
