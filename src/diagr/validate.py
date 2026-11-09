@@ -168,10 +168,6 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
             if x not in d.nodes and x not in d.groups and resolve_edge(d, x) is None:
                 hint = did_you_mean(x, [*d.nodes, *d.groups, *d.edges])
                 p.append(Problem(e.loc, f"'{v}': unknown node, edge or group '{x}'{hint}"))
-    elif v == "parallel":
-        for c in e.children:
-            if c.verb == "parallel":
-                p.append(Problem(c.loc, f"'{c.verb}' cannot run inside 'parallel'"))
     for c in e.children:
         _check_effect(d, c, p)
 
