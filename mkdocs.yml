@@ -52,7 +52,12 @@ markdown_extensions:
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: diagr
+          class: diagr
+          format: !!python/name:diagr.markdown.fence
+          validator: !!python/name:diagr.markdown.validate
   - pymdownx.tabbed:
       alternate_style: true
 
@@ -74,6 +79,7 @@ nav:
   - Reference:
       - Diagram format and effects: format.md
       - Themes and icons: themes-and-icons.md
+      - Docs and CI: integrations.md
       - How diagr compares: comparison.md
   - Examples:
       - examples/index.md

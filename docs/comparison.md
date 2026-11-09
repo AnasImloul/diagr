@@ -69,6 +69,8 @@ None of these is unique on its own; the combination is what diagr is for.
   across a group's title, nodes over groups they are not in.
 - **Reuse within a file.** Components with text parameters, nested groups, several scenarios with their own
   triggers, and looping for screens nobody touches.
+- **In the docs build.** A ```` ```diagr ```` block in MkDocs becomes the picture or the player when the site is
+  built, and a GitHub Actions workflow keeps committed SVGs in step with their diagrams.
 
 ## When another tool fits better
 
@@ -76,6 +78,7 @@ None of these is unique on its own; the combination is what diagr is for.
   crossings far harder than diagr does. diagr places nodes in simple layers and expects you to pin the few that
   matter.
 - **You want one model of the whole system** and many views generated from it: Structurizr, LikeC4 or IcePanel.
-- **The diagram lives in a Markdown file on a platform that renders Mermaid**: Mermaid needs no build step.
+- **The diagram lives in a Markdown file on a platform that renders Mermaid**, such as a GitHub README: Mermaid needs
+  no build step, while diagr needs MkDocs or a CI job to turn the source into images.
 - **You only need a picture**, not a story: any of the diagram languages will do, and diagr's static SVGs are one
   option among several.
