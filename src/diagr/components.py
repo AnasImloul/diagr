@@ -10,7 +10,7 @@ import re
 from dataclasses import replace
 
 from .model import Component, Diagram, Loc, Placement
-from .source import Problem
+from .source import Problem, did_you_mean
 
 PARAM = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
@@ -114,4 +114,6 @@ def expand(d: Diagram, components: dict[str, Component], places: dict[str, Place
         _place(d, c, p)
     for p in places.values():
         if p.parent and p.parent not in d.groups:
-            problems.append(Problem(p.loc, f"place '{p.id}': unknown group '{p.parent}'"))
+            problems.append(
+                Problem(p.loc, f"place '{p.id}': unknown group '{p.parent}'{did_you_mean(p.parent, d.groups)}")
+            )

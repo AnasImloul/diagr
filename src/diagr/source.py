@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 from dataclasses import dataclass
 
 import yaml
@@ -16,6 +17,12 @@ class Problem:
     def __str__(self) -> str:
         where = f"{self.loc}: " if self.loc else ""
         return f"{where}{self.level}: {self.message}"
+
+
+def did_you_mean(name: str, options) -> str:
+    """', did you mean 'x'?' for the closest option, or nothing."""
+    close = difflib.get_close_matches(name, list(options), n=1, cutoff=0.6)
+    return f", did you mean '{close[0]}'?" if close else ""
 
 
 class DiagramError(Exception):

@@ -111,6 +111,20 @@ class Errors(Case):
     def test_place_in_unknown_group(self):
         self.assertReports(problems(BASE.replace("in: outer, with", "in: nowhere, with")), "unknown group 'nowhere'")
 
+    def test_typos_get_suggestions(self):
+        yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (
+            "scenario:\n  steps:\n"
+            "    - {title: s, at: a/dbb, do: [activate b/apl, draw lb->a/apii, 'set a/bd.sub: x']}\n"
+        )
+        found = problems(yml.replace("icon: database", "icon: databse"))
+        for text in (
+            "did you mean 'b/api'",
+            "did you mean 'a/db'",
+            "did you mean 'lb->a/api'",
+            "did you mean 'database'",
+        ):
+            self.assertReports(found, text)
+
     def test_reference_to_a_missing_copy(self):
         self.assertReports(problems(BASE.replace("lb -> b/api:", "lb -> c/api:")), "unknown node 'c/api'")
 

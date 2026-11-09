@@ -203,14 +203,14 @@ active.
 
 ## Validation
 
-`diagr check` reports problems as `file:line:col: error: message`: unknown keys (with a suggestion), duplicate keys
-and ids, unknown nodes, groups, icons and tones, edges to nowhere, edges from a node to itself without a `route` or
-`via`, routes that cannot reach their target, diagonal segments, two nodes on one cell, nodes outside their group,
-groups outside their parent or inside themselves, triggers that play an unknown scenario, effects that reference
-nothing, unknown components or parameters, a format version newer than this diagr, and broken theme or `icons.yml`
-files. Overlapping nodes, labels over nodes, overlapping groups, edges through a node they do not connect or across
-a group's title, hidden nodes or edges that no `show` reveals, and visible edges into hidden nodes are warnings;
-`--strict` makes them fail.
+`diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and
+scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges to
+nowhere, edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal
+segments, two nodes on one cell, nodes outside their group, groups outside their parent or inside themselves,
+triggers that play an unknown scenario, effects that reference nothing, unknown components or parameters, a format
+version newer than this diagr, and broken theme or `icons.yml` files. Overlapping nodes, labels over nodes,
+overlapping groups, edges through a node they do not connect or across a group's title, hidden nodes or edges that
+no `show` reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
 
 ## Python
 

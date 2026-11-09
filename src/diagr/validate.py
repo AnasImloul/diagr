@@ -4,7 +4,7 @@ from .icons import Icons, SvgIcon, Tile
 from .layout.geometry import Layout, Point, Rect, group_title_box
 from .model import Diagram, Effect, Loc, Scenario
 from .scenario import resolve_edge, text_key, walk_effects
-from .source import Problem
+from .source import Problem, did_you_mean
 from .theme import Theme
 
 
@@ -16,7 +16,11 @@ def _icon(p: list[Problem], loc: Loc | None, who: str, name: str, tone: str | No
     ic = icons.get(name)
     if ic is None:
         why = icons.errors.get(name)
-        p.append(Problem(loc, f"{who}: icon '{name}' " + (f"cannot be read ({why})" if why else "not found")))
+        if why:
+            p.append(Problem(loc, f"{who}: icon '{name}' cannot be read ({why})"))
+        else:
+            names = [n for n, _, _ in icons.available()]
+            p.append(Problem(loc, f"{who}: icon '{name}' not found{did_you_mean(name, names)}"))
     elif isinstance(ic, Tile) and not tone and ic.tone not in t.tiles:
         p.append(
             Problem(
@@ -44,13 +48,15 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         if g.span and g.at is None:
             p.append(Problem(g.loc, f"group '{g.id}': 'span' needs 'at'"))
         if g.parent and g.parent not in d.groups:
-            p.append(Problem(g.loc, f"group '{g.id}': unknown parent group '{g.parent}'"))
+            p.append(
+                Problem(g.loc, f"group '{g.id}': unknown parent group '{g.parent}'{did_you_mean(g.parent, d.groups)}")
+            )
         elif g.parent and _in_loop(d, g.id):
             p.append(Problem(g.loc, f"group '{g.id}' is inside itself through 'in'"))
     seen: dict[tuple[float, float], str] = {}
     for n in d.nodes.values():
         if n.group and n.group not in d.groups:
-            p.append(Problem(n.loc, f"node '{n.id}': unknown group '{n.group}'"))
+            p.append(Problem(n.loc, f"node '{n.id}': unknown group '{n.group}'{did_you_mean(n.group, d.groups)}"))
         if n.icon:
             _icon(p, n.loc, f"node '{n.id}'", n.icon, n.tone, t, icons)
         if not n.junction and not n.icon:
@@ -68,7 +74,7 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
     for e in d.edges.values():
         for end in (e.src, e.dst):
             if end.node not in d.nodes:
-                p.append(Problem(e.loc, f"edge '{e.id}': unknown node '{end.node}'"))
+                p.append(Problem(e.loc, f"edge '{e.id}': unknown node '{end.node}'{did_you_mean(end.node, d.nodes)}"))
         if e.id in d.nodes or e.id in d.groups:
             p.append(Problem(e.loc, f"edge id '{e.id}' is also a node or group id"))
         if e.route is not None and e.via is not None:
@@ -115,7 +121,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
             if v == "spin" and x == "off":
                 continue
             if x not in d.nodes:
-                p.append(Problem(e.loc, f"'{v}': unknown node '{x}'"))
+                p.append(Problem(e.loc, f"'{v}': unknown node '{x}'{did_you_mean(x, d.nodes)}"))
             elif v == "cells" and not d.nodes[x].cells:
                 p.append(Problem(e.loc, f"'cells': node '{x}' has no cells"))
             elif v == "cells" and e.range and not (1 <= e.range[0] <= e.range[1] <= len(d.nodes[x].cells)):
@@ -128,13 +134,22 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
             if resolve_edge(d, x) is None:
                 a, _, b = x.partition("->")
                 pairs = [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
-                hint = f" (several edges match; use one of: {', '.join(pairs)})" if len(pairs) > 1 else ""
+                hint = (
+                    f" (several edges match; use one of: {', '.join(pairs)})"
+                    if len(pairs) > 1
+                    else did_you_mean(x, d.edges)
+                )
                 p.append(Problem(e.loc, f"'draw': unknown edge '{x}'{hint}"))
     elif v == "set":
-        if text_key(d, e.targets[0], {}) is None:
+        target = e.targets[0]
+        if text_key(d, target, {}) is None:
+            head = target.rpartition(".")[0] if "->" in target else target.partition(".")[0]
+            known = head in d.nodes or resolve_edge(d, head) is not None
+            hint = "" if known else did_you_mean(head, [*d.nodes, *d.edges])
             p.append(
                 Problem(
-                    e.loc, f"'set': cannot set '{e.targets[0]}' (use node.title, node.sub, node.sub.N or a->b.label)"
+                    e.loc,
+                    f"'set': cannot set '{target}'{hint} (use node.title, node.sub, node.sub.N or a->b.label)",
                 )
             )
     elif v in ("show", "hide", "focus"):
@@ -142,7 +157,8 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
             if v == "focus" and x == "none":
                 continue
             if x not in d.nodes and x not in d.groups and resolve_edge(d, x) is None:
-                p.append(Problem(e.loc, f"'{v}': unknown node, edge or group '{x}'"))
+                hint = did_you_mean(x, [*d.nodes, *d.groups, *d.edges])
+                p.append(Problem(e.loc, f"'{v}': unknown node, edge or group '{x}'{hint}"))
     elif v == "parallel":
         for c in e.children:
             if c.verb in ("cells", "repeat", "parallel"):
@@ -155,7 +171,7 @@ def check_scenario(d: Diagram, sc: Scenario) -> list[Problem]:
     p: list[Problem] = []
     for s in sc.steps:
         if s.at and s.at not in d.nodes:
-            p.append(Problem(s.loc, f"step '{s.title}': unknown node '{s.at}'"))
+            p.append(Problem(s.loc, f"step '{s.title}': unknown node '{s.at}'{did_you_mean(s.at, d.nodes)}"))
         for e in s.effects:
             _check_effect(d, e, p)
     return p
