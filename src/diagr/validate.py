@@ -200,6 +200,13 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         g = b.node.group
         if g in lay.groups and not lay.groups[g].contains((b.x, b.y)):
             p.append(Problem(d.nodes[k].loc, f"node '{k}' is outside its group '{g}'"))
+    for k, b in lay.nodes.items():
+        if b.node.junction:
+            continue
+        inside = _ancestors(d, b.node.group)
+        for g, r in lay.groups.items():
+            if g not in inside and r.overlaps(b.box):
+                _warn(p, d.nodes[k].loc, f"node '{k}' overlaps group '{g}', which it is not in")
     for k, r in lay.groups.items():
         parent = d.groups[k].parent
         if parent in lay.groups and not _inside(r, lay.groups[parent]):
@@ -235,6 +242,14 @@ def _crosses(segments: list[tuple[Point, Point]], r: Rect) -> bool:
         if lo_x < r.x1 and hi_x > r.x and lo_y < r.y1 and hi_y > r.y:
             return True
     return False
+
+
+def _ancestors(d: Diagram, gid: str | None) -> set[str]:
+    out: set[str] = set()
+    while gid in d.groups and gid not in out:
+        out.add(gid)
+        gid = d.groups[gid].parent
+    return out
 
 
 def _inside(inner: Rect, outer: Rect) -> bool:

@@ -204,9 +204,9 @@ scenarios (each with a "did you mean" suggestion for typos), duplicate keys and 
 nowhere, edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal
 segments, two nodes on one cell, nodes outside their group, groups outside their parent or inside themselves,
 triggers that play an unknown scenario, effects that reference nothing, unknown components or parameters, and broken
-theme or `icons.yml` files. Overlapping nodes, labels over nodes, overlapping groups, edges through a node they do
-not connect or across a group's title, hidden nodes or edges that no `show` reveals, and visible edges into hidden
-nodes are warnings; `--strict` makes them fail.
+theme or `icons.yml` files. Overlapping nodes, labels over nodes, overlapping groups, nodes over a group they are
+not in, edges through a node they do not connect or across a group's title, hidden nodes or edges that no `show`
+reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
 
 ## Python
 

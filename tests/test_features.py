@@ -142,6 +142,10 @@ class LayoutWarnings(Case):
         yml = yml.replace("nodes:\n", "nodes:\n  c: {in: outer, at: [2, 0], icon: cube, title: C}\n")
         self.assertReports(problems(yml), "edge 'a->b' passes through node 'c'", "warning")
 
+    def test_node_overlapping_a_group_it_is_not_in(self):
+        yml = NESTED.replace("  b: {in: outer, at: [2, 0]", "  b: {at: [0.3, 0.2]")
+        self.assertReports(problems(yml), "node 'b' overlaps group 'inner', which it is not in", "warning")
+
     def test_edge_across_a_group_title(self):
         yml = """
 id: t
