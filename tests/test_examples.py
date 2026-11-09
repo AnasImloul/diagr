@@ -35,8 +35,11 @@ class Examples(Case):
                         golden.write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
                         continue
                     self.assertTrue(golden.exists(), f"missing {golden.name}; run with DIAGR_UPDATE_GOLDEN=1")
-                    self.assertEqual(f.read_text(encoding="utf-8"), golden.read_text(encoding="utf-8"),
-                                     f"{f.name} differs from tests/golden; if intended, run with DIAGR_UPDATE_GOLDEN=1")
+                    self.assertEqual(
+                        f.read_text(encoding="utf-8"),
+                        golden.read_text(encoding="utf-8"),
+                        f"{f.name} differs from tests/golden; if intended, run with DIAGR_UPDATE_GOLDEN=1",
+                    )
 
 
 class Schema(unittest.TestCase):

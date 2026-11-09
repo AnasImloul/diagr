@@ -130,4 +130,5 @@ class Diagram:
     @staticmethod
     def from_yaml(path: str | Path) -> Diagram:
         from .parse import load_file
+
         return load_file(path)

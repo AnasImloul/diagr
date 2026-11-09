@@ -41,7 +41,7 @@ class Compiled:
     end: str
 
     def state(self, k: int) -> dict[str, Any]:
-        return fold(self.frames[1:k + 1])
+        return fold(self.frames[1 : k + 1])
 
 
 def fold(frames: list[Frame], start: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -60,6 +60,7 @@ def walk_effects(sc: Scenario) -> Iterator[Effect]:
         for e in effects:
             yield e
             yield from walk(e.children)
+
     for step in sc.steps:
         yield from walk(step.effects)
 

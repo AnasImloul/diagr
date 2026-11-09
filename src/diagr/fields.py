@@ -1,4 +1,5 @@
 """Type descriptors that both check a YAML tree (with line numbers) and emit the JSON Schema."""
+
 from __future__ import annotations
 
 import difflib
@@ -154,8 +155,10 @@ class Pair(T):
         return (a, b)
 
     def schema(self):
-        return _describe({"type": "array", "items": Num(minimum=self.minimum).schema(), "minItems": 2,
-                          "maxItems": 2}, self.description)
+        return _describe(
+            {"type": "array", "items": Num(minimum=self.minimum).schema(), "minItems": 2, "maxItems": 2},
+            self.description,
+        )
 
 
 @dataclass
@@ -202,13 +205,15 @@ class Lines(T):
         return [Str().check(y, problems)]
 
     def schema(self):
-        return _describe({"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]},
-                         self.description)
+        return _describe(
+            {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]}, self.description
+        )
 
 
 @dataclass
 class Raw(T):
     """Passed through unchecked; the caller parses it (effects)."""
+
     json: dict = field(default_factory=dict)
     description: str = ""
 
@@ -309,8 +314,11 @@ class MapOf(T):
         return out
 
     def schema(self):
-        s: dict = {"type": "object", "propertyNames": {"pattern": f"^(?:{self.key_pattern})$"},
-                   "additionalProperties": self.value.schema()}
+        s: dict = {
+            "type": "object",
+            "propertyNames": {"pattern": f"^(?:{self.key_pattern})$"},
+            "additionalProperties": self.value.schema(),
+        }
         if self.min_items:
             s["minProperties"] = self.min_items
         return _describe(s, self.description)

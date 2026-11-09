@@ -10,10 +10,42 @@ from .source import DiagramError, Problem
 
 BUILTIN = Path(__file__).resolve().parent / "themes"
 SCHEMES = ("light", "dark")
-SIZES = ("icon", "group_icon", "title", "sub", "line", "label", "group_title", "group_sub", "edge", "flow", "corner",
-         "group_radius", "group_inset", "group_top", "group_bottom", "badge", "margin")
-TOKENS = ("bg", "text", "muted", "line", "rule", "hover", "accent", "on-accent", "fail", "new", "changed", "button",
-          "on-button", "badge", "on-badge")
+SIZES = (
+    "icon",
+    "group_icon",
+    "title",
+    "sub",
+    "line",
+    "label",
+    "group_title",
+    "group_sub",
+    "edge",
+    "flow",
+    "corner",
+    "group_radius",
+    "group_inset",
+    "group_top",
+    "group_bottom",
+    "badge",
+    "margin",
+)
+TOKENS = (
+    "bg",
+    "text",
+    "muted",
+    "line",
+    "rule",
+    "hover",
+    "accent",
+    "on-accent",
+    "fail",
+    "new",
+    "changed",
+    "button",
+    "on-button",
+    "badge",
+    "on-badge",
+)
 
 
 @dataclass
@@ -123,8 +155,9 @@ def _check_scheme(name: str, s: object) -> list[str]:
                 out.append(f"'{name}.tones' must be a mapping")
                 continue
             for tone, pair in v.items():
-                if not (isinstance(pair, dict) and isinstance(pair.get("fill"), str)
-                        and isinstance(pair.get("stroke"), str)):
+                if not (
+                    isinstance(pair, dict) and isinstance(pair.get("fill"), str) and isinstance(pair.get("stroke"), str)
+                ):
                     out.append(f"'{name}.tones.{tone}' needs 'fill' and 'stroke' colours")
         elif k == "tiles":
             if not isinstance(v, dict):

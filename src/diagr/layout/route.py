@@ -45,8 +45,10 @@ def _solve(e: Edge, start: Point, end: Point, d: Diagram, problems: list[str]) -
         rest = need - known
         if not idx:
             if abs(need) > 0.5:
-                problems.append(f"route never moves {'sideways' if axis == 'x' else 'up or down'}, "
-                                f"but the target is {abs(need):.0f}px away on that axis")
+                problems.append(
+                    f"route never moves {'sideways' if axis == 'x' else 'up or down'}, "
+                    f"but the target is {abs(need):.0f}px away on that axis"
+                )
             continue
         if not free:
             if abs(rest) > 0.5:

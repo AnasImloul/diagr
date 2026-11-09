@@ -11,24 +11,37 @@ from .model import Loc
 from .source import Problem
 
 CORE = Path(__file__).resolve().parent / "iconsets" / "core"
-PRESENTATION = ("fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "fill-rule", "clip-rule",
-                "opacity", "color")
+PRESENTATION = (
+    "fill",
+    "stroke",
+    "stroke-width",
+    "stroke-linecap",
+    "stroke-linejoin",
+    "fill-rule",
+    "clip-rule",
+    "opacity",
+    "color",
+)
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
 # Icon markup is inlined into the HTML page, so only drawing elements may pass. An allowlist, because the HTML parser
 # turns some tag names (p, img, div...) into HTML even inside <svg>.
-SVG_ELEMENTS = frozenset("""
+SVG_ELEMENTS = frozenset(
+    """
     a animate animateMotion animateTransform circle clipPath defs desc ellipse feBlend feColorMatrix
     feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight feDropShadow
     feFlood feFuncA feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset
     fePointLight feSpecularLighting feSpotLight feTile feTurbulence filter g image line linearGradient marker mask
     metadata mpath path pattern polygon polyline radialGradient rect stop style svg switch symbol text textPath title
     tspan use view
-""".split())
-HTML_ELEMENTS = frozenset("""
+""".split()
+)
+HTML_ELEMENTS = frozenset(
+    """
     b big blockquote body br center code dd div dl dt em embed font h1 h2 h3 h4 h5 h6 head hr i iframe img li listing
     menu meta nobr object ol p pre ruby s script small span strike strong sub sup table tt u ul var
-""".split())
+""".split()
+)
 
 
 @dataclass
@@ -93,7 +106,7 @@ def _import_svg(name: str, text: str, recolour: str | None) -> SvgIcon:
     end = text.rfind("</svg>")
     if end < root.end():
         raise ValueError(f"icon '{name}' has no closing </svg>")
-    body = text[root.end():end]
+    body = text[root.end() : end]
     body = re.sub(r"<title>.*?</title>|<desc>.*?</desc>", "", body, flags=re.S).strip()
     head = root.group(0) if "xmlns:xlink" in root.group(0) else f'<svg xmlns:xlink="{XLINK_NS}"' + root.group(0)[4:]
     why = _unsafe(head + body + "</svg>")

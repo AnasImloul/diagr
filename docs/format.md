@@ -141,7 +141,7 @@ edges into hidden nodes are warnings; `--strict` makes them fail.
 import diagr
 
 d = diagr.Diagram.from_yaml("diagram.yml")
-d.nodes["nb"].cells = ["ingest", "clean", "join"]   # e.g. stage names read from another file
+d.nodes["nb"].cells = ["ingest", "clean", "join"]  # e.g. stage names read from another file
 p = diagr.prepare(d)
 ```
 

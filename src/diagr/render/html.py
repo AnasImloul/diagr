@@ -17,23 +17,31 @@ ICONS = {
     "pause": '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>',
     "next": '<path d="M12 2h2v12h-2zM2 2v12l9-6z"/>',
 }
-TOGGLE = ('<button id="toggle" type="button" aria-label="Switch between light and dark mode" '
-          'title="Switch theme"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true">'
-          '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>'
-          '<svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/>'
-          '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4'
-          'M17.7 6.3l1.4-1.4"/></svg></button>')
-THEME_BOOT = ('<script>(function(){var t=null;try{t=localStorage.getItem("diagr-theme")}catch(e){}'
-              'if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches'
-              '?"dark":"light";document.documentElement.setAttribute("data-theme",t)})();</script>')
-THEME_TOGGLE = ('<script>document.getElementById("toggle").addEventListener("click",function(){var r=document.'
-                'documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);'
-                'try{localStorage.setItem("diagr-theme",n)}catch(e){}});</script>')
+TOGGLE = (
+    '<button id="toggle" type="button" aria-label="Switch between light and dark mode" '
+    'title="Switch theme"><svg class="moon" viewBox="0 0 24 24" aria-hidden="true">'
+    '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>'
+    '<svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/>'
+    '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4'
+    'M17.7 6.3l1.4-1.4"/></svg></button>'
+)
+THEME_BOOT = (
+    '<script>(function(){var t=null;try{t=localStorage.getItem("diagr-theme")}catch(e){}'
+    'if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches'
+    '?"dark":"light";document.documentElement.setAttribute("data-theme",t)})();</script>'
+)
+THEME_TOGGLE = (
+    '<script>document.getElementById("toggle").addEventListener("click",function(){var r=document.'
+    'documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);'
+    'try{localStorage.setItem("diagr-theme",n)}catch(e){}});</script>'
+)
 
 
 def _button(act: str, label: str) -> str:
-    return (f'<button type="button" class="{act}" data-act="{act}" aria-label="{label}" title="{label}">'
-            f'<svg viewBox="0 0 16 16" aria-hidden="true">{ICONS[act]}</svg></button>')
+    return (
+        f'<button type="button" class="{act}" data-act="{act}" aria-label="{label}" title="{label}">'
+        f'<svg viewBox="0 0 16 16" aria-hidden="true">{ICONS[act]}</svg></button>'
+    )
 
 
 def _json(obj: object) -> str:
@@ -54,14 +62,20 @@ def render_html(p: Prepared) -> str:
     label = escape(d.description or d.title or d.id, quote=True)
     # role=img would hide the trigger buttons inside from assistive tech.
     role = "group" if any(n.trigger for n in d.nodes.values()) else "img"
-    svg = (f'<svg class="diagr" id="dg-{escape(d.id)}" xmlns="http://www.w3.org/2000/svg" '
-           f'viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(b.h)}" font-family="{escape(t.font, quote=True)}" '
-           f'role="{role}" aria-label="{label}">' + serialise(defs, "html", paint) + serialise(body, "html", paint)
-           + "</svg>")
+    svg = (
+        f'<svg class="diagr" id="dg-{escape(d.id)}" xmlns="http://www.w3.org/2000/svg" '
+        f'viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(b.h)}" font-family="{escape(t.font, quote=True)}" '
+        f'role="{role}" aria-label="{label}">'
+        + serialise(defs, "html", paint)
+        + serialise(body, "html", paint)
+        + "</svg>"
+    )
 
     paint_css = "\n".join(f".p-{prop}-{tok} {{ {PROPS[prop]}: var(--{tok}); }}" for prop, tok in sorted(used))
-    root = (f":root {{ --font: {t.font}; --page-width: {num(b.w)}px; {t.css_vars('light')} }}\n"
-            f":root[data-theme=\"dark\"] {{ {t.css_vars('dark')} }}\n")
+    root = (
+        f":root {{ --font: {t.font}; --page-width: {num(b.w)}px; {t.css_vars('light')} }}\n"
+        f':root[data-theme="dark"] {{ {t.css_vars("dark")} }}\n'
+    )
     css = root + (ASSETS / "page.css").read_text(encoding="utf-8") + "\n" + paint_css
 
     panel = ""
@@ -71,26 +85,35 @@ def render_html(p: Prepared) -> str:
         items = "\n".join(
             f'<li data-s="{i}"><span class="num" aria-hidden="true">{i}</span><div><h3><button type="button" '
             f'aria-label="Step {i}: {escape(s.title, quote=True)}">{escape(s.title)}</button></h3>'
-            + (f"<p>{escape(s.text)}</p>" if s.text else "") + "</div></li>"
-            for i, s in enumerate(comp.steps, 1))
-        controls = ('<div class="controls" role="toolbar" aria-label="Scenario" data-playing="0">'
-                    + _button("reset", "Reset (Home)") + _button("back", "Previous step (Left)")
-                    + _button("play", "Play (Space)") + _button("pause", "Pause (Space)")
-                    + _button("next", "Next step (Right)")
-                    + f'<input id="scrub" type="range" min="0" max="{len(comp.frames) - 1}" step="1" value="0" '
-                      'aria-label="Position">'
-                    + '<select id="speed" aria-label="Speed"><option value="0.5">0.5x</option>'
-                      '<option value="1" selected>1x</option><option value="2">2x</option></select></div>')
-        panel = (f'<div class="panel idle" id="panel"><div class="bar"><i id="fill"></i></div>'
-                 f'<div class="row"><div id="status" aria-live="polite">{escape(comp.ready)}</div>{controls}</div>'
-                 f'<ol class="steps">\n{items}\n</ol></div>')
+            + (f"<p>{escape(s.text)}</p>" if s.text else "")
+            + "</div></li>"
+            for i, s in enumerate(comp.steps, 1)
+        )
+        controls = (
+            '<div class="controls" role="toolbar" aria-label="Scenario" data-playing="0">'
+            + _button("reset", "Reset (Home)")
+            + _button("back", "Previous step (Left)")
+            + _button("play", "Play (Space)")
+            + _button("pause", "Pause (Space)")
+            + _button("next", "Next step (Right)")
+            + f'<input id="scrub" type="range" min="0" max="{len(comp.frames) - 1}" step="1" value="0" '
+            'aria-label="Position">' + '<select id="speed" aria-label="Speed"><option value="0.5">0.5x</option>'
+            '<option value="1" selected>1x</option><option value="2">2x</option></select></div>'
+        )
+        panel = (
+            f'<div class="panel idle" id="panel"><div class="bar"><i id="fill"></i></div>'
+            f'<div class="row"><div id="status" aria-live="polite">{escape(comp.ready)}</div>{controls}</div>'
+            f'<ol class="steps">\n{items}\n</ol></div>'
+        )
         payload = {
             "ready": comp.ready,
             "frames": [f.to_json() for f in comp.frames],
             "steps": [{"first": s.first, "last": s.last} for s in comp.steps],
         }
-        script = (f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
-                  f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>")
+        script = (
+            f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
+            f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>"
+        )
 
     title = escape(d.title or d.id)
     return f"""<!doctype html>

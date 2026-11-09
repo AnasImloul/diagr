@@ -36,8 +36,9 @@ class Format(Case):
         self.assertReports(problems("diagram: t\nnodes:\n  a: {at: [nan, 0], icon: server}\n"), "is not a number")
 
     def test_label_at_range(self):
-        self.assertReports(problems(BASE.replace("a -> b: writes", "a -> b: {label: x, label_at: 2}")),
-                           "must be at most 1")
+        self.assertReports(
+            problems(BASE.replace("a -> b: writes", "a -> b: {label: x, label_at: 2}")), "must be at most 1"
+        )
 
     def test_group_span_must_be_positive(self):
         yml = BASE + "groups:\n  g: {title: G, at: [0, 0], span: [-1, 1]}\n"
@@ -129,8 +130,10 @@ class IconFolders(Case):
         return problems(yml, base)
 
     def test_tile_needs_tone_and_glyph(self):
-        self.assertReports(self.icons({"icons.yml": "tiles:\n  x: {tone: blue}\n"}, "icon: server"),
-                           "tile 'x' needs 'tone' and 'glyph'")
+        self.assertReports(
+            self.icons({"icons.yml": "tiles:\n  x: {tone: blue}\n"}, "icon: server"),
+            "tile 'x' needs 'tone' and 'glyph'",
+        )
 
     def test_tile_tone_must_exist_in_theme(self):
         found = self.icons({"icons.yml": "tiles:\n  x: {tone: pink, glyph: '<path/>'}\n"}, "icon: x")
@@ -144,19 +147,21 @@ class IconFolders(Case):
         self.assertReports(self.icons({"icons.yml": "tiles: [\n"}, "icon: server"), "YAML:")
 
     def test_svg_without_closing_tag(self):
-        self.assertReports(self.icons({"x.svg": '<svg viewBox="0 0 10 10"><path/>'}, "icon: x"),
-                           "icon 'x' cannot be read")
+        self.assertReports(
+            self.icons({"x.svg": '<svg viewBox="0 0 10 10"><path/>'}, "icon: x"), "icon 'x' cannot be read"
+        )
 
     def test_recolour_with_unknown_token(self):
-        found = self.icons({"x.svg": '<svg viewBox="0 0 10 10"><path/></svg>', "icons.yml": "recolour: {x: nope}\n"},
-                           "icon: x")
+        found = self.icons(
+            {"x.svg": '<svg viewBox="0 0 10 10"><path/></svg>', "icons.yml": "recolour: {x: nope}\n"}, "icon: x"
+        )
         self.assertReports(found, "unknown theme token 'nope'")
 
     def test_recolour_with_known_token(self):
-        found = self.icons({"x.svg": '<svg viewBox="0 0 10 10"><path/></svg>', "icons.yml": "recolour: {x: text}\n"},
-                           "icon: x")
+        found = self.icons(
+            {"x.svg": '<svg viewBox="0 0 10 10"><path/></svg>', "icons.yml": "recolour: {x: text}\n"}, "icon: x"
+        )
         self.assertClean(found)
-
 
     def test_single_quoted_attributes(self):
         svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path id='p'/><use href='#p'/></svg>"
@@ -180,14 +185,17 @@ class IconFolders(Case):
                 self.assertReports(self.icons({"x.svg": svg}, "icon: x"), "icon 'x' cannot be read")
 
     def test_editor_metadata_is_allowed(self):
-        svg = ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-               'xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10"><inkscape:grid/>'
-               '<defs><linearGradient id="g"/></defs><rect fill="url(#g)" xlink:href="#g"/></svg>')
+        svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
+            'xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10"><inkscape:grid/>'
+            '<defs><linearGradient id="g"/></defs><rect fill="url(#g)" xlink:href="#g"/></svg>'
+        )
         self.assertClean(self.icons({"x.svg": svg}, "icon: x"))
 
     def test_unsafe_tile_glyph_is_refused(self):
-        found = self.icons({"icons.yml": "tiles:\n  x: {tone: blue, glyph: '<path onload=\"alert(1)\"/>'}\n"},
-                           "icon: server")
+        found = self.icons(
+            {"icons.yml": "tiles:\n  x: {tone: blue, glyph: '<path onload=\"alert(1)\"/>'}\n"}, "icon: server"
+        )
         self.assertReports(found, "tile 'x': glyph has an event handler")
 
 

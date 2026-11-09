@@ -27,8 +27,15 @@ def cmd_build(args) -> int:
         try:
             d = load_file(f)
             if d.id in built:
-                raise DiagramError([Problem(None, f"{f}: diagram id '{d.id}' is also used by {built[d.id]}; "
-                                                 "their output files would overwrite each other")])
+                raise DiagramError(
+                    [
+                        Problem(
+                            None,
+                            f"{f}: diagram id '{d.id}' is also used by {built[d.id]}; "
+                            "their output files would overwrite each other",
+                        )
+                    ]
+                )
             built[d.id] = f
             p = prepare(d, args.theme)
             written = write_files(p, args.out)
@@ -47,8 +54,13 @@ def cmd_build(args) -> int:
 
 def _as_json(f: str, p: Problem) -> dict:
     loc = p.loc
-    return {"file": loc.file if loc else f, "line": loc.line if loc else None, "col": loc.col if loc else None,
-            "level": p.level, "message": p.message}
+    return {
+        "file": loc.file if loc else f,
+        "line": loc.line if loc else None,
+        "col": loc.col if loc else None,
+        "level": p.level,
+        "message": p.message,
+    }
 
 
 def cmd_check(args) -> int:
@@ -196,8 +208,12 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("files", nargs="+")
     c.add_argument("--theme")
     c.add_argument("--strict", action="store_true", help="treat warnings as errors")
-    c.add_argument("--format", choices=("text", "json"), default="text",
-                   help="json prints every problem as a list of {file, line, col, level, message} on stdout")
+    c.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="json prints every problem as a list of {file, line, col, level, message} on stdout",
+    )
     c.set_defaults(fn=cmd_check)
 
     i = sub.add_parser("init", help="write a starter diagram")

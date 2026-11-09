@@ -92,6 +92,7 @@ def sub_slots(d: Diagram) -> dict[str, int]:
     slots = {k: len(n.sub) for k, n in d.nodes.items()}
     if d.scenario:
         from ..scenario import walk_effects
+
         for e in walk_effects(d.scenario):
             if e.verb == "set" and e.targets:
                 parts = e.targets[0].split(".")
@@ -126,8 +127,19 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
         widths.append(BUTTON_W)
     half_w = max([half + 4] + [w / 2 for w in widths])
     top = y - half - 14
-    return NodeBox(n, x, y, title_y, sub_ys, strip, caption_y, button, bottom,
-                   Rect(x - half_w, top, 2 * half_w, bottom - top), half + 4)
+    return NodeBox(
+        n,
+        x,
+        y,
+        title_y,
+        sub_ys,
+        strip,
+        caption_y,
+        button,
+        bottom,
+        Rect(x - half_w, top, 2 * half_w, bottom - top),
+        half + 4,
+    )
 
 
 def group_rect(g: Group, d: Diagram, t: Theme, boxes: dict[str, NodeBox]) -> Rect | None:
@@ -169,8 +181,7 @@ def layout(d: Diagram, t: Theme) -> Layout:
         r = group_rect(g, d, t, nodes)
         if r:
             groups[k] = r
-    edges = {k: route_edge(e, nodes, d, t) for k, e in d.edges.items()
-             if e.src.node in nodes and e.dst.node in nodes}
+    edges = {k: route_edge(e, nodes, d, t) for k, e in d.edges.items() if e.src.node in nodes and e.dst.node in nodes}
 
     rects = list(groups.values()) + [b.box for b in nodes.values()]
     rects += [p.label_box for p in edges.values() if p.label_box]

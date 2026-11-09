@@ -90,8 +90,12 @@ class Watch(Case):
 
 class Accessibility(Case):
     def test_svg_with_triggers_is_a_group(self):
-        html = render_html(prepared(BASE.replace("title: A}", "title: A, trigger: Run}")
-                                    + "scenario:\n  steps:\n    - {title: go, do: [done a]}\n"))
+        html = render_html(
+            prepared(
+                BASE.replace("title: A}", "title: A, trigger: Run}")
+                + "scenario:\n  steps:\n    - {title: go, do: [done a]}\n"
+            )
+        )
         self.assertIn('role="group"', html)
         self.assertIn('role="button"', html)
 
@@ -147,8 +151,9 @@ class Cli(Case):
     def test_check_json(self):
         base = self.tmp()
         (base / "bad.yml").write_text("diagram: t\nnodes:\n  a: {at: [0, 0], icon: nope}\n", encoding="utf-8")
-        code, out, err = cli("check", "--format", "json", str(base / "bad.yml"),
-                             str(ROOT / "examples/order-flow/diagram.yml"))
+        code, out, err = cli(
+            "check", "--format", "json", str(base / "bad.yml"), str(ROOT / "examples/order-flow/diagram.yml")
+        )
         self.assertEqual(code, 1)
         self.assertEqual(err, "")
         found = json.loads(out)

@@ -18,8 +18,13 @@ def _icon(p: list[Problem], loc: Loc | None, who: str, name: str, tone: str | No
         why = icons.errors.get(name)
         p.append(Problem(loc, f"{who}: icon '{name}' " + (f"cannot be read ({why})" if why else "not found")))
     elif isinstance(ic, Tile) and not tone and ic.tone not in t.tiles:
-        p.append(Problem(loc, f"{who}: icon '{name}' uses tile tone '{ic.tone}', which the theme does not have "
-                              f"(theme has {', '.join(t.tiles)})"))
+        p.append(
+            Problem(
+                loc,
+                f"{who}: icon '{name}' uses tile tone '{ic.tone}', which the theme does not have "
+                f"(theme has {', '.join(t.tiles)})",
+            )
+        )
     elif isinstance(ic, SvgIcon) and ic.recolour and ic.recolour not in t.tokens["light"]:
         p.append(Problem(loc, f"{who}: icon '{name}' is recoloured with unknown theme token '{ic.recolour}'"))
 
@@ -64,8 +69,9 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         if not e.hidden:
             for end in (e.src.node, e.dst.node):
                 if end in d.nodes and d.nodes[end].hidden:
-                    _warn(p, e.loc, f"edge '{e.id}' is visible but node '{end}' starts hidden; "
-                                    "mark the edge hidden too")
+                    _warn(
+                        p, e.loc, f"edge '{e.id}' is visible but node '{end}' starts hidden; mark the edge hidden too"
+                    )
     if d.scenario:
         p += check_scenario(d)
     _check_hidden(d, p)
@@ -107,8 +113,11 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                 p.append(Problem(e.loc, f"'draw': unknown edge '{x}'{hint}"))
     elif v == "set":
         if text_key(d, e.targets[0], {}) is None:
-            p.append(Problem(e.loc, f"'set': cannot set '{e.targets[0]}' (use node.title, node.sub, node.sub.N "
-                                    "or a->b.label)"))
+            p.append(
+                Problem(
+                    e.loc, f"'set': cannot set '{e.targets[0]}' (use node.title, node.sub, node.sub.N or a->b.label)"
+                )
+            )
     elif v in ("show", "hide", "focus"):
         for x in e.targets:
             if v == "focus" and x == "none":
@@ -142,7 +151,7 @@ def check_layout(d: Diagram, lay: Layout) -> list[Problem]:
             p.append(Problem(d.edges[k].loc, f"edge '{k}': {msg}"))
     boxes = [(k, b.box) for k, b in lay.nodes.items() if not b.node.junction]
     for i, (a, ra) in enumerate(boxes):
-        for b, rb in boxes[i + 1:]:
+        for b, rb in boxes[i + 1 :]:
             if ra.overlaps(rb):
                 _warn(p, d.nodes[b].loc, f"node '{b}' overlaps node '{a}'")
     for k, b in lay.nodes.items():
@@ -158,8 +167,7 @@ def check_layout(d: Diagram, lay: Layout) -> list[Problem]:
                 _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps node '{n}'")
     gl = list(lay.groups.items())
     for i, (a, ra) in enumerate(gl):
-        for b, rb in gl[i + 1:]:
+        for b, rb in gl[i + 1 :]:
             if ra.overlaps(rb) and not (ra.contains((rb.x, rb.y)) and ra.contains((rb.x1, rb.y1))):
                 _warn(p, d.groups[b].loc, f"group '{b}' overlaps group '{a}'")
     return p
-

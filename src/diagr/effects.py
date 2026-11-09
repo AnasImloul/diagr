@@ -29,19 +29,34 @@ EFFECT_SCHEMA = {
     "type": "array",
     "items": {
         "oneOf": [
-            {"type": "string", "pattern": "^(" + "|".join(VERBS) + r")\b",
-             "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: "
-                            + "; ".join(f"{k}: {v}" for k, v in VERBS.items())},
-            {"type": "object", "minProperties": 1, "maxProperties": 1,
-             "propertyNames": {"pattern": r"^(set|status)\b"},
-             "additionalProperties": {"type": "string"},
-             "description": "'verb target [duration]': text, for effects that carry free text"},
-            {"type": "object", "required": ["parallel"], "additionalProperties": False,
-             "properties": {"parallel": {"$ref": "#/$defs/effects"}},
-             "description": "Effects that play together"},
-            {"type": "object", "required": ["repeat", "do"], "additionalProperties": False,
-             "properties": {"repeat": {"type": "integer", "minimum": 1}, "do": {"$ref": "#/$defs/effects"}},
-             "description": "Repeat effects; '{i}' in text is replaced by the round number"},
+            {
+                "type": "string",
+                "pattern": "^(" + "|".join(VERBS) + r")\b",
+                "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: "
+                + "; ".join(f"{k}: {v}" for k, v in VERBS.items()),
+            },
+            {
+                "type": "object",
+                "minProperties": 1,
+                "maxProperties": 1,
+                "propertyNames": {"pattern": r"^(set|status)\b"},
+                "additionalProperties": {"type": "string"},
+                "description": "'verb target [duration]': text, for effects that carry free text",
+            },
+            {
+                "type": "object",
+                "required": ["parallel"],
+                "additionalProperties": False,
+                "properties": {"parallel": {"$ref": "#/$defs/effects"}},
+                "description": "Effects that play together",
+            },
+            {
+                "type": "object",
+                "required": ["repeat", "do"],
+                "additionalProperties": False,
+                "properties": {"repeat": {"type": "integer", "minimum": 1}, "do": {"$ref": "#/$defs/effects"}},
+                "description": "Repeat effects; '{i}' in text is replaced by the round number",
+            },
         ]
     },
 }
@@ -121,8 +136,9 @@ def parse_effects(y: Y, problems: list[Problem], depth: int = 0) -> list[Effect]
             elif sorted(keys) == ["do", "repeat"]:
                 vals = dict((k.value, v) for k, v in item.pairs)
                 count = vals["repeat"]
-                if not (isinstance(count, YScalar) and not count.quoted and count.value.isdigit()
-                        and int(count.value) >= 1):
+                if not (
+                    isinstance(count, YScalar) and not count.quoted and count.value.isdigit() and int(count.value) >= 1
+                ):
                     problems.append(Problem(count.loc, "'repeat' needs a whole number"))
                     continue
                 children = parse_effects(vals["do"], problems, depth + 1)
@@ -134,15 +150,23 @@ def parse_effects(y: Y, problems: list[Problem], depth: int = 0) -> list[Effect]
                     continue
                 verb = k.value.split()[0] if k.value.split() else ""
                 if verb not in TEXT_VERBS:
-                    problems.append(Problem(k.loc, f"only 'set' and 'status' take text after a colon, not '{verb}'"
-                                                   " (did you forget quotes around the effect?)"))
+                    problems.append(
+                        Problem(
+                            k.loc,
+                            f"only 'set' and 'status' take text after a colon, not '{verb}'"
+                            " (did you forget quotes around the effect?)",
+                        )
+                    )
                     continue
                 e = _parse_head(k.value, k, problems, v.value)
                 if e:
                     out.append(e)
             else:
-                problems.append(Problem(item.loc, "an effect is text, 'verb target: text', {parallel: [...]} "
-                                                  "or {repeat: n, do: [...]}"))
+                problems.append(
+                    Problem(
+                        item.loc, "an effect is text, 'verb target: text', {parallel: [...]} or {repeat: n, do: [...]}"
+                    )
+                )
         else:
             problems.append(Problem(item.loc, "an effect is text like 'activate node'"))
     return out

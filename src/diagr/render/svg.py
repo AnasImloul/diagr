@@ -31,8 +31,13 @@ def step_list(comp: Compiled, x0: float, y0: float, width: float) -> tuple[list[
     cols = 2 if width >= 900 else 1
     per_col = math.ceil(len(comp.steps) / cols)
     col_w = width / cols
-    out: list[El] = [El("line", {"x1": num(x0 + 20), "y1": num(y0), "x2": num(x0 + width - 20), "y2": num(y0),
-                                 "stroke-width": 1.5}, paint={"stroke": "rule"})]
+    out: list[El] = [
+        El(
+            "line",
+            {"x1": num(x0 + 20), "y1": num(y0), "x2": num(x0 + width - 20), "y2": num(y0), "stroke-width": 1.5},
+            paint={"stroke": "rule"},
+        )
+    ]
     bottom = y0
     for c in range(cols):
         y = y0 + 34
@@ -40,14 +45,32 @@ def step_list(comp: Compiled, x0: float, y0: float, width: float) -> tuple[list[
             s = comp.steps[i]
             x = x0 + 20 + c * col_w
             out.append(El("circle", {"cx": num(x + 10), "cy": num(y - 4), "r": 10}, paint={"fill": "badge"}))
-            out.append(El("text", {"x": num(x + 10), "y": num(y - 0.2), "font-size": 11, "font-weight": 600,
-                                   "text-anchor": "middle"}, [str(i + 1)], paint={"fill": "on-badge"}))
-            out.append(El("text", {"x": num(x + 30), "y": num(y), "font-size": STEP_TITLE, "font-weight": 600},
-                          [escape(s.title)], paint={"fill": "text"}))
+            out.append(
+                El(
+                    "text",
+                    {"x": num(x + 10), "y": num(y - 0.2), "font-size": 11, "font-weight": 600, "text-anchor": "middle"},
+                    [str(i + 1)],
+                    paint={"fill": "on-badge"},
+                )
+            )
+            out.append(
+                El(
+                    "text",
+                    {"x": num(x + 30), "y": num(y), "font-size": STEP_TITLE, "font-weight": 600},
+                    [escape(s.title)],
+                    paint={"fill": "text"},
+                )
+            )
             lines = wrap(s.text, STEP_TEXT, col_w - 70) if s.text else []
             for j, line in enumerate(lines):
-                out.append(El("text", {"x": num(x + 30), "y": num(y + 19 + j * STEP_LINE), "font-size": STEP_TEXT},
-                              [escape(line)], paint={"fill": "muted"}))
+                out.append(
+                    El(
+                        "text",
+                        {"x": num(x + 30), "y": num(y + 19 + j * STEP_LINE), "font-size": STEP_TEXT},
+                        [escape(line)],
+                        paint={"fill": "muted"},
+                    )
+                )
             y += 19 + len(lines) * STEP_LINE + 22
         bottom = max(bottom, y)
     return out, bottom - y0
@@ -66,15 +89,18 @@ def render_static(sb: SceneBuilder, t: Theme, scheme: str) -> str:
         return t.hex(scheme, token)
 
     label = escape(sb.d.description or sb.d.title or sb.d.id, quote=True)
-    head = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(height)}" '
-            f'width="{num(b.w)}" height="{num(height)}" font-family="{escape(t.font, quote=True)}" role="img" '
-            f'aria-label="{label}">')
+    head = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(height)}" '
+        f'width="{num(b.w)}" height="{num(height)}" font-family="{escape(t.font, quote=True)}" role="img" '
+        f'aria-label="{label}">'
+    )
     parts = [head]
     if sb.d.title:
         parts.append(f"<title>{escape(sb.d.title)}</title>")
     parts.append(serialise(defs, "static", resolve))
-    parts.append(f'<rect x="{num(b.x)}" y="{num(b.y)}" width="{num(b.w)}" height="{num(height)}" '
-                 f'fill="{t.hex(scheme, "bg")}"/>')
+    parts.append(
+        f'<rect x="{num(b.x)}" y="{num(b.y)}" width="{num(b.w)}" height="{num(height)}" fill="{t.hex(scheme, "bg")}"/>'
+    )
     parts.append(serialise(body, "static", resolve))
     parts.extend(serialise(e, "static", resolve) for e in extra)
     parts.append("</svg>")
