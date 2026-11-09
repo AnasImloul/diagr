@@ -27,8 +27,8 @@ edges:
   api -> dispatcher as wake: { label: wake, route: [up 0.4, right, down], dashed: true }
   dispatcher -> bus: {}
   bus -> jobs: { label: send, route: [up, right] }
-  bus -> transcode: { label: start task, route: [up 1.55, right, down] }
-  bus -> captions: { label: start task, route: [down 0.6, right, down] }
+  bus -> transcode: { label: launch worker, route: [up 1.55, right, down] }
+  bus -> captions: { label: launch worker, route: [down 0.6, right, down] }
   jobs -> transcode: {}
   transcode -> dlq: bad source, deadline
   jobs@bottom+15 -> dlq: { label: three failures, route: [down, right] }
