@@ -43,10 +43,11 @@ GROUP = f.Obj(
         "sub": f.F(f.Str(description="Muted text after the title")),
         "icon": f.F(f.Str(description="Icon name, shown before the title")),
         "tone": f.F(f.Str(description="Theme tone: blue, teal, green, violet, amber, orange, neutral")),
-        "at": f.F(f.Pair(description="Top-left cell [col, row]; default: fit the member nodes")),
+        "at": f.F(f.Pair(description="Top-left cell [col, row]; default: fit the member nodes and groups")),
         "span": f.F(f.Pair(minimum=1, description="Size in cells [cols, rows]")),
+        "in": f.F(f.Str(description="Parent group id")),
     },
-    description="A titled, tinted container around nodes",
+    description="A titled, tinted container around nodes and other groups",
 )
 
 NODE = f.Obj(
@@ -190,6 +191,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
             g.get("at"),
             g.get("span"),
             e.loc,
+            parent=g.get("in"),
         )
     for e in rec.get("nodes", []):
         n = e.value

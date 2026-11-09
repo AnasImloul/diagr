@@ -26,6 +26,20 @@ A group is a tinted box with its title at the bottom left. Without `at` it fits 
 (top-left cell) and `span` (cells wide and tall) it covers a fixed area, which is how you make several groups the
 same height. Tones come from the theme: `neutral`, `blue`, `teal`, `green`, `violet`, `amber`, `orange`.
 
+### Nested groups
+
+```yaml
+groups:
+  region:  {title: Region A, tone: neutral}
+  cluster: {title: Cluster, in: region, tone: blue}
+  web:     {title: Checkout, in: cluster, tone: teal}
+```
+
+`in` puts a group inside another, to any depth. A fitted parent surrounds its own nodes and its child groups, with
+room for its title below them. A child with `at` keeps its fixed area and must lie inside its parent. Each level adds
+a margin around the one inside it, so deeply nested groups reach a little past their columns: leave a fractional
+column (`at: [2.2, 0]`) between them and their neighbours. `show`, `hide` and `focus` on a group affect only its box.
+
 ## Nodes
 
 ```yaml
@@ -131,7 +145,7 @@ active.
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys (with a suggestion), duplicate
 keys and ids, unknown nodes, groups, icons and tones, edges to nowhere, edges from a node to itself without a
 `route` or `via`, routes that cannot reach their target, diagonal segments, two nodes on one cell, nodes outside their
-group, effects that reference nothing, a format version newer than this diagr, and broken theme or `icons.yml` files.
+group, groups outside their parent or inside themselves, effects that reference nothing, a format version newer than this diagr, and broken theme or `icons.yml` files.
 Overlapping nodes, labels over nodes, overlapping groups, hidden nodes or edges that no `show` reveals, and visible
 edges into hidden nodes are warnings; `--strict` makes them fail.
 

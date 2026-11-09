@@ -142,26 +142,54 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
     )
 
 
-def group_rect(g: Group, d: Diagram, t: Theme, boxes: dict[str, NodeBox]) -> Rect | None:
+def group_depth(d: Diagram, gid: str) -> int:
+    depth, seen = 0, {gid}
+    parent = d.groups[gid].parent
+    while parent in d.groups and parent not in seen:
+        seen.add(parent)
+        depth += 1
+        parent = d.groups[parent].parent
+    return depth
+
+
+def group_rect(
+    g: Group, d: Diagram, t: Theme, boxes: dict[str, NodeBox], children: list[Rect] | None = None
+) -> Rect | None:
+    """A fixed group covers its cells. A fitted one surrounds its nodes and child groups, title band below."""
+    children = children or []
+    col, row = d.grid.col, d.grid.row
+    inset = t.size("group_inset")
+    cells = None
     if g.at is not None:
         c0, r0 = g.at
         cw, rh = g.span or (1, 1)
-        c1, r1 = c0 + cw - 1, r0 + rh - 1
+        cells = (c0, c0 + cw - 1, r0, r0 + rh - 1)
     else:
         members = [n.at for n in d.nodes.values() if n.group == g.id]
-        if not members:
+        if members:
+            cells = (
+                min(m[0] for m in members),
+                max(m[0] for m in members),
+                min(m[1] for m in members),
+                max(m[1] for m in members),
+            )
+        elif not children:
             return None
-        c0, c1 = min(m[0] for m in members), max(m[0] for m in members)
-        r0, r1 = min(m[1] for m in members), max(m[1] for m in members)
-    col, row = d.grid.col, d.grid.row
-    inset = t.size("group_inset")
-    x0 = c0 * col - col / 2 + inset
-    x1 = c1 * col + col / 2 - inset
-    y0 = r0 * row - row / 2 - t.size("group_top")
-    y1 = r1 * row + row / 2 + t.size("group_bottom")
-    members = [b.box for b in boxes.values() if b.node.group == g.id]
-    if members and g.at is None:
-        y1 = max(y1, max(m.y1 for m in members) + 2 * t.size("group_bottom"))
+    x0 = y0 = float("inf")
+    x1 = y1 = float("-inf")
+    if cells:
+        c0, c1, r0, r1 = cells
+        x0 = c0 * col - col / 2 + inset
+        x1 = c1 * col + col / 2 - inset
+        y0 = r0 * row - row / 2 - t.size("group_top")
+        y1 = r1 * row + row / 2 + t.size("group_bottom")
+    if g.at is None:
+        members = [b.box for b in boxes.values() if b.node.group == g.id]
+        if members:
+            y1 = max(y1, max(m.y1 for m in members) + 2 * t.size("group_bottom"))
+        for c in children:
+            x0, x1 = min(x0, c.x - inset), max(x1, c.x1 + inset)
+            y0, y1 = min(y0, c.y - inset), max(y1, c.y1 + 2 * t.size("group_bottom"))
     need = 32 + text_width(g.title, t.size("group_title"), 600)
     if g.icon:
         need += t.size("group_icon") + 8
@@ -176,11 +204,14 @@ def layout(d: Diagram, t: Theme) -> Layout:
 
     slots = sub_slots(d)
     nodes = {k: node_box(n, n.at[0] * d.grid.col, n.at[1] * d.grid.row, t, slots[k]) for k, n in d.nodes.items()}
-    groups = {}
-    for k, g in d.groups.items():
-        r = group_rect(g, d, t, nodes)
+    fitted: dict[str, Rect] = {}
+    for k in sorted(d.groups, key=lambda k: -group_depth(d, k)):
+        children = [fitted[c] for c, cg in d.groups.items() if cg.parent == k and c in fitted]
+        r = group_rect(d.groups[k], d, t, nodes, children)
         if r:
-            groups[k] = r
+            fitted[k] = r
+    # Outer groups first, so inner ones are drawn on top and fill_at() finds the innermost.
+    groups = {k: fitted[k] for k in sorted(fitted, key=lambda k: group_depth(d, k))}
     edges = {k: route_edge(e, nodes, d, t) for k, e in d.edges.items() if e.src.node in nodes and e.dst.node in nodes}
 
     rects = list(groups.values()) + [b.box for b in nodes.values()]

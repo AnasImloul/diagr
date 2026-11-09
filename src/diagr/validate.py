@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .icons import Icons, SvgIcon, Tile
-from .layout.geometry import Layout
+from .layout.geometry import Layout, Rect
 from .model import Diagram, Effect, Loc
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem
@@ -43,6 +43,10 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             _icon(p, g.loc, f"group '{g.id}'", g.icon, None, t, icons)
         if g.span and g.at is None:
             p.append(Problem(g.loc, f"group '{g.id}': 'span' needs 'at'"))
+        if g.parent and g.parent not in d.groups:
+            p.append(Problem(g.loc, f"group '{g.id}': unknown parent group '{g.parent}'"))
+        elif g.parent and _in_loop(d, g.id):
+            p.append(Problem(g.loc, f"group '{g.id}' is inside itself through 'in'"))
     seen: dict[tuple[float, float], str] = {}
     for n in d.nodes.values():
         if n.group and n.group not in d.groups:
@@ -76,6 +80,16 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         p += check_scenario(d)
     _check_hidden(d, p)
     return p
+
+
+def _in_loop(d: Diagram, gid: str) -> bool:
+    seen, parent = {gid}, d.groups[gid].parent
+    while parent in d.groups:
+        if parent in seen:
+            return True
+        seen.add(parent)
+        parent = d.groups[parent].parent
+    return False
 
 
 def _check_hidden(d: Diagram, p: list[Problem]) -> None:
@@ -158,6 +172,10 @@ def check_layout(d: Diagram, lay: Layout) -> list[Problem]:
         g = b.node.group
         if g in lay.groups and not lay.groups[g].contains((b.x, b.y)):
             p.append(Problem(d.nodes[k].loc, f"node '{k}' is outside its group '{g}'"))
+    for k, r in lay.groups.items():
+        parent = d.groups[k].parent
+        if parent in lay.groups and not _inside(r, lay.groups[parent]):
+            p.append(Problem(d.groups[k].loc, f"group '{k}' is outside its parent group '{parent}'"))
     labels = [(k, e.label_box) for k, e in lay.edges.items() if e.label_box]
     for k, box in labels:
         for n, b in lay.nodes.items():
@@ -168,6 +186,10 @@ def check_layout(d: Diagram, lay: Layout) -> list[Problem]:
     gl = list(lay.groups.items())
     for i, (a, ra) in enumerate(gl):
         for b, rb in gl[i + 1 :]:
-            if ra.overlaps(rb) and not (ra.contains((rb.x, rb.y)) and ra.contains((rb.x1, rb.y1))):
+            if ra.overlaps(rb) and not (_inside(rb, ra) or _inside(ra, rb)):
                 _warn(p, d.groups[b].loc, f"group '{b}' overlaps group '{a}'")
     return p
+
+
+def _inside(inner: Rect, outer: Rect) -> bool:
+    return outer.contains((inner.x, inner.y)) and outer.contains((inner.x1, inner.y1))

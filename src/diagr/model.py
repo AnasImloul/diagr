@@ -30,6 +30,7 @@ class Group:
     at: tuple[float, float] | None = None
     span: tuple[float, float] | None = None
     loc: Loc | None = None
+    parent: str | None = None
 
 
 @dataclass
