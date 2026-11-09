@@ -28,7 +28,7 @@ edges:
 scenarios:
   order:
     loop: true
-    ready: Press Place order to follow one order.
+    ready: One order, from checkout to confirmation.
     end: Order stored and confirmed.
     steps:
       - title: Submit
