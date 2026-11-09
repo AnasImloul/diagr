@@ -118,13 +118,15 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
     bottom = last + 4
     button = None
     if n.trigger:
-        button = Rect(x - BUTTON_W / 2, bottom + 17, BUTTON_W, BUTTON_H)
+        # Wide enough for the play icon, the gap and the label, with at least 12px each side.
+        w = max(BUTTON_W, text_width(n.trigger, 14, 600) + 18 + 24)
+        button = Rect(x - w / 2, bottom + 17, w, BUTTON_H)
         bottom = button.y1 + 4
     widths = [text_width(n.title, t.size("title"), 600)] + [text_width(s, t.size("sub")) for s in n.sub]
     if strip:
         widths.append(strip.w)
     if button:
-        widths.append(BUTTON_W)
+        widths.append(button.w)
     half_w = max([half + 4] + [w / 2 for w in widths])
     top = y - half - 14
     return NodeBox(

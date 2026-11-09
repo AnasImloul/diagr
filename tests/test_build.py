@@ -50,6 +50,18 @@ class Layout(Case):
         self.assertEqual(a.port("top"), (a.x, a.y - 44))
 
 
+class Buttons(Case):
+    def test_long_trigger_label_widens_the_button(self):
+        short = prepared(BASE.replace("title: A}", "title: A, trigger: Run}")).layout.nodes["a"].button
+        long = (
+            prepared(BASE.replace("title: A}", "title: A, trigger: Send a very long request}")).layout.nodes["a"].button
+        )
+        assert short and long
+        self.assertEqual(short.w, 132)
+        self.assertGreater(long.w, 132)
+        self.assertAlmostEqual(long.x + long.w / 2, 0)
+
+
 class Render(Case):
     def test_removed_edge_is_faded_and_red(self):
         p = prepared(BASE.replace("a -> b: writes", "a -> b: {label: writes, mark: removed}"))
