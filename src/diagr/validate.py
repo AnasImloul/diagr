@@ -63,9 +63,10 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             _warn(p, n.loc, f"node '{n.id}' has no icon")
         if n.tone and n.tone not in t.tiles:
             p.append(Problem(n.loc, f"node '{n.id}': unknown tile tone '{n.tone}' (theme has {', '.join(t.tiles)})"))
-        if n.at in seen:
+        if n.at is not None and n.at in seen:
             p.append(Problem(n.loc, f"node '{n.id}' sits on the same cell as '{seen[n.at]}'"))
-        seen[n.at] = n.id
+        if n.at is not None:
+            seen[n.at] = n.id
         if n.plays and n.plays not in d.scenarios:
             names = ", ".join(d.scenarios) or "none"
             p.append(Problem(n.loc, f"node '{n.id}': 'plays' names unknown scenario '{n.plays}' (scenarios: {names})"))

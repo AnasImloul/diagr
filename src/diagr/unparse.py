@@ -8,7 +8,7 @@ import yaml
 
 from .model import Diagram, Edge, Group, Move, Node, Port
 
-HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list")
+HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list", "direction")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 
@@ -37,7 +37,7 @@ def _group(g: Group) -> dict[str, Any]:
 
 
 def _node(n: Node) -> dict[str, Any]:
-    out: dict[str, Any] = {"at": _pair(n.at)}
+    out: dict[str, Any] = {"at": _pair(n.at)} if n.at else {}
     if n.group:
         out["in"] = n.group
     for key in ("icon", "tone", "title"):
@@ -108,9 +108,17 @@ def to_yaml(d: Diagram, source: dict[str, Any]) -> str:
     """source is the file as plain YAML data: its other keys, such as the scenarios, are kept as written."""
     head = {k: source[k] for k in HEAD if k in source}
     rest = {k: v for k, v in source.items() if k not in HEAD and k not in REPLACED}
-    parts = (
-        [yaml.safe_dump(head, sort_keys=False, allow_unicode=True, width=120, default_flow_style=None)] if head else []
-    )
+    lines = [
+        yaml.safe_dump(
+            {k: v},
+            sort_keys=False,
+            allow_unicode=True,
+            width=120,
+            default_flow_style=None if isinstance(v, dict) else False,
+        )
+        for k, v in head.items()
+    ]
+    parts = ["".join(lines)] if head else []
     if d.groups:
         parts.append(_section("groups", {k: _group(g) for k, g in d.groups.items()}))
     parts.append(_section("nodes", {k: _node(n) for k, n in d.nodes.items()}))

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .icons import Icons
+from .layout.auto import place
 from .layout.geometry import Layout, layout, sub_slots
 from .model import Diagram
 from .parse import load_file
@@ -28,6 +29,7 @@ class Prepared:
 
 
 def prepare(d: Diagram, theme: str | None = None) -> Prepared:
+    place(d)
     t = load_theme(theme, Path.cwd()) if theme else load_theme(d.theme, d.base)
     icons = Icons([(d.base / f).resolve() for f in d.icons])
     problems = check_model(d, t, icons)

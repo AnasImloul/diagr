@@ -36,7 +36,7 @@ class Group:
 @dataclass
 class Node:
     id: str
-    at: tuple[float, float]
+    at: tuple[float, float] | None
     title: str = ""
     sub: list[str] = field(default_factory=list)
     icon: str | None = None
@@ -51,6 +51,7 @@ class Node:
     tooltip: str | None = None
     loc: Loc | None = None
     plays: str | None = None
+    auto: bool = False
 
 
 @dataclass
@@ -150,6 +151,7 @@ class Diagram:
     edges: dict[str, Edge] = field(default_factory=dict)
     scenarios: dict[str, Scenario] = field(default_factory=dict)
     step_list: bool = True
+    direction: str = "right"
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
 

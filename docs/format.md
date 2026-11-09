@@ -10,6 +10,7 @@ description: One sentence, used as the accessible label.
 theme: default               # built-in name or a path to a theme file
 icons: [./icons]             # extra icon folders, searched before the core set
 grid: {col: 200, row: 170}   # cell size in px
+direction: right             # automatic layout flows right (default) or down
 step_list: true              # numbered badges and the step list in static output
 ```
 
@@ -51,7 +52,7 @@ nodes:
 
 | Key | Meaning |
 |---|---|
-| `at` | Grid cell `[col, row]`, required. Fractions are allowed (`[2.5, 1]`). |
+| `at` | Grid cell `[col, row]`. Fractions are allowed (`[2.5, 1]`). Leave it out to have the node placed for you, see [Automatic layout](#automatic-layout). |
 | `title`, `sub` | Text under the icon. `sub` is a string or a list of lines. |
 | `icon`, `tone` | Icon name; `tone` recolours a generated tile (`blue`, `teal`, `green`, `violet`, `amber`, `orange`, `slate`, `red`). |
 | `in` | Group id. |
@@ -91,6 +92,41 @@ edges:
 - Other keys: `dashed`, `mark`, `label_at` (0 to 1 along the path; the default is the middle of the longest
   horizontal run), `hidden`, `tooltip`.
 
+## Automatic layout
+
+Nodes without `at` are placed for you, so a first draft needs no coordinates at all:
+
+```yaml
+id: signup
+groups:
+  back: {title: Backend, tone: teal}
+nodes:
+  web:   {icon: browser, title: Web app}
+  api:   {in: back, icon: api, title: API}
+  users: {in: back, icon: database, title: Users}
+  mail:  {icon: mail, title: Welcome email}
+edges:
+  web -> api: sign up
+  api -> users: insert
+  api -> mail: send
+```
+
+- **Layers.** Edges point along the flow: a node goes one column after the nodes that lead to it (one row, with
+  `direction: down`). An edge that would close a loop is drawn back round the outside instead.
+- **Groups.** Each group gets its own band across the flow, nested inside its parent's band and spaced so the boxes do
+  not overlap. Groups that sit in different columns share rows. Nodes outside any group go as close as they can to the
+  nodes they are connected to.
+- **Edges** between placed nodes that have no `route` or `via` get a path of their own: along the source's row, then
+  across in the gap before the target, with lanes from different sources spread apart.
+- **Mixing.** Nodes with `at` keep it, and placed nodes move aside rather than land on them, so you can pin the few
+  nodes whose place matters and leave the rest. A group with a fixed area (`at` and `span`) needs its nodes pinned.
+- **Pinning everything.** `diagr expand FILE` writes every computed position as `at` and every computed path as a
+  `route`, so the output draws the same picture with nothing left to place. Start from it to fine-tune by hand.
+- `diagr build --debug` labels each placed node with the cell it got (`[2, 1] auto`).
+
+The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
+does more than any amount of reordering.
+
 ## Components
 
 A component is a block of groups, nodes and edges defined once; `instances` puts named instances of it in the diagram.
@@ -121,7 +157,7 @@ edges:
   `set b/db.sub: primary`, `draw a/api->a/db`), `step.at` and `plays`. Edge ids follow: `a/api->a/db`, or
   `a/<name>` for an edge declared with `as <name>`.
 - **Positions.** A component's cells are relative; the instance's `at` moves all of them, fixed group areas and `via`
-  points included.
+  points included. A component whose nodes have no `at` is placed automatically, like any other node.
 - **Parameters.** `{param}` in titles, sub text, labels, tooltips and trigger labels is replaced by the instance's `with`
   value or the default from `params`; `{required: true}` instead of a default makes every instance set it. Write `{{` and
   `}}` for literal braces. Parameters are text only: ids, positions and numbers cannot be parameters.

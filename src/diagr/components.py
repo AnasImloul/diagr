@@ -79,7 +79,7 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
         d.nodes[name(n.id)] = replace(
             n,
             id=name(n.id),
-            at=shift(n.at),
+            at=shift(n.at) if n.at else None,
             title=fill(n.title),
             sub=[fill(s) for s in n.sub],
             tooltip=fill(n.tooltip) if n.tooltip else None,

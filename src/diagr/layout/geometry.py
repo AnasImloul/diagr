@@ -182,7 +182,7 @@ def group_rect(
         cw, rh = g.span or (1, 1)
         cells = (c0, c0 + cw - 1, r0, r0 + rh - 1)
     else:
-        members = [n.at for n in d.nodes.values() if n.group == g.id]
+        members = [n.at for n in d.nodes.values() if n.group == g.id and n.at is not None]
         if members:
             cells = (
                 min(m[0] for m in members),
@@ -212,10 +212,14 @@ def group_rect(
 
 
 def layout(d: Diagram, t: Theme) -> Layout:
-    from .route import route_edge
+    from .route import auto_routes, route_edge
 
     slots = sub_slots(d)
-    nodes = {k: node_box(n, n.at[0] * d.grid.col, n.at[1] * d.grid.row, t, slots[k]) for k, n in d.nodes.items()}
+    nodes = {
+        k: node_box(n, n.at[0] * d.grid.col, n.at[1] * d.grid.row, t, slots[k])
+        for k, n in d.nodes.items()
+        if n.at is not None
+    }
     fitted: dict[str, Rect] = {}
     for k in sorted(d.groups, key=lambda k: -group_depth(d, k)):
         children = [fitted[c] for c, cg in d.groups.items() if cg.parent == k and c in fitted]
@@ -224,7 +228,12 @@ def layout(d: Diagram, t: Theme) -> Layout:
             fitted[k] = r
     # Outer groups first, so inner ones are drawn on top and fill_at() finds the innermost.
     groups = {k: fitted[k] for k in sorted(fitted, key=lambda k: group_depth(d, k))}
-    edges = {k: route_edge(e, nodes, d, t) for k, e in d.edges.items() if e.src.node in nodes and e.dst.node in nodes}
+    auto = auto_routes(d, nodes, groups, t)
+    edges = {
+        k: route_edge(e, nodes, d, t, auto.get(k))
+        for k, e in d.edges.items()
+        if e.src.node in nodes and e.dst.node in nodes
+    }
 
     rects = list(groups.values()) + [b.box for b in nodes.values()]
     rects += [p.label_box for p in edges.values() if p.label_box]

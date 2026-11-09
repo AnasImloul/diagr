@@ -3,8 +3,8 @@
 Clean diagrams from a YAML file. One file in; out come a static SVG for light mode, one for dark mode, and a
 self-contained HTML page where the diagram can play a scenario step by step.
 
-- **Static first.** The SVGs are hand-laid-out on a grid, with rounded orthogonal edges, label pills and tinted
-  groups. Icons are inlined and colours are baked in, so they work in READMEs, docs and slides.
+- **Static first.** The SVGs are laid out on a grid, automatically or with the cells you pin, with rounded
+  orthogonal edges, label pills and tinted groups. Icons are inlined and colours are baked in, so they work in READMEs, docs and slides.
 - **Interactive on top.** The HTML page has a scenario player: Run, play and pause, step forward and back, scrub,
   speed, keyboard shortcuts. A diagram can have several scenarios, each with its own trigger button. The state at
   each step is computed from the step number, so stepping back and scrubbing show exactly what playing would.

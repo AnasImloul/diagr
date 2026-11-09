@@ -34,7 +34,8 @@ def overlay(p: Prepared) -> str:
                 f'<text x="{num((c - 0.5) * col + 4)}" y="{num((r - 0.5) * row + 11)}" opacity=".7">{c},{r}</text>'
             )
     for k, nb in lay.nodes.items():
-        at = f"[{_coord(nb.node.at[0])}, {_coord(nb.node.at[1])}]"
+        x, y = nb.node.at or (0, 0)
+        at = f"[{_coord(x)}, {_coord(y)}]" + (" auto" if nb.node.auto else "")
         out.append(
             f'<text x="{num(nb.x)}" y="{num(nb.box.y - 4)}" text-anchor="middle" font-weight="600">'
             f"{escape(k)} {at}</text>"

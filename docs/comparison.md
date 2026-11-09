@@ -9,7 +9,7 @@ before relying on a detail.
 
 | Tool | Source | Step through a story | Output | Layout |
 |---|---|---|---|---|
-| **diagr** | YAML in your repository | Scenarios: nodes go active, done or failed, edges draw, text changes, frame by frame | Static SVG for light and dark, and one self-contained HTML page with the player | Manual, on a grid |
+| **diagr** | YAML in your repository | Scenarios: nodes go active, done or failed, edges draw, text changes, frame by frame | Static SVG for light and dark, and one self-contained HTML page with the player | Automatic on a grid, with any node pinned by hand |
 | [D2](https://d2lang.com/tour/composition/) | D2 language in your repository | Layers, scenarios and steps: whole diagrams that inherit from each other | SVG, PNG, PDF; an SVG that cycles through the steps | Automatic |
 | [Mermaid](https://mermaid.js.org/syntax/flowchart.html) | Mermaid syntax, often inline in Markdown | Not built in; edges can carry a continuous dash animation | Rendered in the page by a JavaScript library | Automatic |
 | [Structurizr](https://docs.structurizr.com/ui/diagrams/animation) | Structurizr DSL, one model with many views | Animation steps that reveal elements and relationships; dynamic views for a use case | Its own diagram viewer and exports | Automatic, with manual adjustment |
@@ -72,8 +72,9 @@ None of these is unique on its own; the combination is what diagr is for.
 
 ## When another tool fits better
 
-- **You want the layout done for you**, or the diagram has dozens of nodes: D2, Mermaid and Graphviz place nodes
-  automatically. diagr asks you to place each node on the grid.
+- **The diagram has dozens of densely connected nodes**: the layout engines behind D2, Mermaid and Graphviz minimise
+  crossings far harder than diagr does. diagr places nodes in simple layers and expects you to pin the few that
+  matter.
 - **You want one model of the whole system** and many views generated from it: Structurizr, LikeC4 or IcePanel.
 - **The diagram lives in a Markdown file on a platform that renders Mermaid**: Mermaid needs no build step.
 - **You only need a picture**, not a story: any of the diagram languages will do, and diagr's static SVGs are one

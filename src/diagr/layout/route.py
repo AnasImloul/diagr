@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import math
 
-from ..model import Diagram, Edge
+from ..model import Diagram, Edge, Move
 from ..theme import Theme
-from .geometry import EdgePath, NodeBox, Point, Rect
+from .geometry import EdgePath, NodeBox, Point, Rect, group_title_box
 from .text import text_width
 
 EXIT = {"right": "right", "left": "left", "down": "bottom", "up": "top"}
@@ -104,7 +104,178 @@ def label_point(pts: list[Point], at: float | None, width: float = 0) -> Point:
     return pts[-1]
 
 
-def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme) -> EdgePath:
+def _forward(a: NodeBox, b: NodeBox, d: Diagram) -> bool:
+    return b.y > a.y + 0.5 if d.direction == "down" else b.x > a.x + 0.5
+
+
+def _along(e: Edge, d: Diagram) -> bool:
+    """Whether the edge's sides, if any, leave and enter along the flow, as a lane needs."""
+    out, into = ("bottom", "top") if d.direction == "down" else ("right", "left")
+    return e.src.side in (None, out) and e.dst.side in (None, into)
+
+
+def _behind(e: Edge, d: Diagram) -> bool:
+    """Whether the edge's sides, if any, suit a route back round the outside."""
+    across, near = (("left", "right"), "top") if d.direction == "down" else (("top", "bottom"), "left")
+    return e.src.side in (None, *across) and e.dst.side in (None, near)
+
+
+def _ends(e: Edge, a: NodeBox, b: NodeBox, d: Diagram) -> tuple[Point, Point]:
+    if d.direction == "down":
+        # Below the whole node, trigger button included.
+        return (a.x + e.src.offset, a.box.y1), b.port("top", e.dst.offset)
+    return a.port("right", e.src.offset), b.port("left", e.dst.offset)
+
+
+def _lane(e: Edge, a: NodeBox, b: NodeBox, d: Diagram, turn: float) -> list[Point]:
+    """For placed nodes: follow the source's row and turn at `turn`, in the gap before the target."""
+    p0, p1 = _ends(e, a, b, d)
+    if d.direction == "down":
+        return [p0, (p0[0], turn), (p1[0], turn), p1]
+    return [p0, (turn, p0[1]), (turn, p1[1]), p1]
+
+
+def _outer(d: Diagram, gid: str | None) -> set[str]:
+    out: set[str] = set()
+    while gid in d.groups and gid not in out:
+        out.add(gid)
+        gid = d.groups[gid].parent
+    return out
+
+
+def _gap(
+    d: Diagram, groups: dict[str, Rect], ga: set[str], gb: set[str], lo: float, hi: float, c0: float, c1: float
+) -> tuple[float, float]:
+    """The free stretch of the main axis between lo and hi: past the groups only the source is in, before those only
+    the target is in, and clear of other groups across the cross span c0..c1."""
+    down = d.direction == "down"
+    lo = max([lo] + [(groups[g].y1 if down else groups[g].x1) for g in ga - gb if g in groups])
+    hi = min([hi] + [(groups[g].y if down else groups[g].x) for g in gb - ga if g in groups])
+    for g, r in groups.items():
+        if g in ga or g in gb:
+            continue
+        end = r.y1 if down else r.x1
+        r0, r1 = (r.x, r.x1) if down else (r.y, r.y1)
+        if r0 < c1 and c0 < r1 and lo < end < hi:
+            lo = end
+    return lo, hi
+
+
+def _clear(p: Point, to: float, down: bool, rects: list[Rect]) -> bool:
+    """Whether a straight line from p across the flow to `to` misses every rect."""
+    if down:
+        x0, x1 = sorted((p[0], to))
+        line = Rect(x0, p[1] - 1, x1 - x0, 2)
+    else:
+        y0, y1 = sorted((p[1], to))
+        line = Rect(p[0] - 1, y0, 2, y1 - y0)
+    return not any(r.overlaps(line) for r in rects)
+
+
+def _jog(pts: list[Point], titles: list[Rect]) -> list[Point]:
+    """Flowing down, a lane leaves each group through its bottom edge, where the title is: step right of it."""
+    (x, y0), (_, y1) = pts[0], pts[1]
+    hit = [r for r in titles if r.x - 4 <= x <= r.x1 + 4 and y0 < r.y < y1]
+    top = min((r.y for r in hit), default=y0)
+    if top - y0 < 4:
+        return pts
+    jy, jx = max((y0 + top) / 2, top - 8), max(r.x1 for r in hit) + 10
+    return [pts[0], (x, jy), (jx, jy), (jx, y1), *pts[2:]]
+
+
+def auto_routes(d: Diagram, nodes: dict[str, NodeBox], groups: dict[str, Rect], t: Theme) -> dict[str, list[Point]]:
+    """Routes for edges between placed nodes that have no route of their own.
+
+    A forward edge follows its source's row and turns midway through the gap before the target, with lanes from
+    different sources into one gap spread apart so their lines do not lie on each other. A backward edge leaves its
+    source on the far side, runs back above (or beside) everything and comes in on the target's near side."""
+    down = d.direction == "down"
+    main, cross = (1, 0) if down else (0, 1)
+    cell = d.grid.row if down else d.grid.col
+    found: dict[str, tuple[float, float, float, float]] = {}
+    back: list[str] = []
+    for k, e in d.edges.items():
+        a, b = nodes.get(e.src.node), nodes.get(e.dst.node)
+        if a is None or b is None or e.via or e.route or not (a.node.auto or b.node.auto):
+            continue
+        if _forward(a, b, d) and _along(e, d):
+            p0, p1 = _ends(e, a, b, d)
+            ga, gb = _outer(d, a.node.group), _outer(d, b.node.group)
+            lo, hi = _gap(d, groups, ga, gb, p0[main], p1[main], *sorted((p0[cross], p1[cross])))
+            if hi - lo < 8:
+                mid = max(p0[main], (b.y if down else b.x) - cell / 2)
+                lo, hi = mid - 12, mid + 12
+            found[k] = (lo, hi, p0[cross], p1[cross])
+        elif (b.y < a.y - 0.5 if down else b.x < a.x - 0.5) and _behind(e, d):
+            back.append(k)
+    out: dict[str, list[Point]] = {}
+    gaps: dict[tuple[int, int], list[str]] = {}
+    for k, (lo, hi, _, _) in found.items():
+        gaps.setdefault((round(lo), round(hi)), []).append(k)
+    for (lo, hi), keys in gaps.items():
+        # One turn per source; a lane heading towards higher cross values turns later the lower it starts.
+        sources = sorted(
+            {(d.edges[k].src.node, found[k][2], found[k][3] > found[k][2]) for k in keys},
+            key=lambda s: (s[2], -s[1] if s[2] else s[1]),
+        )
+        # A little before the middle, so the run after the turn is the longest and carries the label: the run before
+        # it is often shared with the source's other edges.
+        step = min(12.0, (hi - lo) / (len(sources) + 1))
+        mid = lo + (hi - lo) * 0.4
+        at = {s[0]: mid + (i - (len(sources) - 1) / 2) * step for i, s in enumerate(sources)}
+        for k in keys:
+            e = d.edges[k]
+            a, b = nodes[e.src.node], nodes[e.dst.node]
+            out[k] = _lane(e, a, b, d, at[e.src.node])
+            if down:
+                left = _outer(d, a.node.group) - _outer(d, b.node.group)
+                out[k] = _jog(out[k], [group_title_box(d.groups[g], groups[g], t) for g in left if g in groups])
+    if back:
+        rects = list(groups.values()) + [n.box for n in nodes.values()]
+        edges = {
+            "before": min((r.x if down else r.y) for r in rects) - 24,
+            "after": max((r.x1 if down else r.y1) for r in rects) + 24,
+        }
+        sides = {"before": "left" if down else "top", "after": "right" if down else "bottom"}
+        count = {"before": 0, "after": 0}
+        for k in back:
+            e = d.edges[k]
+            a, b = nodes[e.src.node], nodes[e.dst.node]
+            ga, gb = _outer(d, a.node.group), _outer(d, b.node.group)
+            others = [r for r in rects if r is not a.box and all(r is not groups.get(g) for g in ga)]
+            clear = {w: _clear(a.port(sides[w], e.src.offset), edges[w], down, others) for w in edges}
+            if e.src.side:
+                way = "before" if e.src.side == sides["before"] else "after"
+            else:
+                way = "before" if clear["before"] or not clear["after"] else "after"
+            p0, p1 = a.port(sides[way], e.src.offset), b.port("top" if down else "left", e.dst.offset)
+            side = edges[way] + (-12 if way == "before" else 12) * count[way]
+            count[way] += 1
+            lo, hi = _gap(d, groups, ga, gb, p1[main] - cell, p1[main], *sorted((side, p1[cross])))
+            turn = (lo + hi) / 2
+            if down:
+                out[k] = [p0, (side, p0[1]), (side, turn), (p1[0], turn), p1]
+            else:
+                out[k] = [p0, (p0[0], side), (turn, side), (turn, p1[1]), p1]
+    return out
+
+
+def as_route(pts: list[Point]) -> list[Move]:
+    """The moves that draw pts, in px, with the last move on each axis left free to reach the target."""
+    moves: list[Move] = []
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:], strict=False):
+        if abs(x1 - x0) > 0.01:
+            moves.append(Move("right" if x1 > x0 else "left", round(abs(x1 - x0)), "px"))
+        elif abs(y1 - y0) > 0.01:
+            moves.append(Move("down" if y1 > y0 else "up", round(abs(y1 - y0)), "px"))
+    for horizontal in (True, False):
+        same = [m for m in moves if (m.dir in ("left", "right")) == horizontal]
+        if same:
+            same[-1].length = None
+    return moves
+
+
+def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme, auto: list[Point] | None = None) -> EdgePath:
     a, b = nodes[e.src.node], nodes[e.dst.node]
     problems: list[str] = []
     if e.via:
@@ -116,6 +287,8 @@ def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme) -> Edge
         s_side = e.src.side or EXIT[e.route[0].dir]
         t_side = e.dst.side or ENTER[e.route[-1].dir]
         pts = _solve(e, a.port(s_side, e.src.offset), b.port(t_side, e.dst.offset), d, problems)
+    elif auto is not None:
+        pts = auto
     else:
         s_side, t_side, bend = _default_sides(a, b)
         s_side, t_side = e.src.side or s_side, e.dst.side or t_side

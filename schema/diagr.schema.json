@@ -111,7 +111,7 @@
             },
             "minItems": 2,
             "maxItems": 2,
-            "description": "Grid cell [col, row]; fractions allowed"
+            "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
           },
           "title": {
             "type": "string"
@@ -191,9 +191,6 @@
           }
         },
         "additionalProperties": false,
-        "required": [
-          "at"
-        ],
         "description": "A node: icon, title and sub text, centred on a grid cell"
       },
       "minProperties": 1
@@ -371,7 +368,7 @@
                   },
                   "minItems": 2,
                   "maxItems": 2,
-                  "description": "Grid cell [col, row]; fractions allowed"
+                  "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
                 },
                 "title": {
                   "type": "string"
@@ -451,9 +448,6 @@
                 }
               },
               "additionalProperties": false,
-              "required": [
-                "at"
-              ],
               "description": "A node: icon, title and sub text, centred on a grid cell"
             },
             "minProperties": 1
@@ -698,6 +692,14 @@
     "step_list": {
       "type": "boolean",
       "description": "Show numbered badges and the step list in static output (default true)"
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "right",
+        "down"
+      ],
+      "description": "Which way automatically placed nodes flow"
     }
   },
   "additionalProperties": false,

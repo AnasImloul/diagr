@@ -6,6 +6,7 @@ from pathlib import Path
 from . import fields as f
 from .components import expand
 from .effects import EFFECT_SCHEMA, parse_effects
+from .layout.auto import place
 from .model import Component, Diagram, Edge, Grid, Group, Instance, Move, Node, Port, Scenario, Step
 from .scenario import walk_effects
 from .source import DiagramError, Problem, Y, YMap, YScalar, YSeq, did_you_mean, load
@@ -90,7 +91,7 @@ GROUP = f.Obj(
 NODE = f.Obj(
     "node",
     {
-        "at": f.F(f.Pair(description="Grid cell [col, row]; fractions allowed"), required=True),
+        "at": f.F(f.Pair(description="Grid cell [col, row]; fractions allowed; default: placed automatically")),
         "title": f.F(f.Str()),
         "sub": f.F(f.Lines(description="Muted text under the title")),
         "icon": f.F(f.Str(description="Icon name from the diagram's icon folders or the core set")),
@@ -222,6 +223,7 @@ DIAGRAM = f.Obj(
             f.MapOf(SCENARIO, min_items=1, description="Scenarios by id; the first is the default and static output's")
         ),
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
+        "direction": f.F(f.Str(enum=("right", "down"), description="Which way automatically placed nodes flow")),
     },
 )
 
@@ -352,6 +354,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         icons=rec.get("icons", []),
         grid=Grid(grid.get("col", 215), grid.get("row", 160)) if grid else Grid(),
         step_list=rec.get("step_list", True),
+        direction=rec.get("direction", "right"),
         base=base,
         file=file,
     )
@@ -374,11 +377,11 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         values = {p.key: p.value for p in v.get("with", [])}
         instances[e.key] = Instance(e.key, v.get("component"), v.get("at") or (0, 0), v.get("in"), values, e.loc)
     expand(d, components, instances, problems)
+    place(d)
 
     for e in rec.get("scenarios") or []:
         d.scenarios[e.key] = _scenario(e.key, e.value, problems)
     _cell_names(d, problems)
-
     if problems:
         raise DiagramError(problems)
     return d
