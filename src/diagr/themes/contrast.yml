@@ -1,0 +1,60 @@
+# High contrast: darker text and lines, stronger group borders, thicker edges and slightly larger text, for
+# projectors, printouts and readers who need more contrast. Everything else comes from the default theme.
+extends: default
+name: contrast
+
+sizes:
+  title: 15
+  sub: 13
+  line: 17
+  label: 13
+  group_title: 16
+  group_sub: 13
+  edge: 2
+  flow: 4.5
+
+light:
+  text: "#000000"
+  muted: "#32383f"
+  line: "#24292f"
+  rule: "#6e7781"
+  hover: "#eaeef2"
+  accent: "#0f7a35"
+  fail: "#a40e26"
+  new: "#6639ba"
+  changed: "#7d4e00"
+  button: "#000000"
+  badge: "#000000"
+  tones:
+    neutral: {fill: "#f6f8fa", stroke: "#57606a"}
+    blue: {fill: "#eef5ff", stroke: "#0550ae"}
+    teal: {fill: "#eefaf6", stroke: "#0b6b5e"}
+    green: {fill: "#eefaf1", stroke: "#116329"}
+    violet: {fill: "#f5f0ff", stroke: "#5a32a3"}
+    amber: {fill: "#fff8e5", stroke: "#7d4e00"}
+    orange: {fill: "#fff4eb", stroke: "#953800"}
+
+dark:
+  bg: "#010409"
+  text: "#ffffff"
+  muted: "#d1d7e0"
+  line: "#d1d7e0"
+  rule: "#8b949e"
+  hover: "#161b22"
+  accent: "#56d364"
+  on-accent: "#010409"
+  fail: "#ff7b72"
+  new: "#bc8cff"
+  changed: "#e3b341"
+  button: "#ffffff"
+  on-button: "#010409"
+  badge: "#ffffff"
+  on-badge: "#010409"
+  tones:
+    neutral: {fill: "#0d1117", stroke: "#9198a1"}
+    blue: {fill: "#0b1626", stroke: "#58a6ff"}
+    teal: {fill: "#0a1a17", stroke: "#3ccfb4"}
+    green: {fill: "#0b1a10", stroke: "#56d364"}
+    violet: {fill: "#150f24", stroke: "#bc8cff"}
+    amber: {fill: "#1a1405", stroke: "#e3b341"}
+    orange: {fill: "#1e1208", stroke: "#ffa657"}

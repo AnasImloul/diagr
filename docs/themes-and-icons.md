@@ -2,8 +2,14 @@
 
 ## Themes
 
-A theme is a YAML file with a font, sizes, and two token sets of the same names: `light` and `dark`. The built-in
-theme is `src/diagr/themes/default.yml`.
+A theme is a YAML file with a font, sizes, and two token sets of the same names: `light` and `dark`. Two themes are
+built in, in `src/diagr/themes/`:
+
+- **`default`**, used when a diagram names none.
+- **`contrast`**, for projectors, printouts and readers who need more contrast: black or white text, darker lines and
+  group borders, thicker edges and slightly larger text. Try it on any diagram with `diagr build --theme contrast`.
+
+Either way, the colours reach both outputs:
 
 - Static SVGs bake the colours in, one file per scheme, so they work in slides, PDF tools and `<img>` tags.
 - The HTML page writes the tokens as CSS variables and switches between them with the theme toggle (or the
@@ -34,9 +40,10 @@ gradient of generated icon tiles.
 Icons are looked up by name: first in the diagram's `icons:` folders, in order, then in the core set
 (`src/diagr/iconsets/core/icons.yml`).
 
-The core set is neutral on purpose: `api`, `branch`, `browser`, `chart`, `check`, `clock`, `cloud`, `cube`,
-`database`, `file`, `folder`, `function`, `globe`, `lake`, `layers`, `lock`, `mail`, `notebook`, `pipeline`, `queue`,
-`refresh`, `server`, `settings`, `upload`, `user`.
+The core set is neutral on purpose: `api`, `balancer`, `bell`, `branch`, `browser`, `bucket`, `cache`, `chart`,
+`check`, `clock`, `cloud`, `container`, `cpu`, `cube`, `database`, `events`, `file`, `folder`, `function`, `gateway`,
+`globe`, `key`, `lake`, `layers`, `lock`, `mail`, `mobile`, `monitor`, `network`, `notebook`, `pipeline`, `queue`,
+`refresh`, `search`, `server`, `settings`, `shield`, `terminal`, `upload` and `user`.
 
 An icon folder holds either kind of icon:
 

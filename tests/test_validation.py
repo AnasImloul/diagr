@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from diagr.icons import _import_svg
-from tests.support import Case, problems
+from tests.support import ROOT, Case, problems
 
 BASE = """
 id: t
@@ -128,6 +128,11 @@ class Themes(Case):
 
     def test_unknown_theme(self):
         self.assertReports(problems(BASE + "theme: nope\n"), "theme 'nope' not found")
+
+    def test_contrast_builds_every_example_cleanly(self):
+        for example in sorted((ROOT / "examples").glob("*/diagram.yml")):
+            with self.subTest(example.parent.name):
+                self.assertClean(problems(example.read_text(encoding="utf-8"), example.parent, "contrast"))
 
     def test_broken_yaml(self):
         found = self.theme("light: [\n")
