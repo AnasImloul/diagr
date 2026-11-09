@@ -52,7 +52,7 @@ See the [examples](examples/index.md) for rendered diagrams with their source, a
 |---|---|
 | `diagr init [FILE] [--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
 | `diagr build FILE... [-o DIR] [--theme T] [--debug]` | Write the two SVGs and the HTML page for each file; `--debug` adds the grid and route overlay to the page (G toggles it) |
-| `diagr watch FILE... [-o DIR] [--theme T] [--interval S] [--debug]` | Rebuild when the file, its icon folders or its theme file change; polls every 0.5 s by default |
+| `diagr watch FILE... [-o DIR] [--theme T] [--interval S] [--debug] [--serve] [--port P]` | Rebuild when the file, its icon folders or its theme file change; `--serve` also serves the output at `http://127.0.0.1:8001/`, and open pages reload on each rebuild, keeping the scenario, step and scroll position |
 | `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout |
 | `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |
 | `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |

@@ -166,6 +166,16 @@ def _stamp(paths: list[Path]) -> tuple:
 def cmd_watch(args) -> int:
     files = [Path(f) for f in args.files]
     stamps: dict[Path, tuple] = {}
+    server = None
+    if args.serve:
+        from .live import LiveServer
+
+        try:
+            server = LiveServer(Path(args.out), args.port)
+        except OSError as e:
+            print(f"error: cannot serve on port {args.port}: {e.strerror or e}", file=sys.stderr)
+            return 1
+        print(f"serving {args.out} at http://127.0.0.1:{server.port}/", file=sys.stderr)
     print(f"watching {len(files)} file(s), Ctrl-C to stop", file=sys.stderr)
     try:
         while True:
@@ -174,9 +184,11 @@ def cmd_watch(args) -> int:
                 if stamps.get(f) != s:
                     stamps[f] = s
                     try:
-                        written, warnings = build_files(f, args.out, args.theme, args.debug)
+                        written, warnings = build_files(f, args.out, args.theme, args.debug, live=bool(server))
                         _report(warnings)
                         print(f"{time.strftime('%H:%M:%S')} built {', '.join(w.name for w in written)}")
+                        if server:
+                            server.bump()
                     except DiagramError as e:
                         _report(e.problems)
                     except OSError as e:
@@ -184,6 +196,9 @@ def cmd_watch(args) -> int:
             time.sleep(args.interval)
     except KeyboardInterrupt:
         return 0
+    finally:
+        if server:
+            server.close()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -203,6 +218,8 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--out", "-o", default="dist")
     w.add_argument("--theme")
     w.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
+    w.add_argument("--serve", action="store_true", help="serve the output on localhost; open pages reload on rebuild")
+    w.add_argument("--port", type=int, default=8001, help="port for --serve (default 8001)")
     w.add_argument("--interval", type=float, default=0.5)
     w.set_defaults(fn=cmd_watch)
 

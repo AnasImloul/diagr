@@ -97,6 +97,30 @@ class Authoring(Case):
         self.assertIn("a [0, 0]", html)
         self.assertIn("a-&gt;b: point 1 of 2", html)
 
+    def test_live_script_only_when_serving(self):
+        p = prepared(BASE)
+        self.assertNotIn("/__diagr/version", render_html(p))
+        self.assertIn("/__diagr/version", render_html(p, live=True))
+
+    def test_live_server(self):
+        import urllib.request
+
+        from diagr.live import LiveServer
+
+        folder = self.tmp()
+        (folder / "x.html").write_text("hi", encoding="utf-8")
+        server = LiveServer(folder, 0)
+        self.addCleanup(server.close)
+        base = f"http://127.0.0.1:{server.port}"
+        with urllib.request.urlopen(base + "/__diagr/version") as r:
+            self.assertEqual(r.read(), b"0")
+            self.assertEqual(r.headers["Cache-Control"], "no-store")
+        server.bump()
+        with urllib.request.urlopen(base + "/__diagr/version") as r:
+            self.assertEqual(r.read(), b"1")
+        with urllib.request.urlopen(base + "/x.html") as r:
+            self.assertEqual(r.read(), b"hi")
+
 
 class Accessibility(Case):
     def test_svg_with_triggers_is_a_group(self):

@@ -5,6 +5,7 @@ from html import escape
 from pathlib import Path
 
 from ..build import Prepared
+from ..live import SCRIPT as LIVE
 from ..scenario import Compiled
 from ..scene import num, serialise
 from .debug import TOGGLE as DEBUG_TOGGLE
@@ -63,7 +64,7 @@ def _json(obj: object) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
-def render_html(p: Prepared, debug: bool = False) -> str:
+def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
     d, t = p.diagram, p.theme
     sb = p.scene()
     body, b = sb.build()
@@ -168,7 +169,7 @@ def render_html(p: Prepared, debug: bool = False) -> str:
 {panel}
 </div>
 {THEME_TOGGLE}{DEBUG_TOGGLE if debug else ""}
-{script}
+{script}{LIVE if live else ""}
 </body>
 </html>
 """

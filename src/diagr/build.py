@@ -47,14 +47,14 @@ def prepare(d: Diagram, theme: str | None = None) -> Prepared:
 
 
 def build_files(
-    path: str | Path, out: str | Path, theme: str | None = None, debug: bool = False
+    path: str | Path, out: str | Path, theme: str | None = None, debug: bool = False, live: bool = False
 ) -> tuple[list[Path], list[Problem]]:
     p = prepare(load_file(path), theme)
-    return write_files(p, out, debug), p.warnings
+    return write_files(p, out, debug, live), p.warnings
 
 
-def write_files(p: Prepared, out: str | Path, debug: bool = False) -> list[Path]:
-    """The two static SVGs and the HTML page; debug adds the authoring overlay to the page."""
+def write_files(p: Prepared, out: str | Path, debug: bool = False, live: bool = False) -> list[Path]:
+    """The two static SVGs and the HTML page; debug adds the authoring overlay, live the reload script."""
     from .render.html import render_html
     from .render.svg import render_static
 
@@ -66,6 +66,6 @@ def write_files(p: Prepared, out: str | Path, debug: bool = False) -> list[Path]
         f.write_text(render_static(p.scene(), p.theme, scheme), encoding="utf-8")
         written.append(f)
     f = out / f"{p.diagram.id}.html"
-    f.write_text(render_html(p, debug), encoding="utf-8")
+    f.write_text(render_html(p, debug, live), encoding="utf-8")
     written.append(f)
     return written
