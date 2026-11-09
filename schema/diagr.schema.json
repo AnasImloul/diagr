@@ -9,7 +9,7 @@
       "maximum": 1,
       "description": "Format version"
     },
-    "diagram": {
+    "id": {
       "type": "string",
       "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$",
       "description": "Diagram id, used for output file names"
@@ -286,11 +286,24 @@
               "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*)$"
             },
             "additionalProperties": {
-              "type": [
-                "string",
-                "null"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "required": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "required"
+                  ],
+                  "additionalProperties": false
+                }
               ],
-              "description": "Default value; leave it empty to make the parameter required"
+              "description": "The default value, or {required: true} for a parameter every instance must set"
             },
             "description": "Text parameters, used as {name} in titles, sub text, labels, tooltips and triggers"
           },
@@ -524,10 +537,10 @@
         "required": [
           "nodes"
         ],
-        "description": "A reusable block of groups, nodes and edges in its own grid cells; 'place' puts copies of it"
+        "description": "A reusable block of groups, nodes and edges in its own grid cells; 'instances' uses it"
       }
     },
-    "place": {
+    "instances": {
       "type": "object",
       "propertyNames": {
         "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
@@ -551,7 +564,7 @@
           },
           "in": {
             "type": "string",
-            "description": "Group that holds the copy's outermost groups and nodes"
+            "description": "Group that holds the instance's outermost groups and nodes"
           },
           "with": {
             "type": "object",
@@ -568,7 +581,7 @@
         "required": [
           "component"
         ],
-        "description": "A copy of a component; its groups, nodes and edges are named '<copy>/<id>'"
+        "description": "An instance of a component; its groups, nodes and edges are named '<instance>/<id>'"
       }
     },
     "scenario": {
@@ -613,7 +626,7 @@
                     {
                       "type": "string",
                       "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
-                      "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+                      "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
                     },
                     {
                       "type": "object",
@@ -723,7 +736,7 @@
                       {
                         "type": "string",
                         "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
-                        "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+                        "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
                       },
                       {
                         "type": "object",
@@ -796,7 +809,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "diagram",
+    "id",
     "nodes"
   ],
   "$defs": {
@@ -807,7 +820,7 @@
           {
             "type": "string",
             "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
-            "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+            "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
           },
           {
             "type": "object",

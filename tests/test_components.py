@@ -7,10 +7,10 @@ from tests.support import Case, problems
 from tests.test_build import prepared
 
 BASE = """
-diagram: t
+id: t
 components:
   pair:
-    params: {name: , note: default note}
+    params: {name: {required: true}, note: default note}
     groups:
       box: {title: "{name}", sub: "{note}", tone: blue}
     nodes:
@@ -19,7 +19,7 @@ components:
     edges:
       api -> db: "writes for {name}"
       api -> db as backup: {label: backup, route: [up 40px, right, down]}
-place:
+instances:
   a: {component: pair, at: [0, 0], with: {name: Alpha}}
   b: {component: pair, at: [0, 2], in: outer, with: {name: Beta, note: custom}}
 groups:
@@ -53,6 +53,13 @@ class Expansion(Case):
         self.assertEqual(d.nodes["b/api"].title, "Beta API")
         self.assertEqual(d.nodes["a/db"].tooltip, "default note")
         self.assertEqual(d.edges["b/api->b/db"].label, "writes for Beta")
+
+    def test_literal_braces(self):
+        d = prepared(BASE.replace('title: Store, tooltip: "{note}"', 'title: "{{name}} is {name}"')).diagram
+        self.assertEqual(d.nodes["a/db"].title, "{name} is Alpha")
+
+    def test_empty_parameter_is_an_error(self):
+        self.assertReports(problems(BASE.replace("name: {required: true}", "name: ")), "write {required: true}")
 
     def test_in_puts_the_outermost_groups_in_a_parent(self):
         d = prepared(BASE).diagram
@@ -113,7 +120,7 @@ class Errors(Case):
 
     def test_copy_name_clash(self):
         yml = BASE.replace("  lb: {at: [-1, 1]", "  a/api: {at: [5, 5], icon: api, title: X}\n  lb: {at: [-1, 1]")
-        self.assertReports(problems(yml), "place 'a': a/api already defined elsewhere")
+        self.assertReports(problems(yml), "instance 'a': a/api already defined elsewhere")
 
     def test_typos_get_suggestions(self):
         yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (

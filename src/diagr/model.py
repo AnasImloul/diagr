@@ -90,6 +90,7 @@ class Effect:
     text: str | None = None
     ms: float | None = None
     range: tuple[int, int] | None = None
+    range_names: tuple[str, str] | None = None
     children: list[Effect] = field(default_factory=list)
     count: int = 1
     loc: Loc | None = None
@@ -126,7 +127,7 @@ class Component:
 
 
 @dataclass
-class Placement:
+class Instance:
     id: str
     component: str
     at: tuple[float, float] = (0, 0)

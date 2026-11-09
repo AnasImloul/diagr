@@ -1,7 +1,7 @@
-"""Components: a block of groups, nodes and edges defined once and placed as named copies.
+"""Components: a block of groups, nodes and edges defined once and used as named instances.
 
-Expansion runs before validation and turns every copy into ordinary groups, nodes and edges named
-'<copy>/<id>', offset by the copy's position, with {param} text filled in.
+Expansion runs before validation and turns every instance into ordinary groups, nodes and edges named
+'<instance>/<id>', offset by the instance's position, with {param} text filled in.
 """
 
 from __future__ import annotations
@@ -9,19 +9,20 @@ from __future__ import annotations
 import re
 from dataclasses import replace
 
-from .model import Component, Diagram, Loc, Placement
+from .model import Component, Diagram, Instance, Loc
 from .source import Problem, did_you_mean
 
-PARAM = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+# {name} is a parameter; {{ and }} are literal braces.
+PARAM = re.compile(r"\{\{|\}\}|\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 def _check(c: Component, problems: list[Problem]) -> None:
-    """Problems in the definition itself, reported once however many copies there are."""
+    """Problems in the definition itself, reported once however many instances there are."""
 
     def scan(loc: Loc | None, what: str, *texts: str | None) -> None:
         for text in texts:
             for m in PARAM.finditer(text or ""):
-                if m.group(1) not in c.params:
+                if m.group(1) and m.group(1) not in c.params:
                     have = ", ".join(c.params) or "none"
                     problems.append(
                         Problem(loc, f"component '{c.id}': {what} uses unknown parameter {m.group(0)} (params: {have})")
@@ -48,12 +49,12 @@ def _check(c: Component, problems: list[Problem]) -> None:
                 )
 
 
-def _place(d: Diagram, c: Component, p: Placement, problems: list[Problem]) -> None:
+def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem]) -> None:
     values = {k: v for k, v in c.params.items() if v is not None} | p.values
     ox, oy = p.at
 
     def fill(text: str) -> str:
-        return PARAM.sub(lambda m: values.get(m.group(1), m.group(0)), text)
+        return PARAM.sub(lambda m: m.group(0)[0] if not m.group(1) else values.get(m.group(1), m.group(0)), text)
 
     def name(local: str) -> str:
         return f"{p.id}/{local}"
@@ -63,7 +64,7 @@ def _place(d: Diagram, c: Component, p: Placement, problems: list[Problem]) -> N
 
     taken = [name(k) for k in c.groups if name(k) in d.groups] + [name(k) for k in c.nodes if name(k) in d.nodes]
     if taken:
-        problems.append(Problem(p.loc, f"place '{p.id}': {', '.join(taken)} already defined elsewhere in the file"))
+        problems.append(Problem(p.loc, f"instance '{p.id}': {', '.join(taken)} already defined elsewhere in the file"))
         return
     for g in c.groups.values():
         d.groups[name(g.id)] = replace(
@@ -100,24 +101,30 @@ def _place(d: Diagram, c: Component, p: Placement, problems: list[Problem]) -> N
         )
 
 
-def expand(d: Diagram, components: dict[str, Component], places: dict[str, Placement], problems: list[Problem]) -> None:
+def expand(
+    d: Diagram, components: dict[str, Component], instances: dict[str, Instance], problems: list[Problem]
+) -> None:
     for c in components.values():
         _check(c, problems)
-    for p in places.values():
+    for p in instances.values():
         c = components.get(p.component)
         if c is None:
             have = ", ".join(components) or "none"
-            problems.append(Problem(p.loc, f"place '{p.id}': unknown component '{p.component}' (components: {have})"))
+            problems.append(
+                Problem(p.loc, f"instance '{p.id}': unknown component '{p.component}' (components: {have})")
+            )
             continue
         unknown = [k for k in p.values if k not in c.params]
         missing = [k for k, v in c.params.items() if v is None and k not in p.values]
         if unknown:
-            problems.append(Problem(p.loc, f"place '{p.id}': component '{c.id}' has no parameter {', '.join(unknown)}"))
+            problems.append(
+                Problem(p.loc, f"instance '{p.id}': component '{c.id}' has no parameter {', '.join(unknown)}")
+            )
         if missing:
-            problems.append(Problem(p.loc, f"place '{p.id}': component '{c.id}' needs {', '.join(missing)}"))
-        _place(d, c, p, problems)
-    for p in places.values():
+            problems.append(Problem(p.loc, f"instance '{p.id}': component '{c.id}' needs {', '.join(missing)}"))
+        _instantiate(d, c, p, problems)
+    for p in instances.values():
         if p.parent and p.parent not in d.groups:
             problems.append(
-                Problem(p.loc, f"place '{p.id}': unknown group '{p.parent}'{did_you_mean(p.parent, d.groups)}")
+                Problem(p.loc, f"instance '{p.id}': unknown group '{p.parent}'{did_you_mean(p.parent, d.groups)}")
             )

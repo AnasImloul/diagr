@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
 diagr: 1
-diagram: multi-region
+id: multi-region
 title: Multi-region platform
 description: >-
   A global load balancer sends traffic to region A, with region B on standby. Each region runs a cluster of
@@ -11,7 +11,7 @@ grid: {col: 200, row: 150}
 # One region, defined once. Its cells are relative: [0, 0] is the checkout API.
 components:
   region:
-    params: {name: , role: primary, database: primary}
+    params: {name: {required: true}, role: primary, database: primary}
     groups:
       region: {title: "{name}", sub: "{role}", tone: neutral}
       cluster: {title: Cluster, in: region, tone: blue}
@@ -28,8 +28,8 @@ components:
       api -> prices: {label: prices, route: [up 40px, right, down]}
       worker -> db@bottom-16: {label: write, route: [down 56px, right, up]}
 
-# Two copies. Their nodes are a/api, a/worker, ... and b/api, b/worker, ...
-place:
+# Two instances. Their nodes are a/api, a/worker, ... and b/api, b/worker, ...
+instances:
   a: {component: region, at: [2.2, 0], with: {name: Region A}}
   b: {component: region, at: [2.2, 2.4], with: {name: Region B, role: standby, database: replica}}
 
@@ -121,14 +121,14 @@ scenarios:
       - title: Build and test
         at: ci
         text: The pipeline builds the new version and runs the tests.
-        do: [activate ci, cells ci 1..2]
+        do: [activate ci, cells ci build..test]
       - title: Canary in region B
         at: b/worker
         text: The standby region gets the new version first, as a canary with no customer traffic.
         do:
           - show ci->b/worker
           - draw ci->b/worker
-          - cells ci 3..3
+          - cells ci canary
           - activate b/worker 500ms
           - "set b/worker.sub: v2 canary"
           - done b/worker
@@ -138,7 +138,7 @@ scenarios:
         do:
           - show ci->a/worker
           - draw ci->a/worker
-          - cells ci 4..4
+          - cells ci rollout
           - activate a/worker
           - repeat: 2
             do: ["set a/worker.sub: replica {i} of 2 on v2", wait 500ms]

@@ -36,6 +36,13 @@ class Compile(unittest.TestCase):
         s = fold(p.compiled.frames)
         self.assertEqual([s.get(f"c:a:{i}") for i in range(3)], ["ok", "ok", "ok"])
 
+    def test_cells_by_position_and_name(self):
+        yml = BASE.replace("title: A}", "title: A, cells: [x, y, z]}") + "scenario:\n  steps:\n"
+        short = prepared(yml + "    - {title: one, do: [cells a x..y, cells a 3]}\n")
+        long = prepared(yml + "    - {title: one, do: [cells a 1..2, cells a 3..3]}\n")
+        assert short.compiled and long.compiled
+        self.assertEqual([f.to_json() for f in short.compiled.frames], [f.to_json() for f in long.compiled.frames])
+
     def test_flow_is_the_long_form(self):
         three = BASE + "  b -> c: x\nnodes2:\n"
         yml = three.replace("nodes2:\n", "").replace("nodes:\n", "nodes:\n  c: {at: [2, 0], icon: cube, title: C}\n")

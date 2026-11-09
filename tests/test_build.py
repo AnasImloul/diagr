@@ -17,7 +17,7 @@ from diagr.theme import BUILTIN, theme_files
 from tests.support import ROOT, Case
 
 BASE = """
-diagram: t
+id: t
 nodes:
   a: {at: [0, 0], icon: server, title: A}
   b: {at: [1, 0], icon: database, title: B}
@@ -184,7 +184,7 @@ class Cli(Case):
 
     def test_check_json(self):
         base = self.tmp()
-        (base / "bad.yml").write_text("diagram: t\nnodes:\n  a: {at: [0, 0], icon: nope}\n", encoding="utf-8")
+        (base / "bad.yml").write_text("id: t\nnodes:\n  a: {at: [0, 0], icon: nope}\n", encoding="utf-8")
         code, out, err = cli(
             "check", "--format", "json", str(base / "bad.yml"), str(ROOT / "examples/order-flow/diagram.yml")
         )
@@ -214,13 +214,13 @@ class Cli(Case):
         path = self.tmp() / "my flow" / "diagram.yml"
         code, _, _ = cli("init", str(path))
         self.assertEqual(code, 0)
-        self.assertIn("diagram: my-flow\n", path.read_text(encoding="utf-8"))
+        self.assertIn("id: my-flow\n", path.read_text(encoding="utf-8"))
         self.assertEqual(cli("check", "--strict", str(path))[0], 0)
 
     def test_init_takes_an_id(self):
         path = self.tmp() / "x.yml"
         cli("init", str(path), "--id", "orders")
-        self.assertIn("diagram: orders\n", path.read_text(encoding="utf-8"))
+        self.assertIn("id: orders\n", path.read_text(encoding="utf-8"))
 
     def test_init_never_overwrites(self):
         path = self.tmp() / "x.yml"

@@ -8,8 +8,8 @@ import yaml
 
 from .model import Diagram, Edge, Group, Move, Node, Port
 
-HEAD = ("diagr", "diagram", "title", "description", "theme", "icons", "grid", "step_list")
-REPLACED = ("groups", "nodes", "edges", "components", "place")
+HEAD = ("diagr", "id", "title", "description", "theme", "icons", "grid", "step_list")
+REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 
 def _n(v: float) -> float | int:

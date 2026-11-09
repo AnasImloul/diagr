@@ -71,7 +71,7 @@ def on_files(files, config):
         if status != 0:
             raise RuntimeError(f"diagr build failed for {yml}")
         data = yaml.safe_load(yml.read_text())
-        id_, title = data["diagram"], data["title"]
+        id_, title = data["id"], data["title"]
         description = " ".join(str(data.get("description", "")).split())
         for name in (f"{id_}.html", f"{id_}-light.svg", f"{id_}-dark.svg"):
             files.append(File.generated(config, f"examples/{id_}/{name}", abs_src_path=str(built / name)))

@@ -5,7 +5,7 @@ Colours, fonts and sizes live in the theme, not here.
 
 ```yaml
 diagr: 1
-diagram: order-flow          # id, used for output file names
+id: order-flow                # used for output file names
 title: Order processing
 description: One sentence, used as the accessible label.
 theme: default               # built-in name or a path to a theme file
@@ -94,12 +94,12 @@ edges:
 
 ## Components
 
-A component is a block of groups, nodes and edges defined once; `place` puts named copies of it.
+A component is a block of groups, nodes and edges defined once; `instances` puts named instances of it in the diagram.
 
 ```yaml
 components:
   region:
-    params: {name: , role: primary}      # an empty value makes the parameter required
+    params: {name: {required: true}, role: primary}      # a value is the default
     groups:
       region:  {title: "{name}", sub: "{role}", tone: neutral}
       cluster: {title: Cluster, in: region, tone: blue}
@@ -109,7 +109,7 @@ components:
     edges:
       api -> db: write
 
-place:
+instances:
   a: {component: region, at: [2, 0], with: {name: Region A}}
   b: {component: region, at: [2, 2], with: {name: Region B, role: standby}, in: cloud}
 
@@ -117,21 +117,22 @@ edges:
   a/db -> b/db: replication
 ```
 
-- **Names.** Inside a component, ids are local (`api`, `db`). Each copy prefixes them with its own name, so the rest
+- **Names.** Inside a component, ids are local (`api`, `db`). Each instance prefixes them with its own name, so the rest
   of the file refers to `a/api` and `b/db`: in edges (`lb -> a/api@left`), effects (`fail a/api`,
   `set b/db.sub: primary`, `draw a/api->a/db`), `step.at` and `plays`. Edge ids follow: `a/api->a/db`, or
   `a/<name>` for an edge declared with `as <name>`.
-- **Positions.** A component's cells are relative; the copy's `at` moves all of them, fixed group areas and `via`
+- **Positions.** A component's cells are relative; the instance's `at` moves all of them, fixed group areas and `via`
   points included.
-- **Parameters.** `{param}` in titles, sub text, labels, tooltips and trigger labels is replaced by the copy's `with`
-  value or the default from `params`. Parameters are text only: ids, positions and numbers cannot be parameters.
-- **`in`** on a placement puts the copy's outermost groups and nodes inside an existing group.
+- **Parameters.** `{param}` in titles, sub text, labels, tooltips and trigger labels is replaced by the instance's `with`
+  value or the default from `params`; `{required: true}` instead of a default makes every instance set it. Write `{{` and
+  `}}` for literal braces. Parameters are text only: ids, positions and numbers cannot be parameters.
+- **`in`** on an instance puts its outermost groups and nodes inside an existing group.
 - A component's nodes and edges can only use its own groups and nodes. A problem in a component's definition (an
-  unknown `{param}`, an edge to a node it does not have) is reported once; a problem that depends on the copy, like
-  an overlap, names the copy's ids (`a/api`).
+  unknown `{param}`, an edge to a node it does not have) is reported once; a problem that depends on the instance, like
+  an overlap, names the instance's ids (`a/api`).
 - Components cannot contain other components, and scenarios stay at the top level.
-- `diagr expand FILE` prints the file with every copy written out as plain groups, nodes and edges, to check what
-  a component turned into. Its ids keep the `copy/id` form, which the format accepts.
+- `diagr expand FILE` prints the file with every instance written out as plain groups, nodes and edges, to check what
+  a component turned into. Its ids keep the `instance/id` form, which the format accepts.
 
 ## Scenario
 
@@ -189,7 +190,7 @@ An effect is `verb targets [duration]`. The duration is how long the frame holds
 | `draw a->b` | The accent line draws along the edge, then its arrow turns accent | 700 ms |
 | `flow a -> b -> c [ms]` | Follow a path: `activate a`, `draw a->b`, `done a`, then the same from `b`. The last node is left as it is, so the next step can pick it up. A duration applies to each `activate` | |
 | `set n.title: text`, `set n.sub: text`, `set n.sub.1: text`, `set a->b.label: text` | Replace text. `n.sub` replaces every line | 0 ms |
-| `cells n [1..4] [ms]` | Fill the cells one by one; a range stops early and leaves the last cell active | 520 ms per cell |
+| `cells n [2..4] [ms]` | Fill the cells one by one. A range by position (`2..4`, or `3` for one cell) or by name (`build..test`, `canary`) fills only those; a range that stops early leaves its last cell active, and the next range completes it | 520 ms per cell |
 | `spin n`, `spin n off` | Rotate the node's glyph | 0 ms |
 | `show x`, `hide x` | Reveal or hide a node, edge or group | 0 ms |
 | `focus x y`, `focus none` | Dim everything except the targets | 0 ms |

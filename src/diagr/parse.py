@@ -6,13 +6,14 @@ from pathlib import Path
 from . import fields as f
 from .components import expand
 from .effects import EFFECT_SCHEMA, parse_effects
-from .model import Component, Diagram, Edge, Grid, Group, Move, Node, Placement, Port, Scenario, Step
-from .source import DiagramError, Problem, Y, YScalar, YSeq, load
+from .model import Component, Diagram, Edge, Grid, Group, Instance, Move, Node, Port, Scenario, Step
+from .scenario import walk_effects
+from .source import DiagramError, Problem, Y, YMap, YScalar, YSeq, did_you_mean, load
 
 ID = r"[A-Za-z_][A-Za-z0-9_-]*"
 REF = rf"{ID}(?:/{ID})?"
 PARAM_NAME = r"[A-Za-z_][A-Za-z0-9_]*"
-IDS = "an id: letters, digits, _ and -, optionally 'copy/id' as `diagr expand` writes"
+IDS = "an id: letters, digits, _ and -, optionally 'instance/id' as `diagr expand` writes"
 SIDE = r"left|right|top|bottom"
 PORT = rf"({REF})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
 EDGE_KEY = rf"{PORT}\s*->\s*{PORT}(?:\s+as\s+({REF}))?"
@@ -41,18 +42,36 @@ class Cells(f.T):
 
 
 class Param(f.T):
-    description = "Default value; leave it empty to make the parameter required"
+    description = "The default value, or {required: true} for a parameter every instance must set"
 
     def kind(self) -> str:
-        return "text, or nothing for a required parameter"
+        return "a default value or {required: true}"
 
     def check(self, y, problems):
-        if isinstance(y, YScalar) and y.null:
+        if isinstance(y, YMap):
+            rec = f.Obj("parameter", {"required": f.F(f.Bool(), required=True)}).check(y, problems)
+            if not rec.get("required"):
+                return self._fail(y, problems, "a parameter without a default needs {required: true}")
             return None
+        if isinstance(y, YScalar) and y.null:
+            return self._fail(y, problems, "give the parameter a default, or write {required: true}")
         return f.Str().check(y, problems)
 
     def schema(self):
-        return f._describe({"type": ["string", "null"]}, self.description)
+        return f._describe(
+            {
+                "oneOf": [
+                    {"type": "string"},
+                    {
+                        "type": "object",
+                        "properties": {"required": {"const": True}},
+                        "required": ["required"],
+                        "additionalProperties": False,
+                    },
+                ]
+            },
+            self.description,
+        )
 
 
 GROUP = f.Obj(
@@ -160,15 +179,15 @@ COMPONENT = f.Obj(
         "nodes": f.F(f.MapOf(NODE, min_items=1), required=True),
         "edges": f.F(EDGES),
     },
-    description="A reusable block of groups, nodes and edges in its own grid cells; 'place' puts copies of it",
+    description="A reusable block of groups, nodes and edges in its own grid cells; 'instances' uses it",
 )
 
-PLACEMENT = f.Obj(
-    "placement",
+INSTANCE = f.Obj(
+    "instance",
     {
         "component": f.F(f.Str(pattern=ID, description="Component id"), required=True),
         "at": f.F(f.Pair(description="Grid cell where the component's [0, 0] goes; default [0, 0]")),
-        "in": f.F(f.Str(description="Group that holds the copy's outermost groups and nodes")),
+        "in": f.F(f.Str(description="Group that holds the instance's outermost groups and nodes")),
         "with": f.F(
             f.MapOf(
                 f.Str(),
@@ -178,14 +197,14 @@ PLACEMENT = f.Obj(
             )
         ),
     },
-    description="A copy of a component; its groups, nodes and edges are named '<copy>/<id>'",
+    description="An instance of a component; its groups, nodes and edges are named '<instance>/<id>'",
 )
 
 DIAGRAM = f.Obj(
     "diagram",
     {
         "diagr": f.F(f.Num(integer=True, minimum=1, maximum=FORMAT_VERSION, description="Format version")),
-        "diagram": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),
+        "id": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),
         "title": f.F(f.Str()),
         "description": f.F(f.Str(description="Accessible description of the whole diagram")),
         "theme": f.F(f.Str(description="Theme name or path to a theme file")),
@@ -197,13 +216,14 @@ DIAGRAM = f.Obj(
         "nodes": f.F(f.MapOf(NODE, min_items=1, key_pattern=REF, key_description=IDS), required=True),
         "edges": f.F(EDGES),
         "components": f.F(f.MapOf(COMPONENT)),
-        "place": f.F(f.MapOf(PLACEMENT)),
+        "instances": f.F(f.MapOf(INSTANCE)),
         "scenario": f.F(SCENARIO),
         "scenarios": f.F(
             f.MapOf(SCENARIO, min_items=1, description="Several scenarios by id; the first is the default")
         ),
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
     },
+    renamed={"diagram": "id", "place": "instances"},
 )
 
 
@@ -298,6 +318,24 @@ def _edges(entries: list[f.Entry], out: dict[str, Edge], problems: list[Problem]
         )
 
 
+def _cell_names(d: Diagram, problems: list[Problem]) -> None:
+    """Turn 'cells n build..test' into positions, now that each node's cell names are known."""
+    for sc in d.scenarios.values():
+        for e in walk_effects(sc):
+            if e.verb != "cells" or not e.range_names or e.targets[0] not in d.nodes:
+                continue
+            names = d.nodes[e.targets[0]].cells
+            spots = []
+            for name in e.range_names:
+                if name in names:
+                    spots.append(names.index(name) + 1)
+                else:
+                    hint = did_you_mean(name, [n for n in names if n]) if any(names) else " (its cells have no names)"
+                    problems.append(Problem(e.loc, f"'cells': node '{e.targets[0]}' has no cell '{name}'{hint}"))
+            if len(spots) == 2:
+                e.range = (spots[0], spots[1])
+
+
 def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     problems: list[Problem] = []
     rec = f.check(DIAGRAM, tree, problems)
@@ -306,7 +344,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
 
     grid = rec.get("grid")
     d = Diagram(
-        id=rec.get("diagram"),
+        id=rec.get("id"),
         title=rec.get("title", ""),
         description=rec.get("description", ""),
         theme=rec.get("theme", "default"),
@@ -329,12 +367,12 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         comp.nodes = {n.key: _node(n) for n in c.get("nodes", [])}
         _edges(c.get("edges", []), comp.edges, problems)
         components[e.key] = comp
-    places = {}
-    for e in rec.get("place", []):
+    instances = {}
+    for e in rec.get("instances", []):
         v = e.value
         values = {p.key: p.value for p in v.get("with", [])}
-        places[e.key] = Placement(e.key, v.get("component"), v.get("at") or (0, 0), v.get("in"), values, e.loc)
-    expand(d, components, places, problems)
+        instances[e.key] = Instance(e.key, v.get("component"), v.get("at") or (0, 0), v.get("in"), values, e.loc)
+    expand(d, components, instances, problems)
 
     if rec.get("scenario") is not None and rec.get("scenarios") is not None:
         problems.append(Problem(rec.at("scenarios"), "use either 'scenario' or 'scenarios', not both"))
@@ -342,6 +380,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         d.scenario = _scenario("main", rec.get("scenario"), problems)
     for e in rec.get("scenarios") or []:
         d.scenarios[e.key] = _scenario(e.key, e.value, problems)
+    _cell_names(d, problems)
 
     if problems:
         raise DiagramError(problems)

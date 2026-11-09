@@ -31,7 +31,7 @@ example above):
 
 ```yaml
 diagr: 1
-diagram: order-flow
+id: order-flow
 title: Order processing
 grid: {col: 200, row: 170}
 
@@ -120,7 +120,7 @@ uv run mkdocs build --strict # writes site/
 - [Diagram format and effects](docs/format.md)
 - [Themes and icons](docs/themes-and-icons.md)
 - [Examples](examples/): `order-flow`, `cloud-architecture` (bus, fan-out, dead-letter queue, retries),
-  `dashboard-refresh` (a pipeline with progress cells), `multi-region` (nested groups, a component placed twice, three scenarios)
+  `dashboard-refresh` (a pipeline with progress cells), `multi-region` (nested groups, a component used twice, three scenarios)
 
 ## Layout of this repo
 

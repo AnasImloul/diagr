@@ -136,7 +136,7 @@ def cmd_init(args) -> int:
     did = re.sub(r"[^A-Za-z0-9_-]+", "-", name).strip("-") or "diagram"
     if not re.fullmatch(ID, did):
         did = f"d-{did}"
-    text = STARTER.read_text(encoding="utf-8").replace("diagram: order-flow", f"diagram: {did}", 1)
+    text = STARTER.read_text(encoding="utf-8").replace("id: order-flow", f"id: {did}", 1)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")

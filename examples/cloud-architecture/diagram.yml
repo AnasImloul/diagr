@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
 diagr: 1
-diagram: cloud-architecture
+id: cloud-architecture
 title: Job pipeline
 description: >-
   The API admits jobs into a fair backlog. A dispatcher releases them to queues and starts workers; jobs that keep

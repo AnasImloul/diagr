@@ -7,7 +7,6 @@ from .model import Effect
 from .source import Problem, Y, YMap, YScalar, YSeq
 
 DURATION = re.compile(r"(\d+(?:\.\d+)?)(ms|s)")
-RANGE = re.compile(r"(\d+)\.\.(\d+)")
 
 TEXT_VERBS = {"set", "status"}
 VERBS = {
@@ -18,7 +17,7 @@ VERBS = {
     "flow": "Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; "
     "the last node is left as it is. A duration applies to each activate",
     "set": "Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'",
-    "cells": "Fill a node's cells one by one, optionally a range 'cells n 1..4'",
+    "cells": "Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'",
     "spin": "Rotate the node's glyph; 'spin n off' stops it",
     "show": "Reveal a hidden node, edge or group",
     "hide": "Hide a node, edge or group",
@@ -100,10 +99,15 @@ def _parse_head(head: str, y: Y, problems: list[Problem], text: str | None) -> E
         return e
     if args and _ms(args[-1]) is not None:
         e.ms = _ms(args.pop())
-    rng = RANGE.fullmatch(args[-1]) if verb == "cells" and args else None
-    if rng:
-        args.pop()
-        e.range = (int(rng.group(1)), int(rng.group(2)))
+    if verb == "cells" and len(args) == 2:
+        # 'cells n 2..4', 'cells n 3', 'cells n build..test', 'cells n canary'; parse.py resolves the names.
+        spec = args.pop()
+        lo, _, hi = spec.partition("..")
+        hi = hi or lo
+        if lo.isdigit() and hi.isdigit():
+            e.range = (int(lo), int(hi))
+        else:
+            e.range_names = (lo, hi)
     e.targets = args
     e.text = text
     if verb == "flow":

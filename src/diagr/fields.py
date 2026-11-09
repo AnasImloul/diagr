@@ -237,6 +237,7 @@ class Obj(T):
     description: str = ""
     shorthand: T | None = None
     shorthand_field: str | None = None
+    renamed: dict[str, str] = field(default_factory=dict)
 
     def kind(self) -> str:
         return "a mapping"
@@ -250,6 +251,10 @@ class Obj(T):
         values, locs, bad = {}, {}, False
         for k, v in y.pairs:
             spec = self.fields.get(k.value)
+            if spec is None and k.value in self.renamed:
+                problems.append(Problem(k.loc, f"'{k.value}' is now '{self.renamed[k.value]}'"))
+                bad = True
+                continue
             if spec is None:
                 close = difflib.get_close_matches(k.value, self.fields, n=1)
                 hint = f", did you mean '{close[0]}'?" if close else ""

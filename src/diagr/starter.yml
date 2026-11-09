@@ -1,5 +1,5 @@
 diagr: 1
-diagram: order-flow
+id: order-flow
 title: Order processing
 grid: {col: 200, row: 170}
 

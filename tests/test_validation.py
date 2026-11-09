@@ -6,7 +6,7 @@ from diagr.icons import _import_svg
 from tests.support import Case, problems
 
 BASE = """
-diagram: t
+id: t
 nodes:
   a: {at: [0, 0], icon: server, title: A}
   b: {at: [1, 0], icon: database, title: B}
@@ -23,7 +23,7 @@ class Format(Case):
         self.assertReports(problems(BASE + "titel: x\n"), "did you mean 'title'?")
 
     def test_empty_nodes(self):
-        self.assertReports(problems("diagram: t\nnodes: {}\n"), "must not be empty")
+        self.assertReports(problems("id: t\nnodes: {}\n"), "must not be empty")
 
     def test_empty_steps(self):
         self.assertReports(problems(BASE + "scenario: {steps: []}\n"), "must not be empty")
@@ -33,7 +33,7 @@ class Format(Case):
         self.assertClean(problems("diagr: 1\n" + BASE))
 
     def test_nan_is_not_a_number(self):
-        self.assertReports(problems("diagram: t\nnodes:\n  a: {at: [nan, 0], icon: server}\n"), "is not a number")
+        self.assertReports(problems("id: t\nnodes:\n  a: {at: [nan, 0], icon: server}\n"), "is not a number")
 
     def test_label_at_range(self):
         self.assertReports(
@@ -70,6 +70,18 @@ class Flow(Case):
 
     def test_not_inside_parallel(self):
         self.assertReports(problems(self.step("parallel: [flow a -> b]")), "'flow' cannot run inside 'parallel'")
+
+
+class Cells(Case):
+    def step(self, cells: str, do: str) -> str:
+        yml = BASE.replace("title: A}", f"title: A, cells: {cells}}}")
+        return yml + f"scenario:\n  steps:\n    - {{title: s, do: [{do}]}}\n"
+
+    def test_unknown_cell_name(self):
+        self.assertReports(problems(self.step("[build, test]", "cells a biuld")), "did you mean 'build'")
+
+    def test_names_need_named_cells(self):
+        self.assertReports(problems(self.step("3", "cells a build")), "its cells have no names")
 
 
 class Edges(Case):
@@ -149,7 +161,7 @@ class IconFolders(Case):
         (base / "icons").mkdir()
         for name, text in files.items():
             (base / "icons" / name).write_text(text, encoding="utf-8")
-        yml = f"diagram: t\nicons: [./icons]\nnodes:\n  a: {{at: [0, 0], {node}}}\n"
+        yml = f"id: t\nicons: [./icons]\nnodes:\n  a: {{at: [0, 0], {node}}}\n"
         return problems(yml, base)
 
     def test_tile_needs_tone_and_glyph(self):

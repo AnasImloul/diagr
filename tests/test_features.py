@@ -12,7 +12,7 @@ from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
 NESTED = """
-diagram: t
+id: t
 groups:
   outer: {title: Outer, tone: neutral}
   inner: {title: Inner, in: outer, tone: blue}
@@ -24,7 +24,7 @@ edges:
 """
 
 TWO = """
-diagram: t
+id: t
 nodes:
   a: {at: [0, 0], icon: server, title: A, trigger: Go, plays: second}
   b: {at: [1, 0], icon: database, title: B}
@@ -168,7 +168,7 @@ class LayoutWarnings(Case):
 
     def test_edge_across_a_group_title(self):
         yml = """
-diagram: t
+id: t
 groups:
   g: {title: A long group title, tone: blue}
 nodes:
