@@ -27,6 +27,7 @@ edges:
 
 scenarios:
   order:
+    loop: true
     ready: Press Place order to follow one order.
     end: Order stored and confirmed.
     steps:
