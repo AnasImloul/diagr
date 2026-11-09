@@ -70,6 +70,9 @@ class Flow(Case):
     def test_inside_parallel(self):
         self.assertClean(problems(self.step("parallel: [flow a -> b]")))
 
+    def test_no_parallel_inside_parallel(self):
+        self.assertReports(problems(self.step("parallel: [{parallel: [done a]}]")), "'parallel' cannot run inside")
+
 
 class Cells(Case):
     def step(self, cells: str, do: str) -> str:

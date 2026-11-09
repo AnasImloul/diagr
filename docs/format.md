@@ -188,7 +188,7 @@ An effect is `verb targets [duration]`. The duration is how long the frame holds
 | `focus x y`, `focus none` | Dim everything except the targets | 0 ms |
 | `wait 400ms` | Pause | |
 | `status: text` | Replace the status line | 0 ms |
-| `parallel: [...]` | Effects that play together (not `cells`, `repeat` or `parallel`). Flows side by side advance one hop at a time: each frame plays the next frame of every flow and lasts as long as the slowest | longest |
+| `parallel: [...]` | Effects that play together, in lockstep: each frame plays the next frame of every effect and lasts as long as the slowest, so flows advance one hop at a time, cells fill side by side and a `repeat` runs its rounds alongside. A `parallel` cannot hold another `parallel` | longest |
 | `repeat: 3` with `do: [...]` | Unrolled at build time; `{i}` in text becomes the round number | |
 
 Effects that take free text use a colon: `set api.sub 400ms: order is valid`. In YAML, quote the whole item when the

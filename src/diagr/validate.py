@@ -170,7 +170,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                 p.append(Problem(e.loc, f"'{v}': unknown node, edge or group '{x}'{hint}"))
     elif v == "parallel":
         for c in e.children:
-            if c.verb in ("cells", "repeat", "parallel"):
+            if c.verb == "parallel":
                 p.append(Problem(c.loc, f"'{c.verb}' cannot run inside 'parallel'"))
     for c in e.children:
         _check_effect(d, c, p)

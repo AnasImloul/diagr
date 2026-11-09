@@ -71,6 +71,21 @@ class Compile(unittest.TestCase):
         frames = [[f.to_json() for f in p.scenarios["s"].frames] for p in (short, long)]
         self.assertEqual(frames[0], frames[1])
 
+    def test_cells_and_repeat_inside_parallel(self):
+        yml = BASE.replace("title: A}", "title: A, cells: [x, y]}") + (
+            "scenarios:\n  s:\n    steps:\n    - title: one\n      do:\n"
+            "        - parallel: [cells a, flow a -> b, {repeat: 2, do: ['status: round {i}']}]\n"
+        )
+        frames = prepared(yml).scenarios["s"].frames
+        self.assertEqual(frames[1].set["c:a:0"], "act")
+        self.assertEqual(frames[1].set["n:a"], "active")
+        self.assertEqual(frames[1].set["status"], "round 1")
+        self.assertEqual(frames[2].set["c:a:1"], "act")
+        self.assertEqual(frames[2].set["e:a->b"], "drawn")
+        self.assertEqual(frames[2].set["status"], "round 2")
+        self.assertEqual(frames[2].dur, 700)
+        self.assertEqual(frames[3].set, {"c:a:1": "ok", "cap:a": None, "n:a": "done"})
+
     def test_parallel_is_one_frame(self):
         c = self.compiled("    - title: one\n      do:\n        - parallel: [activate a, 'draw a->b 300ms']\n")
         self.assertEqual(len(c.frames), 3)
