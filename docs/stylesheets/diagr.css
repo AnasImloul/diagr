@@ -305,6 +305,11 @@ iframe.diagr-embed {
   box-shadow: var(--dg-shadow);
 }
 
+[data-md-color-scheme="default"] .md-typeset img.dg-shot[src$="#only-dark"],
+[data-md-color-scheme="slate"] .md-typeset img.dg-shot[src$="#only-light"] {
+  display: none;
+}
+
 .md-typeset .dg-frame {
   overflow: hidden;
 }

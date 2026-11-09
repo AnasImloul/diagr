@@ -124,7 +124,7 @@ edges:
   `route`, so the output draws the same picture with nothing left to place. Start from it to fine-tune by hand.
 - `diagr build --debug` labels each placed node with the cell it got (`[2, 1] auto`).
 
-The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
+The [event-driven example](examples/event-driven.md) is laid out this way from start to finish. The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
 does more than any amount of reordering.
 
 ## Components

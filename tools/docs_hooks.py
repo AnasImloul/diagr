@@ -29,6 +29,14 @@ PAGE = """# {title}
 
     ![{title}, dark]({id}/{id}-dark.svg){{ .dg-shot }}
 
+=== "Contrast"
+
+    ![{title}, contrast theme]({id}/contrast/{id}-light.svg#only-light){{ .dg-shot }}
+    ![{title}, contrast theme]({id}/contrast/{id}-dark.svg#only-dark){{ .dg-shot }}
+
+    The same diagram in the built-in `contrast` theme (`diagr build --theme contrast`), in the site's light or dark
+    scheme.
+
 ## Source
 
 ```yaml
@@ -68,13 +76,17 @@ def on_files(files, config):
         built = out / yml.parent.name
         with contextlib.redirect_stdout(io.StringIO()):
             status = diagr(["build", str(yml), "-o", str(built)])
-        if status != 0:
+            contrast = diagr(["build", str(yml), "-o", str(built / "contrast"), "--theme", "contrast"])
+        if status != 0 or contrast != 0:
             raise RuntimeError(f"diagr build failed for {yml}")
         data = yaml.safe_load(yml.read_text())
         id_, title = data["id"], data["title"]
         description = " ".join(str(data.get("description", "")).split())
         for name in (f"{id_}.html", f"{id_}-light.svg", f"{id_}-dark.svg"):
             files.append(File.generated(config, f"examples/{id_}/{name}", abs_src_path=str(built / name)))
+        for name in (f"{id_}-light.svg", f"{id_}-dark.svg"):
+            src = str(built / "contrast" / name)
+            files.append(File.generated(config, f"examples/{id_}/contrast/{name}", abs_src_path=src))
         lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
         page = PAGE.format(id=id_, title=title, description=description, source="\n".join(lines).strip())
         files.append(File.generated(config, f"examples/{id_}.md", content=page))

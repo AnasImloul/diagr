@@ -127,7 +127,8 @@ uv run mkdocs build --strict # writes site/
 - [How diagr compares](docs/comparison.md) with D2, Mermaid, Structurizr, LikeC4, Ilograph and IcePanel
 - [Examples](examples/): `order-flow`, `cloud-architecture` (pull-based workers, dead-letter queue, retries, a
   parallel captions path), `multi-region` (nested groups, a component used twice, three scenarios), `data-platform`
-  (a three-instance component, three-level nesting, a merge junction, four scenarios)
+  (a three-instance component, three-level nesting, a merge junction, four scenarios), `event-driven` (no
+  positions at all: every node is placed automatically)
 
 ## Layout of this repo
 

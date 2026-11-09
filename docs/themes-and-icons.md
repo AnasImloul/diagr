@@ -7,7 +7,8 @@ built in, in `src/diagr/themes/`:
 
 - **`default`**, used when a diagram names none.
 - **`contrast`**, for projectors, printouts and readers who need more contrast: black or white text, darker lines and
-  group borders, thicker edges and slightly larger text. Try it on any diagram with `diagr build --theme contrast`.
+  group borders, thicker edges and slightly larger text. Try it on any diagram with `diagr build --theme contrast`;
+  every [example](examples/index.md) shows it in its Contrast tab.
 
 Either way, the colours reach both outputs:
 

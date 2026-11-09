@@ -87,3 +87,4 @@ nav:
       - Cloud architecture: examples/cloud-architecture.md
       - Multi-region platform: examples/multi-region.md
       - Data platform: examples/data-platform.md
+      - Event-driven shop: examples/event-driven.md

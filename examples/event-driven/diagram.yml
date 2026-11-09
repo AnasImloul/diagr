@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../schema/diagr.schema.json
+# No node has `at`: diagr places every node, and routes every edge, on its own.
+id: event-driven
+title: Event-driven shop
+description: >-
+  Phone and web clients call one gateway. The orders service stores each order and publishes an event, and three
+  consumers react to it on their own: stock, search and notifications.
+
+groups:
+  clients: {title: Clients, tone: neutral}
+  core: {title: Core services, tone: teal}
+  consumers: {title: Consumers, sub: subscribed to order events, tone: violet}
+
+nodes:
+  mobile: {in: clients, icon: mobile, title: Phone app, trigger: Place order}
+  web: {in: clients, icon: browser, title: Web shop}
+  gateway: {icon: gateway, title: API gateway, sub: "auth, rate limits"}
+  orders: {in: core, icon: api, title: Orders service}
+  cache: {in: core, icon: cache, title: Session cache}
+  db: {in: core, icon: database, title: Orders}
+  bus: {icon: events, title: Event bus, sub: order.placed}
+  stock: {in: consumers, icon: cube, title: Stock}
+  search: {in: consumers, icon: search, title: Search index}
+  notify: {in: consumers, icon: bell, title: Notifications}
+  monitor: {icon: monitor, title: Monitoring, sub: traces and alerts}
+
+edges:
+  mobile -> gateway: HTTPS
+  web -> gateway: HTTPS
+  gateway -> orders: POST /orders
+  orders -> cache: session
+  orders -> db: insert
+  orders -> bus: publish
+  bus -> stock: {}
+  bus -> search: {}
+  bus -> notify: {}
+  bus -> monitor: {label: lag, dashed: true}
+
+scenarios:
+  order:
+    ready: Press Place order to follow one order.
+    end: Stock, search and the customer all heard about the order.
+    steps:
+      - title: Call the gateway
+        text: The phone app sends the order to the API gateway, which checks the token.
+        do: [activate mobile, flow mobile -> gateway, done mobile, activate gateway 600ms, done gateway]
+      - title: Store the order
+        text: The orders service reads the session from the cache and writes the order.
+        do:
+          - flow gateway -> orders
+          - activate orders
+          - parallel: [flow orders -> cache, flow orders -> db]
+          - done cache db
+      - title: Publish
+        text: One event goes on the bus. The orders service is done; it does not wait for anyone.
+        do: [flow orders -> bus, done orders, activate bus 600ms]
+      - title: React
+        text: Each consumer picks the event up on its own.
+        do:
+          - parallel: [flow bus -> stock, flow bus -> search, flow bus -> notify]
+          - done bus stock search notify
