@@ -61,11 +61,11 @@ scenarios:
       - title: Request
         at: user
         text: The customer's browser sends the order to the global load balancer.
-        do: [activate user, draw user->lb, done user]
+        do: [flow user -> lb]
       - title: Route to region A
         at: lb
         text: Region A is active, so the load balancer sends the request there.
-        do: [activate lb 300ms, draw lb->a/api, done lb]
+        do: [flow lb -> a/api 300ms]
       - title: Price and accept
         at: a/api
         text: The checkout API asks the pricing service for the total, then queues the order for the workers.
@@ -78,7 +78,7 @@ scenarios:
       - title: Persist
         at: a/worker
         text: A worker writes the order to the primary database.
-        do: [activate a/worker 400ms, draw a/worker->a/db, done a/worker, activate a/db 300ms, done a/db]
+        do: [flow a/worker -> a/db 400ms, activate a/db 300ms, done a/db]
       - title: Replicate
         at: b/db
         text: The write is replicated to region B, which stays ready to take over.

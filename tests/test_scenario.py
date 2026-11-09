@@ -36,6 +36,17 @@ class Compile(unittest.TestCase):
         s = fold(p.compiled.frames)
         self.assertEqual([s.get(f"c:a:{i}") for i in range(3)], ["ok", "ok", "ok"])
 
+    def test_flow_is_the_long_form(self):
+        three = BASE + "  b -> c: x\nnodes2:\n"
+        yml = three.replace("nodes2:\n", "").replace("nodes:\n", "nodes:\n  c: {at: [2, 0], icon: cube, title: C}\n")
+        short = prepared(yml + "scenario:\n  steps:\n    - {title: one, do: [flow a -> b -> c 300ms]}\n")
+        long = prepared(
+            yml + "scenario:\n  steps:\n    - title: one\n      do: [activate a 300ms, draw a->b, done a, "
+            "activate b 300ms, draw b->c, done b]\n"
+        )
+        assert short.compiled and long.compiled
+        self.assertEqual([f.to_json() for f in short.compiled.frames], [f.to_json() for f in long.compiled.frames])
+
     def test_parallel_is_one_frame(self):
         c = self.compiled("    - title: one\n      do:\n        - parallel: [activate a, 'draw a->b 300ms']\n")
         self.assertEqual(len(c.frames), 3)

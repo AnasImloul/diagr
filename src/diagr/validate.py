@@ -152,6 +152,15 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                     f"'set': cannot set '{target}'{hint} (use node.title, node.sub, node.sub.N or a->b.label)",
                 )
             )
+    elif v == "flow":
+        for x in e.targets:
+            if x not in d.nodes:
+                p.append(Problem(e.loc, f"'flow': unknown node '{x}'{did_you_mean(x, d.nodes)}"))
+        for a, b in zip(e.targets, e.targets[1:], strict=False):
+            if a in d.nodes and b in d.nodes and resolve_edge(d, f"{a}->{b}") is None:
+                pairs = [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
+                why = f"several edges go from '{a}' to '{b}'; use 'draw' with one of: {', '.join(pairs)}"
+                p.append(Problem(e.loc, f"'flow': {why if pairs else f'no edge from {a!r} to {b!r}'}"))
     elif v in ("show", "hide", "focus"):
         for x in e.targets:
             if v == "focus" and x == "none":
@@ -161,7 +170,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                 p.append(Problem(e.loc, f"'{v}': unknown node, edge or group '{x}'{hint}"))
     elif v == "parallel":
         for c in e.children:
-            if c.verb in ("cells", "repeat", "parallel"):
+            if c.verb in ("cells", "repeat", "parallel", "flow"):
                 p.append(Problem(c.loc, f"'{c.verb}' cannot run inside 'parallel'"))
     for c in e.children:
         _check_effect(d, c, p)

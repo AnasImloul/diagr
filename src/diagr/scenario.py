@@ -156,6 +156,16 @@ class _Compiler:
         if v == "focus":
             ids = [t if t in d.nodes or t in d.groups else resolve_edge(d, t) or t for t in e.targets]
             return [Frame({"focus": None if e.targets == ["none"] else ids}, e.ms or 0, step)]
+        if v == "flow":
+            out = []
+            for a, b in zip(e.targets, e.targets[1:], strict=False):
+                for sub in (
+                    Effect("activate", [a], ms=e.ms, loc=e.loc),
+                    Effect("draw", [f"{a}->{b}"], loc=e.loc),
+                    Effect("done", [a], loc=e.loc),
+                ):
+                    out += self._run(sub, step, i)
+            return out
         if v == "wait":
             return [Frame({}, e.ms or 0, step)]
         if v == "parallel":

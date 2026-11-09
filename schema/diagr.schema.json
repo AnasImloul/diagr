@@ -612,8 +612,8 @@
                   "oneOf": [
                     {
                       "type": "string",
-                      "pattern": "^(activate|done|fail|draw|set|cells|spin|show|hide|focus|wait|status)\\b",
-                      "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+                      "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
+                      "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
                     },
                     {
                       "type": "object",
@@ -722,8 +722,8 @@
                     "oneOf": [
                       {
                         "type": "string",
-                        "pattern": "^(activate|done|fail|draw|set|cells|spin|show|hide|focus|wait|status)\\b",
-                        "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+                        "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
+                        "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
                       },
                       {
                         "type": "object",
@@ -806,8 +806,8 @@
         "oneOf": [
           {
             "type": "string",
-            "pattern": "^(activate|done|fail|draw|set|cells|spin|show|hide|focus|wait|status)\\b",
-            "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+            "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
+            "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, optionally a range 'cells n 1..4'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
           },
           {
             "type": "object",

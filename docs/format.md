@@ -185,6 +185,7 @@ An effect is `verb targets [duration]`. The duration is how long the frame holds
 | `done a [b ...]` | Node finished: check badge | 0 ms |
 | `fail a` | Node failed: red ring and cross. An active cell fails too | 0 ms |
 | `draw a->b` | The accent line draws along the edge, then its arrow turns accent | 700 ms |
+| `flow a -> b -> c [ms]` | Follow a path: `activate a`, `draw a->b`, `done a`, then the same from `b`. The last node is left as it is, so the next step can pick it up. A duration applies to each `activate` | |
 | `set n.title: text`, `set n.sub: text`, `set n.sub.1: text`, `set a->b.label: text` | Replace text. `n.sub` replaces every line | 0 ms |
 | `cells n [1..4] [ms]` | Fill the cells one by one; a range stops early and leaves the last cell active | 520 ms per cell |
 | `spin n`, `spin n off` | Rotate the node's glyph | 0 ms |

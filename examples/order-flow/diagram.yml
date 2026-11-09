@@ -33,7 +33,7 @@ scenario:
     - title: Submit
       at: web
       text: The customer places the order from the checkout page.
-      do: [activate web 300ms, draw web->api, done web]
+      do: [flow web -> api 300ms]
     - title: Validate and queue
       at: api
       text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.

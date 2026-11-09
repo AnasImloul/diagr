@@ -44,7 +44,7 @@ scenario:
   end: The job is back on the queue.
   steps:
     - title: Admit
-      do: [activate api 300ms, draw api->backlog, done api, activate backlog 300ms]
+      do: [flow api -> backlog 300ms, activate backlog 300ms]
     - title: Dispatch
       do:
         - draw backlog->dispatcher

@@ -49,6 +49,29 @@ class Format(Case):
         self.assertReports(problems(yml), "'repeat' needs a whole number")
 
 
+class Flow(Case):
+    def step(self, do: str) -> str:
+        return BASE + f"scenario:\n  steps:\n    - {{title: s, do: [{do}]}}\n"
+
+    def test_needs_a_path(self):
+        self.assertReports(problems(self.step("flow a")), "'flow' takes a path of nodes")
+
+    def test_needs_an_edge_per_hop(self):
+        self.assertReports(problems(self.step("flow b -> a")), "no edge from 'b' to 'a'")
+
+    def test_unknown_node(self):
+        self.assertReports(problems(self.step("flow a -> bb")), "did you mean 'b'")
+
+    def test_ambiguous_hop(self):
+        yml = self.step("flow a -> b").replace(
+            "  a -> b: writes\n", "  a -> b as one: writes\n  a -> b as two: twice\n"
+        )
+        self.assertReports(problems(yml), "several edges go from 'a' to 'b'")
+
+    def test_not_inside_parallel(self):
+        self.assertReports(problems(self.step("parallel: [flow a -> b]")), "'flow' cannot run inside 'parallel'")
+
+
 class Edges(Case):
     def test_self_loop_without_route(self):
         self.assertReports(problems(BASE + "  a -> a as loop: x\n"), "starts and ends at 'a'", "error")

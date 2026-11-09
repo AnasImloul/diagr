@@ -15,6 +15,8 @@ VERBS = {
     "done": "Node finished: check badge",
     "fail": "Node failed: red ring and cross; an active cell fails too",
     "draw": "Edge is used: the accent line draws along the path",
+    "flow": "Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; "
+    "the last node is left as it is. A duration applies to each activate",
     "set": "Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'",
     "cells": "Fill a node's cells one by one, optionally a range 'cells n 1..4'",
     "spin": "Rotate the node's glyph; 'spin n off' stops it",
@@ -104,7 +106,13 @@ def _parse_head(head: str, y: Y, problems: list[Problem], text: str | None) -> E
         e.range = (int(rng.group(1)), int(rng.group(2)))
     e.targets = args
     e.text = text
-    if verb == "wait":
+    if verb == "flow":
+        hops = args[0].split("->") if len(args) == 1 else []
+        if len(hops) < 2 or not all(hops):
+            problems.append(Problem(y.loc, "'flow' takes a path of nodes, e.g. 'flow a -> b -> c'"))
+            return None
+        e.targets = hops
+    elif verb == "wait":
         if e.ms is None or args:
             problems.append(Problem(y.loc, "'wait' takes only a duration, e.g. 'wait 400ms'"))
             return None
