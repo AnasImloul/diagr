@@ -136,6 +136,16 @@ class Icons:
                     return None
         return None
 
+    def available(self) -> list[tuple[str, str, Path]]:
+        """(name, 'tile' or 'svg', folder) for every icon, as a lookup would find it."""
+        found: dict[str, tuple[str, str, Path]] = {}
+        for src in self.sources:
+            for name in src.tiles:
+                found.setdefault(name, (name, "tile", src.folder))
+            for path in sorted(src.folder.glob("*.svg")):
+                found.setdefault(path.stem, (path.stem, "svg", src.folder))
+        return sorted(found.values())
+
     def names(self) -> list[str]:
         out: set[str] = set()
         for src in self.sources:

@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
 
 from . import __version__
 from .build import build_files, prepare, write_files
-from .parse import json_schema, load_file
+from .icons import CORE, Icons
+from .parse import ID, json_schema, load_file
 from .source import DiagramError, Problem
 
 
@@ -42,21 +44,76 @@ def cmd_build(args) -> int:
     return status
 
 
+def _as_json(f: str, p: Problem) -> dict:
+    loc = p.loc
+    return {"file": loc.file if loc else f, "line": loc.line if loc else None, "col": loc.col if loc else None,
+            "level": p.level, "message": p.message}
+
+
 def cmd_check(args) -> int:
     status = 0
+    found: list[dict] = []
     for f in args.files:
         try:
-            p = prepare(load_file(f), args.theme)
+            problems = prepare(load_file(f), args.theme).warnings
+            if args.strict and problems:
+                status = 1
+        except DiagramError as e:
+            problems = e.problems
+            status = 1
+        if args.format == "json":
+            found += [_as_json(f, p) for p in problems]
+            continue
+        _report(problems)
+        if not problems:
+            print(f"{f}: ok")
+    if args.format == "json":
+        print(json.dumps(found, indent=2))
+    return status
+
+
+def cmd_icons(args) -> int:
+    folders: list[Path] = []
+    if args.file:
+        try:
+            d = load_file(args.file)
         except DiagramError as e:
             _report(e.problems)
-            status = 1
-            continue
-        _report(p.warnings)
-        if args.strict and p.warnings:
-            status = 1
-        if not p.warnings:
-            print(f"{f}: ok")
-    return status
+            return 1
+        folders = [(d.base / f).resolve() for f in d.icons]
+    icons = Icons(folders)
+    _report(icons.problems)
+    for f in icons.missing:
+        print(f"warning: icon folder not found: {f}", file=sys.stderr)
+    rows = icons.available()
+    width = max((len(name) for name, _, _ in rows), default=0)
+    for name, kind, folder in rows:
+        print(f"{name:<{width}}  {kind:<4}  {'core' if folder == CORE else folder}")
+    return 0
+
+
+STARTER = Path(__file__).resolve().parent / "starter.yml"
+
+
+def cmd_init(args) -> int:
+    path = Path(args.file)
+    if path.exists():
+        print(f"error: {path} already exists", file=sys.stderr)
+        return 1
+    name = args.id or (path.stem if path.stem != "diagram" else path.resolve().parent.name)
+    did = re.sub(r"[^A-Za-z0-9_-]+", "-", name).strip("-") or "diagram"
+    if not re.fullmatch(ID, did):
+        did = f"d-{did}"
+    text = STARTER.read_text(encoding="utf-8").replace("diagram: order-flow", f"diagram: {did}", 1)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    except OSError as e:
+        print(f"error: cannot write {path}: {e.strerror or e}", file=sys.stderr)
+        return 1
+    print(path)
+    print(f"next: diagr build {path}", file=sys.stderr)
+    return 0
 
 
 def cmd_schema(args) -> int:
@@ -137,7 +194,18 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("files", nargs="+")
     c.add_argument("--theme")
     c.add_argument("--strict", action="store_true", help="treat warnings as errors")
+    c.add_argument("--format", choices=("text", "json"), default="text",
+                   help="json prints every problem as a list of {file, line, col, level, message} on stdout")
     c.set_defaults(fn=cmd_check)
+
+    i = sub.add_parser("init", help="write a starter diagram")
+    i.add_argument("file", nargs="?", default="diagram.yml")
+    i.add_argument("--id", help="diagram id; default: the file name, or the folder name for diagram.yml")
+    i.set_defaults(fn=cmd_init)
+
+    n = sub.add_parser("icons", help="list the icons a diagram can use")
+    n.add_argument("file", nargs="?", help="a diagram, to include its icon folders")
+    n.set_defaults(fn=cmd_icons)
 
     s = sub.add_parser("schema", help="print the JSON Schema for diagram files")
     s.add_argument("--out", "-o")

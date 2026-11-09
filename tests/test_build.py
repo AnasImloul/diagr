@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
+import re
 import textwrap
 import unittest
 
 from diagr import prepare
-from diagr.cli import main
+from diagr.cli import STARTER, main
 from diagr.parse import from_tree
 from diagr.render.svg import render_static
 from diagr.source import load
@@ -100,6 +102,59 @@ class Cli(Case):
         code, stdout, _ = cli("build", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out))
         self.assertEqual(code, 0)
         self.assertEqual(len(stdout.splitlines()), 3)
+
+    def test_check_json(self):
+        base = self.tmp()
+        (base / "bad.yml").write_text("diagram: t\nnodes:\n  a: {at: [0, 0], icon: nope}\n", encoding="utf-8")
+        code, out, err = cli("check", "--format", "json", str(base / "bad.yml"),
+                             str(ROOT / "examples/order-flow/diagram.yml"))
+        self.assertEqual(code, 1)
+        self.assertEqual(err, "")
+        found = json.loads(out)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["line"], 3)
+        self.assertEqual(found[0]["level"], "error")
+        self.assertIn("icon 'nope' not found", found[0]["message"])
+
+    def test_check_json_clean(self):
+        code, out, _ = cli("check", "--format", "json", str(ROOT / "examples/order-flow/diagram.yml"))
+        self.assertEqual((code, json.loads(out)), (0, []))
+
+    def test_icons_lists_core(self):
+        code, out, _ = cli("icons")
+        self.assertEqual(code, 0)
+        self.assertRegex(out, r"(?m)^server\s+tile\s+core$")
+
+    def test_icons_includes_the_diagram_folders(self):
+        code, out, _ = cli("icons", str(ROOT / "examples/dashboard-refresh/diagram.yml"))
+        self.assertEqual(code, 0)
+        self.assertRegex(out, r"(?m)^devops\s+tile\s+.*icons$")
+
+    def test_init_writes_a_clean_diagram(self):
+        path = self.tmp() / "my flow" / "diagram.yml"
+        code, _, _ = cli("init", str(path))
+        self.assertEqual(code, 0)
+        self.assertIn("diagram: my-flow\n", path.read_text(encoding="utf-8"))
+        self.assertEqual(cli("check", "--strict", str(path))[0], 0)
+
+    def test_init_takes_an_id(self):
+        path = self.tmp() / "x.yml"
+        cli("init", str(path), "--id", "orders")
+        self.assertIn("diagram: orders\n", path.read_text(encoding="utf-8"))
+
+    def test_init_never_overwrites(self):
+        path = self.tmp() / "x.yml"
+        path.write_text("mine", encoding="utf-8")
+        code, _, err = cli("init", str(path))
+        self.assertEqual(code, 1)
+        self.assertIn("already exists", err)
+        self.assertEqual(path.read_text(encoding="utf-8"), "mine")
+
+    def test_readme_shows_the_starter(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        block = re.search(r"```yaml\n(.*?)```", readme, re.S)
+        assert block
+        self.assertEqual(block.group(1), STARTER.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
