@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from . import __version__
-from .build import build_files, prepare, prepare_all, write_files
+from .build import build_files, prepare_all, write_files
 from .icons import CORE, Icons
 from .parse import ID, json_schema, load_file
 from .source import DiagramError, Problem
@@ -93,20 +93,10 @@ def cmd_expand(args) -> int:
     try:
         d = load_file(args.file)
         source = yaml.safe_load(Path(args.file).read_text(encoding="utf-8"))
-        if any(n.auto for n in d.nodes.values()):
-            # Placed nodes are written with their positions, and the edges drawn for them with their routes, so the
-            # expanded file draws the same picture.
-            from .layout.route import as_route
-
-            p = prepare(d)
-            for k in p.layout.edges:
-                e = d.edges[k]
-                if e.route is None and e.via is None and (d.nodes[e.src.node].auto or d.nodes[e.dst.node].auto):
-                    e.route = as_route(p.layout.edges[k].points) if len(p.layout.edges[k].points) > 2 else None
+        text = to_yaml(d, source)
     except DiagramError as e:
         _report(e.problems)
         return 1
-    text = to_yaml(d, source)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
     else:

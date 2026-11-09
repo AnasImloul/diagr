@@ -104,8 +104,23 @@ def _section(name: str, items: dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _pin(d: Diagram) -> None:
+    """Give edges drawn for placed nodes the route they were drawn with; the nodes already carry their positions."""
+    from .build import prepare
+    from .layout.route import as_route
+
+    edges = prepare(d).layout.edges
+    for k, path in edges.items():
+        e = d.edges[k]
+        if e.route is None and e.via is None and (d.nodes[e.src.node].auto or d.nodes[e.dst.node].auto):
+            e.route = as_route(path.points) if len(path.points) > 2 else None
+
+
 def to_yaml(d: Diagram, source: dict[str, Any]) -> str:
-    """source is the file as plain YAML data: its other keys, such as the scenarios, are kept as written."""
+    """source is the file as plain YAML data: its other keys, such as the scenarios, are kept as written. Placed
+    nodes are written with their positions and their edges with routes, so the output draws the same picture."""
+    if any(n.auto for n in d.nodes.values()):
+        _pin(d)
     head = {k: source[k] for k in HEAD if k in source}
     rest = {k: v for k, v in source.items() if k not in HEAD and k not in REPLACED}
     lines = [

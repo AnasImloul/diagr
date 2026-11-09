@@ -193,6 +193,7 @@ def auto_routes(d: Diagram, nodes: dict[str, NodeBox], groups: dict[str, Rect], 
     main, cross = (1, 0) if down else (0, 1)
     cell = d.grid.row if down else d.grid.col
     found: dict[str, tuple[float, float, float, float]] = {}
+    room: dict[str, tuple[float, float]] = {}
     back: list[str] = []
     for k, e in d.edges.items():
         a, b = nodes.get(e.src.node), nodes.get(e.dst.node)
@@ -203,11 +204,24 @@ def auto_routes(d: Diagram, nodes: dict[str, NodeBox], groups: dict[str, Rect], 
             ga, gb = _outer(d, a.node.group), _outer(d, b.node.group)
             lo, hi = _gap(d, groups, ga, gb, p0[main], p1[main], *sorted((p0[cross], p1[cross])))
             if hi - lo < 8:
+                # No clear gap: any turn between the two ends will do, so it can join the source's other lanes.
+                room[k] = (p0[main] + 8, p1[main] - 8)
                 mid = max(p0[main], (b.y if down else b.x) - cell / 2)
                 lo, hi = mid - 12, mid + 12
             found[k] = (lo, hi, p0[cross], p1[cross])
         elif (b.y < a.y - 0.5 if down else b.x < a.x - 0.5) and _behind(e, d):
             back.append(k)
+    # Lanes from one source share one turn where their gaps overlap, so they leave as a single trunk.
+    by_source: dict[str, list[str]] = {}
+    for k in found:
+        by_source.setdefault(d.edges[k].src.node, []).append(k)
+    for keys in by_source.values():
+        if len(keys) > 1:
+            lo = max(room[k][0] if k in room else found[k][0] for k in keys)
+            hi = min(room[k][1] if k in room else found[k][1] for k in keys)
+            if hi - lo >= 8:
+                for k in keys:
+                    found[k] = (lo, hi, found[k][2], found[k][3])
     out: dict[str, list[Point]] = {}
     gaps: dict[tuple[int, int], list[str]] = {}
     for k, (lo, hi, _, _) in found.items():
@@ -265,9 +279,9 @@ def as_route(pts: list[Point]) -> list[Move]:
     moves: list[Move] = []
     for (x0, y0), (x1, y1) in zip(pts, pts[1:], strict=False):
         if abs(x1 - x0) > 0.01:
-            moves.append(Move("right" if x1 > x0 else "left", round(abs(x1 - x0)), "px"))
+            moves.append(Move("right" if x1 > x0 else "left", round(abs(x1 - x0), 2), "px"))
         elif abs(y1 - y0) > 0.01:
-            moves.append(Move("down" if y1 > y0 else "up", round(abs(y1 - y0)), "px"))
+            moves.append(Move("down" if y1 > y0 else "up", round(abs(y1 - y0), 2), "px"))
     for horizontal in (True, False):
         same = [m for m in moves if (m.dir in ("left", "right")) == horizontal]
         if same:
