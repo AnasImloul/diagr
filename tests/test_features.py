@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import textwrap
 import unittest
 
-from diagr.model import Scenario
-from diagr.parse import from_tree
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
-from diagr.source import load
-from tests.support import ROOT, Case, problems
+from tests.support import Case, problems
 from tests.test_build import prepared
 
 NESTED = """
@@ -97,26 +93,7 @@ class Scenarios(Case):
     def test_each_scenario_is_compiled(self):
         p = prepared(TWO)
         self.assertEqual(list(p.scenarios), ["first", "second"])
-        self.assertIs(p.compiled, p.scenarios["first"])
         self.assertEqual(p.scenarios["second"].ready, "second ready")
-
-    def test_scenario_is_the_first_one(self):
-        d = from_tree(load(textwrap.dedent(TWO), "t.yml"), "t.yml", ROOT)
-        assert d.scenario
-        self.assertEqual(d.scenario.id, "first")
-        d.scenario = Scenario([], id="only")
-        self.assertEqual(list(d.scenarios), ["only"])
-
-    def test_single_scenario_key_still_works(self):
-        p = prepared(
-            TWO.split("scenarios:")[0].replace(", plays: second", "") + "scenario:\n  steps:\n    - {title: x}\n"
-        )
-        self.assertEqual(list(p.scenarios), ["main"])
-
-    def test_not_both_keys(self):
-        self.assertReports(
-            problems(TWO + "scenario:\n  steps:\n    - {title: x}\n"), "either 'scenario' or 'scenarios'"
-        )
 
     def test_empty_scenarios(self):
         yml = TWO.split("scenarios:")[0].replace(", plays: second", "") + "scenarios: {}\n"
@@ -157,7 +134,6 @@ class Scenarios(Case):
     def test_one_scenario_has_no_picker(self):
         html = render_html(prepared(TWO.split("  second:")[0].replace(", plays: second", "")))
         self.assertNotIn('class="scenarios"', html)
-        self.assertNotIn("data-badges", html)
 
 
 class LayoutWarnings(Case):

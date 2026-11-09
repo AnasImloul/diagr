@@ -134,12 +134,12 @@
       states.push(s);
     }
     lists.forEach(function (ol) {
-      var on = !ol.hasAttribute("data-scenario") || ol.getAttribute("data-scenario") === sc.id;
+      var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;
       if (on) items = ol.querySelectorAll("li");
     });
     picker.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-scenario") === sc.id)); });
-    if (scenarios.length > 1) svg.setAttribute("data-scenario", sc.id);
+    svg.setAttribute("data-scenario", sc.id);
     if (scrub) scrub.max = String(N);
     api.frames = N;
   }

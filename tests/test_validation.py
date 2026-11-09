@@ -26,11 +26,7 @@ class Format(Case):
         self.assertReports(problems("id: t\nnodes: {}\n"), "must not be empty")
 
     def test_empty_steps(self):
-        self.assertReports(problems(BASE + "scenario: {steps: []}\n"), "must not be empty")
-
-    def test_newer_format_version(self):
-        self.assertReports(problems("diagr: 99\n" + BASE), "must be at most 1")
-        self.assertClean(problems("diagr: 1\n" + BASE))
+        self.assertReports(problems(BASE + "scenarios: {s: {steps: []}}\n"), "must not be empty")
 
     def test_nan_is_not_a_number(self):
         self.assertReports(problems("id: t\nnodes:\n  a: {at: [nan, 0], icon: server}\n"), "is not a number")
@@ -45,13 +41,16 @@ class Format(Case):
         self.assertReports(problems(yml), "must be at least 1")
 
     def test_quoted_repeat_count(self):
-        yml = BASE + "scenario:\n  steps:\n    - title: s\n      do:\n        - repeat: '2'\n          do: [done a]\n"
+        yml = (
+            BASE
+            + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat: '2'\n          do: [done a]\n"
+        )
         self.assertReports(problems(yml), "'repeat' needs a whole number")
 
 
 class Flow(Case):
     def step(self, do: str) -> str:
-        return BASE + f"scenario:\n  steps:\n    - {{title: s, do: [{do}]}}\n"
+        return BASE + f"scenarios:\n  s:\n    steps:\n    - {{title: s, do: [{do}]}}\n"
 
     def test_needs_a_path(self):
         self.assertReports(problems(self.step("flow a")), "'flow' takes a path of nodes")
@@ -75,7 +74,7 @@ class Flow(Case):
 class Cells(Case):
     def step(self, cells: str, do: str) -> str:
         yml = BASE.replace("title: A}", f"title: A, cells: {cells}}}")
-        return yml + f"scenario:\n  steps:\n    - {{title: s, do: [{do}]}}\n"
+        return yml + f"scenarios:\n  s:\n    steps:\n    - {{title: s, do: [{do}]}}\n"
 
     def test_unknown_cell_name(self):
         self.assertReports(problems(self.step("[build, test]", "cells a biuld")), "did you mean 'build'")
@@ -100,17 +99,17 @@ class Hidden(Case):
 
     def test_mentioning_a_hidden_node_is_not_showing_it(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}").replace("a -> b: writes", "a -> b: {hidden: true}")
-        yml += "scenario:\n  steps:\n    - {title: s, do: [activate b, show a->b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [activate b, show a->b]}\n"
         self.assertReports(problems(yml), "node 'b' is hidden and nothing shows it", "warning")
 
     def test_shown_node_is_fine(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}").replace("a -> b: writes", "a -> b: {hidden: true}")
-        yml += "scenario:\n  steps:\n    - {title: s, do: [show b a->b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [show b a->b]}\n"
         self.assertClean(problems(yml))
 
     def test_visible_edge_into_hidden_node(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}")
-        yml += "scenario:\n  steps:\n    - {title: s, do: [show b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [show b]}\n"
         self.assertReports(problems(yml), "edge 'a->b' is visible but node 'b' starts hidden", "warning")
 
     def test_hidden_edge_that_nothing_shows(self):

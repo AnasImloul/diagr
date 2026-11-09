@@ -112,7 +112,7 @@ class Scenario:
     ready: str = ""
     end: str = ""
     loc: Loc | None = None
-    id: str = "main"
+    id: str = ""
     title: str = ""
 
 
@@ -151,15 +151,6 @@ class Diagram:
     step_list: bool = True
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
-
-    @property
-    def scenario(self) -> Scenario | None:
-        """The first scenario: the one static output shows and an untargeted trigger plays."""
-        return next(iter(self.scenarios.values()), None)
-
-    @scenario.setter
-    def scenario(self, sc: Scenario | None) -> None:
-        self.scenarios = {} if sc is None else {sc.id: sc}
 
     @staticmethod
     def from_yaml(path: str | Path) -> Diagram:

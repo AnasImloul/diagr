@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
-diagr: 1
 id: order-flow
 title: Order processing
 description: A web app posts an order to the API, which queues it for workers that write it to the orders database.
@@ -26,36 +25,37 @@ edges:
   queue -> dlq: {label: after 3 tries, dashed: true}
   worker -> mail: {label: notify, hidden: true}
 
-scenario:
-  ready: Press Place order to follow one order.
-  end: Order stored and confirmed.
-  steps:
-    - title: Submit
-      at: web
-      text: The customer places the order from the checkout page.
-      do: [flow web -> api 300ms]
-    - title: Validate and queue
-      at: api
-      text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.
-      do: [activate api 400ms, "set api.sub: order is valid", draw api->queue, done api]
-    - title: Process
-      at: worker
-      text: A worker takes the order off the queue and writes it to the database.
-      do:
-        - activate queue
-        - draw queue->worker
-        - done queue
-        - activate worker 600ms
-        - draw worker->db
-        - activate db 300ms
-        - done worker db
-    - title: Confirm
-      at: mail
-      text: Once the order is stored, the worker sends the confirmation email.
-      do:
-        - show mail worker->mail
-        - focus worker mail worker->mail
-        - draw worker->mail
-        - activate mail 500ms
-        - done mail
-        - focus none
+scenarios:
+  order:
+    ready: Press Place order to follow one order.
+    end: Order stored and confirmed.
+    steps:
+      - title: Submit
+        at: web
+        text: The customer places the order from the checkout page.
+        do: [flow web -> api 300ms]
+      - title: Validate and queue
+        at: api
+        text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.
+        do: [activate api 400ms, "set api.sub: order is valid", draw api->queue, done api]
+      - title: Process
+        at: worker
+        text: A worker takes the order off the queue and writes it to the database.
+        do:
+          - activate queue
+          - draw queue->worker
+          - done queue
+          - activate worker 600ms
+          - draw worker->db
+          - activate db 300ms
+          - done worker db
+      - title: Confirm
+        at: mail
+        text: Once the order is stored, the worker sends the confirmation email.
+        do:
+          - show mail worker->mail
+          - focus worker mail worker->mail
+          - draw worker->mail
+          - activate mail 500ms
+          - done mail
+          - focus none

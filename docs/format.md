@@ -4,8 +4,7 @@ A diagram is one YAML file. It says what exists (groups, nodes, edges) and, opti
 Colours, fonts and sizes live in the theme, not here.
 
 ```yaml
-diagr: 1
-id: order-flow                # used for output file names
+id: order-flow               # used for output file names
 title: Order processing
 description: One sentence, used as the accessible label.
 theme: default               # built-in name or a path to a theme file
@@ -134,22 +133,24 @@ edges:
 - `diagr expand FILE` prints the file with every instance written out as plain groups, nodes and edges, to check what
   a component turned into. Its ids keep the `instance/id` form, which the format accepts.
 
-## Scenario
+## Scenarios
 
 ```yaml
-scenario:
-  ready: Press Place order to follow one order.
-  end: Order stored.
-  steps:
-    - title: Validate and queue
-      at: api                      # the node that gets the step's number badge
-      status: Validating           # status line while the step plays; default: the title
-      text: The API checks the order and puts it on the queue.
-      do:
-        - activate api 400ms
-        - "set api.sub: order is valid"
-        - draw api->queue
-        - done api
+scenarios:
+  order:                             # scenario id
+    title: Place an order            # name in the player's scenario picker, when there are several
+    ready: Press Place order to follow one order.
+    end: Order stored.
+    steps:
+      - title: Validate and queue
+        at: api                      # the node that gets the step's number badge
+        status: Validating           # status line while the step plays; default: the title
+        text: The API checks the order and puts it on the queue.
+        do:
+          - activate api 400ms
+          - "set api.sub: order is valid"
+          - draw api->queue
+          - done api
 ```
 
 A scenario compiles to a list of frames. Each frame only assigns values (node `api` is active, edge `api->queue` is
@@ -157,26 +158,17 @@ drawn, a text is replaced), and the state at frame k is all assignments up to k.
 scrub and replay exact: the player jumps to any frame and the page shows the same thing it shows when playing up to
 it.
 
-### Several scenarios
+`scenarios` maps ids to scenarios, and a diagram can have any number. With more than one, the HTML page gets a picker;
+switching resets the diagram and shows that scenario's steps and badges. A trigger plays the scenario named by its
+node's `plays`, or the first one:
 
 ```yaml
-scenarios:
-  checkout:
-    title: Checkout request          # name in the player's scenario picker
-    steps: [...]
-  failover:
-    title: Region failover
-    ready: Press Fail region A to see region B take over.
-    steps: [...]
-
 nodes:
   health: {at: [0, 0], icon: clock, title: Health checks, trigger: Fail region A, plays: failover}
 ```
 
-`scenarios` maps ids to scenarios; use it instead of `scenario`, not as well. The HTML page gets a picker; switching
-resets the diagram and shows that scenario's steps and badges, and a trigger with `plays` switches to its scenario
-before playing it. A static SVG can only show one, so it shows the first scenario's badges and step list. From a
-script, `diagr.scenario("failover")` switches and `diagr.scenarios` lists the ids.
+A static SVG can only show one scenario, so it shows the first one's badges and step list. From a script,
+`diagr.scenario("failover")` switches and `diagr.scenarios` lists the ids.
 
 ### Effects
 
@@ -211,10 +203,10 @@ active.
 scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges to
 nowhere, edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal
 segments, two nodes on one cell, nodes outside their group, groups outside their parent or inside themselves,
-triggers that play an unknown scenario, effects that reference nothing, unknown components or parameters, a format
-version newer than this diagr, and broken theme or `icons.yml` files. Overlapping nodes, labels over nodes,
-overlapping groups, edges through a node they do not connect or across a group's title, hidden nodes or edges that
-no `show` reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
+triggers that play an unknown scenario, effects that reference nothing, unknown components or parameters, and broken
+theme or `icons.yml` files. Overlapping nodes, labels over nodes, overlapping groups, edges through a node they do
+not connect or across a group's title, hidden nodes or edges that no `show` reveals, and visible edges into hidden
+nodes are warnings; `--strict` makes them fail.
 
 ## Python
 
@@ -227,5 +219,5 @@ p = diagr.prepare(d)
 ```
 
 `prepare` validates, lays out and compiles; `diagr.render.svg.render_static(p.scene(), p.theme, "dark")` and
-`diagr.render.html.render_html(p)` return the outputs as strings. `d.scenarios` maps scenario ids to scenarios
-(`d.scenario` is the first one), and `p.scenarios` holds each one compiled to frames.
+`diagr.render.html.render_html(p)` return the outputs as strings. `d.scenarios` maps scenario ids to scenarios,
+and `p.scenarios` holds each one compiled to frames.

@@ -30,7 +30,6 @@ To start your own, `uv run diagr init my-flow.yml` writes this starter diagram (
 example above):
 
 ```yaml
-diagr: 1
 id: order-flow
 title: Order processing
 grid: {col: 200, row: 170}
@@ -50,11 +49,12 @@ edges:
   api -> queue: enqueue
   queue -> db: write
 
-scenario:
-  steps:
-    - {title: Submit, at: web, do: [activate web, draw web->api, done web]}
-    - {title: Queue, at: api, do: [activate api 400ms, draw api->queue, done api]}
-    - {title: Store, at: db, do: [draw queue->db, activate db 300ms, done db]}
+scenarios:
+  order:
+    steps:
+      - {title: Submit, at: web, do: [activate web, draw web->api, done web]}
+      - {title: Queue, at: api, do: [activate api 400ms, draw api->queue, done api]}
+      - {title: Store, at: db, do: [draw queue->db, activate db 300ms, done db]}
 ```
 
 In a README, use both static files so the image follows the reader's theme:

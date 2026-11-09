@@ -467,11 +467,8 @@ class SceneBuilder:
                     paint={"fill": "on-badge"},
                 ),
             ]
-            if len(self.scenarios) == 1:
-                el.add(*parts)
-            else:
-                # The player shows one scenario's badges at a time; static output has only the first's.
-                el.add(El("g", {"data-badges": sid}, parts, only=None if sid == first else "html"))
+            # The player shows one scenario's badges at a time; static output has only the first's.
+            el.add(El("g", {"data-badges": sid}, parts, only=None if sid == first else "html"))
         cx, cy = x + half + 8, y - half - 4
         spin = El("g", {"class": "st st-spin"}, only="html")
         spin.add(El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "accent"}))
@@ -556,9 +553,10 @@ class SceneBuilder:
             },
         )
         plays = self.d.nodes[k].plays or next(iter(self.scenarios), None)
-        if len(self.scenarios) > 1 and plays in self.scenarios:
+        if plays in self.scenarios:
             g.attrs["data-plays"] = plays
-            g.attrs["aria-label"] = f"{label}: play {self.scenarios[plays].title or plays}"
+            if self.scenarios[plays].title:
+                g.attrs["aria-label"] = f"{label}: play {self.scenarios[plays].title}"
         g.add(
             El(
                 "rect",

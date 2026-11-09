@@ -8,9 +8,8 @@ from tests.test_build import BASE, prepared
 
 class Compile(unittest.TestCase):
     def compiled(self, steps: str):
-        p = prepared(BASE + "scenario:\n  ready: go\n  end: finished\n  steps:\n" + steps)
-        assert p.compiled
-        return p.compiled
+        p = prepared(BASE + "scenarios:\n  s:\n    ready: go\n    end: finished\n    steps:\n" + steps)
+        return p.scenarios["s"]
 
     def test_state_after_the_last_frame(self):
         c = self.compiled("    - {title: one, do: [activate a, draw a->b, done a]}\n")
@@ -29,30 +28,29 @@ class Compile(unittest.TestCase):
 
     def test_cell_ranges_continue(self):
         p = prepared(
-            BASE.replace("title: A}", "title: A, cells: [x, y, z]}") + "scenario:\n  steps:\n"
+            BASE.replace("title: A}", "title: A, cells: [x, y, z]}") + "scenarios:\n  s:\n    steps:\n"
             "    - {title: one, do: [cells a 1..1]}\n    - {title: two, do: [cells a 2..3]}\n"
         )
-        assert p.compiled
-        s = fold(p.compiled.frames)
+        s = fold(p.scenarios["s"].frames)
         self.assertEqual([s.get(f"c:a:{i}") for i in range(3)], ["ok", "ok", "ok"])
 
     def test_cells_by_position_and_name(self):
-        yml = BASE.replace("title: A}", "title: A, cells: [x, y, z]}") + "scenario:\n  steps:\n"
+        yml = BASE.replace("title: A}", "title: A, cells: [x, y, z]}") + "scenarios:\n  s:\n    steps:\n"
         short = prepared(yml + "    - {title: one, do: [cells a x..y, cells a 3]}\n")
         long = prepared(yml + "    - {title: one, do: [cells a 1..2, cells a 3..3]}\n")
-        assert short.compiled and long.compiled
-        self.assertEqual([f.to_json() for f in short.compiled.frames], [f.to_json() for f in long.compiled.frames])
+        frames = [[f.to_json() for f in p.scenarios["s"].frames] for p in (short, long)]
+        self.assertEqual(frames[0], frames[1])
 
     def test_flow_is_the_long_form(self):
         three = BASE + "  b -> c: x\nnodes2:\n"
         yml = three.replace("nodes2:\n", "").replace("nodes:\n", "nodes:\n  c: {at: [2, 0], icon: cube, title: C}\n")
-        short = prepared(yml + "scenario:\n  steps:\n    - {title: one, do: [flow a -> b -> c 300ms]}\n")
+        short = prepared(yml + "scenarios:\n  s:\n    steps:\n    - {title: one, do: [flow a -> b -> c 300ms]}\n")
         long = prepared(
-            yml + "scenario:\n  steps:\n    - title: one\n      do: [activate a 300ms, draw a->b, done a, "
+            yml + "scenarios:\n  s:\n    steps:\n    - title: one\n      do: [activate a 300ms, draw a->b, done a, "
             "activate b 300ms, draw b->c, done b]\n"
         )
-        assert short.compiled and long.compiled
-        self.assertEqual([f.to_json() for f in short.compiled.frames], [f.to_json() for f in long.compiled.frames])
+        frames = [[f.to_json() for f in p.scenarios["s"].frames] for p in (short, long)]
+        self.assertEqual(frames[0], frames[1])
 
     def test_parallel_is_one_frame(self):
         c = self.compiled("    - title: one\n      do:\n        - parallel: [activate a, 'draw a->b 300ms']\n")

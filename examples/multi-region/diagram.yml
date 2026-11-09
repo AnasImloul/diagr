@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
-diagr: 1
 id: multi-region
 title: Multi-region platform
 description: >-

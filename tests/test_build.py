@@ -127,7 +127,7 @@ class Accessibility(Case):
         html = render_html(
             prepared(
                 BASE.replace("title: A}", "title: A, trigger: Run}")
-                + "scenario:\n  steps:\n    - {title: go, do: [done a]}\n"
+                + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"
             )
         )
         self.assertIn('role="group"', html)
@@ -137,7 +137,7 @@ class Accessibility(Case):
         self.assertIn('role="img"', render_html(prepared(BASE)))
 
     def test_steps_are_buttons(self):
-        html = render_html(prepared(BASE + "scenario:\n  steps:\n    - {title: go, do: [done a]}\n"))
+        html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"))
         self.assertIn('<button type="button" aria-label="Step 1: go">go</button>', html)
 
 

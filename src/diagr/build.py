@@ -23,11 +23,6 @@ class Prepared:
     scenarios: dict[str, Compiled]
     warnings: list[Problem] = field(default_factory=list)
 
-    @property
-    def compiled(self) -> Compiled | None:
-        """The first scenario, which static output shows."""
-        return next(iter(self.scenarios.values()), None)
-
     def scene(self) -> SceneBuilder:
         return SceneBuilder(self.diagram, self.theme, self.layout, self.icons, self.scenarios)
 

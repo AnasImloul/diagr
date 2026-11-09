@@ -76,13 +76,11 @@ class Expansion(Case):
 
     def test_scenarios_reach_into_copies(self):
         yml = BASE + (
-            "scenario:\n  steps:\n    - title: go\n      do:\n"
+            "scenarios:\n  s:\n    steps:\n    - title: go\n      do:\n"
             "        - draw lb->b/api\n        - 'set b/db.sub: busy'\n        - 'set lb->a/api.label: idle'\n"
             "        - done b/api\n"
         )
-        compiled = prepared(yml).compiled
-        assert compiled
-        s = fold(compiled.frames)
+        s = fold(prepared(yml).scenarios["s"].frames)
         self.assertEqual(s["e:lb->b/api"], "drawn")
         self.assertEqual(s["t:b/db:sub:0"], "busy")
         self.assertEqual(s["t:lb->a/api:label"], "idle")
@@ -124,7 +122,7 @@ class Errors(Case):
 
     def test_typos_get_suggestions(self):
         yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (
-            "scenario:\n  steps:\n"
+            "scenarios:\n  s:\n    steps:\n"
             "    - {title: s, at: a/dbb, do: [activate b/apl, draw lb->a/apii, 'set a/bd.sub: x']}\n"
         )
         found = problems(yml.replace("icon: database", "icon: databse"))

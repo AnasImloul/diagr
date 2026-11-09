@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
-diagr: 1
 id: cloud-architecture
 title: Job pipeline
 description: >-
@@ -39,33 +38,34 @@ edges:
   cq -> captions: {}
   captions -> llm: transcript
 
-scenario:
-  ready: Follow one job from admission to a dead-letter queue and back.
-  end: The job is back on the queue.
-  steps:
-    - title: Admit
-      do: [flow api -> backlog 300ms, activate backlog 300ms]
-    - title: Dispatch
-      do:
-        - draw backlog->dispatcher
-        - done backlog
-        - activate dispatcher 300ms
-        - draw dispatcher->bus 300ms
-        - parallel: [draw bus->jobs, draw bus->transcode]
-        - done dispatcher
-    - title: Fail three times
-      do:
-        - activate jobs
-        - draw jobs->transcode 400ms
-        - repeat: 3
-          do:
-            [
-              activate transcode 500ms,
-              fail transcode,
-              "set transcode.sub 400ms: attempt {i} of 3 failed",
-            ]
-        - draw jobs->dlq
-        - activate dlq 400ms
-        - done jobs
-    - title: Redrive
-      do: [draw redrive 900ms, done dlq, "status: An operator redrove the job.", wait 600ms]
+scenarios:
+  job:
+    ready: Follow one job from admission to a dead-letter queue and back.
+    end: The job is back on the queue.
+    steps:
+      - title: Admit
+        do: [flow api -> backlog 300ms, activate backlog 300ms]
+      - title: Dispatch
+        do:
+          - draw backlog->dispatcher
+          - done backlog
+          - activate dispatcher 300ms
+          - draw dispatcher->bus 300ms
+          - parallel: [draw bus->jobs, draw bus->transcode]
+          - done dispatcher
+      - title: Fail three times
+        do:
+          - activate jobs
+          - draw jobs->transcode 400ms
+          - repeat: 3
+            do:
+              [
+                activate transcode 500ms,
+                fail transcode,
+                "set transcode.sub 400ms: attempt {i} of 3 failed",
+              ]
+          - draw jobs->dlq
+          - activate dlq 400ms
+          - done jobs
+      - title: Redrive
+        do: [draw redrive 900ms, done dlq, "status: An operator redrove the job.", wait 600ms]

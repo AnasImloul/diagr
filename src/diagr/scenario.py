@@ -39,7 +39,7 @@ class Compiled:
     steps: list[StepInfo]
     ready: str
     end: str
-    id: str = "main"
+    id: str = ""
     title: str = ""
 
     def state(self, k: int) -> dict[str, Any]:

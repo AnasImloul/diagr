@@ -48,7 +48,7 @@ def _button(act: str, label: str) -> str:
     )
 
 
-def _steps(c: Compiled, hidden: bool, tagged: bool) -> str:
+def _steps(c: Compiled, hidden: bool) -> str:
     items = "\n".join(
         f'<li data-s="{i}"><span class="num" aria-hidden="true">{i}</span><div><h3><button type="button" '
         f'aria-label="Step {i}: {escape(s.title, quote=True)}">{escape(s.title)}</button></h3>'
@@ -56,7 +56,7 @@ def _steps(c: Compiled, hidden: bool, tagged: bool) -> str:
         + "</div></li>"
         for i, s in enumerate(c.steps, 1)
     )
-    attrs = (f' data-scenario="{escape(c.id, quote=True)}"' if tagged else "") + (" hidden" if hidden else "")
+    attrs = f' data-scenario="{escape(c.id, quote=True)}"' + (" hidden" if hidden else "")
     return f'<ol class="steps"{attrs}>\n{items}\n</ol>'
 
 
@@ -79,7 +79,7 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
     # role=img would hide the trigger buttons inside from assistive tech.
     role = "group" if any(n.trigger for n in d.nodes.values()) else "img"
     comps = list(p.scenarios.values())
-    current = f'data-scenario="{escape(comps[0].id)}" ' if len(comps) > 1 else ""
+    current = f'data-scenario="{escape(comps[0].id)}" ' if comps else ""
     svg = (
         f'<svg class="diagr" {current}id="dg-{escape(d.id)}" xmlns="http://www.w3.org/2000/svg" '
         f'viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(b.h)}" font-family="{escape(t.font, quote=True)}" '
@@ -101,7 +101,7 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
     script = ""
     if comps:
         first = comps[0]
-        lists = "\n".join(_steps(c, hidden=c is not first, tagged=len(comps) > 1) for c in comps)
+        lists = "\n".join(_steps(c, hidden=c is not first) for c in comps)
         picker = ""
         if len(comps) > 1:
             picker = (
@@ -144,11 +144,10 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
             f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
             f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>"
         )
-        if len(comps) > 1:
-            css += "\n" + "\n".join(
-                f'svg.diagr[data-scenario="{c.id}"] [data-badges]:not([data-badges="{c.id}"]) {{ display: none; }}'
-                for c in comps
-            )
+        css += "\n" + "\n".join(
+            f'svg.diagr[data-scenario="{c.id}"] [data-badges]:not([data-badges="{c.id}"]) {{ display: none; }}'
+            for c in comps
+        )
 
     title = escape(d.title or d.id)
     return f"""<!doctype html>

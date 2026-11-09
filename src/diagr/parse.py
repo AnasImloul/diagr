@@ -19,7 +19,6 @@ PORT = rf"({REF})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
 EDGE_KEY = rf"{PORT}\s*->\s*{PORT}(?:\s+as\s+({REF}))?"
 MOVE = r"(up|down|left|right)(?:\s+(\d+(?:\.\d+)?)(px)?)?"
 MARKS = ("new", "removed", "changed")
-FORMAT_VERSION = 1
 
 
 class Cells(f.T):
@@ -203,7 +202,6 @@ INSTANCE = f.Obj(
 DIAGRAM = f.Obj(
     "diagram",
     {
-        "diagr": f.F(f.Num(integer=True, minimum=1, maximum=FORMAT_VERSION, description="Format version")),
         "id": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),
         "title": f.F(f.Str()),
         "description": f.F(f.Str(description="Accessible description of the whole diagram")),
@@ -217,13 +215,11 @@ DIAGRAM = f.Obj(
         "edges": f.F(EDGES),
         "components": f.F(f.MapOf(COMPONENT)),
         "instances": f.F(f.MapOf(INSTANCE)),
-        "scenario": f.F(SCENARIO),
         "scenarios": f.F(
-            f.MapOf(SCENARIO, min_items=1, description="Several scenarios by id; the first is the default")
+            f.MapOf(SCENARIO, min_items=1, description="Scenarios by id; the first is the default and static output's")
         ),
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
     },
-    renamed={"diagram": "id", "place": "instances"},
 )
 
 
@@ -374,10 +370,6 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         instances[e.key] = Instance(e.key, v.get("component"), v.get("at") or (0, 0), v.get("in"), values, e.loc)
     expand(d, components, instances, problems)
 
-    if rec.get("scenario") is not None and rec.get("scenarios") is not None:
-        problems.append(Problem(rec.at("scenarios"), "use either 'scenario' or 'scenarios', not both"))
-    elif rec.get("scenario") is not None:
-        d.scenario = _scenario("main", rec.get("scenario"), problems)
     for e in rec.get("scenarios") or []:
         d.scenarios[e.key] = _scenario(e.key, e.value, problems)
     _cell_names(d, problems)
