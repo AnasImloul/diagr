@@ -52,6 +52,25 @@ class Compile(unittest.TestCase):
         frames = [[f.to_json() for f in p.scenarios["s"].frames] for p in (short, long)]
         self.assertEqual(frames[0], frames[1])
 
+    def test_parallel_flows_advance_in_lockstep(self):
+        yml = (
+            BASE.replace(
+                "nodes:\n", "nodes:\n  c: {at: [0, 1], icon: cube, title: C}\n  d: {at: [1, 1], icon: cube, title: D}\n"
+            )
+            + "  c -> d: y\n"
+        )
+        short = prepared(
+            yml + "scenarios:\n  s:\n    steps:\n    - {title: one, do: [parallel: [flow a -> b 200ms, flow c -> d]]}\n"
+        )
+        long = prepared(
+            yml + "scenarios:\n  s:\n    steps:\n    - title: one\n      do:\n"
+            "        - parallel: [activate a 200ms, activate c]\n"
+            "        - parallel: [draw a->b, draw c->d]\n"
+            "        - parallel: [done a, done c]\n"
+        )
+        frames = [[f.to_json() for f in p.scenarios["s"].frames] for p in (short, long)]
+        self.assertEqual(frames[0], frames[1])
+
     def test_parallel_is_one_frame(self):
         c = self.compiled("    - title: one\n      do:\n        - parallel: [activate a, 'draw a->b 300ms']\n")
         self.assertEqual(len(c.frames), 3)

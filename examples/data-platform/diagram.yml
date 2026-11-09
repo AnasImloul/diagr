@@ -90,16 +90,13 @@ scenarios:
         at: orders/src
         text: All three feeds are pulled at once.
         do:
-          - parallel: [activate orders/src, activate clicks/src, activate stock/src]
-          - parallel: [draw orders/src->orders/ingest, draw clicks/src->clicks/ingest, draw stock/src->stock/ingest]
-          - parallel: [done orders/src clicks/src stock/src, activate orders/ingest clicks/ingest stock/ingest]
+          - parallel: [flow orders/src -> orders/ingest, flow clicks/src -> clicks/ingest, flow stock/src -> stock/ingest]
       - title: Validate
         at: orders/check
         text: Each feed checks its records against the feed's schema.
         do:
-          - parallel: [draw orders/ingest->orders/check, draw clicks/ingest->clicks/check, draw stock/ingest->stock/check]
-          - parallel: [done orders/ingest clicks/ingest stock/ingest, activate orders/check clicks/check stock/check]
-          - wait 400ms
+          - parallel: [flow orders/ingest -> orders/check, flow clicks/ingest -> clicks/check, flow stock/ingest -> stock/check]
+          - activate orders/check clicks/check stock/check 400ms
           - done orders/check clicks/check stock/check
       - title: Land in bronze
         at: raw

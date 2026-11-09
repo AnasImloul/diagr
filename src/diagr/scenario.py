@@ -166,13 +166,19 @@ class _Compiler:
         if v == "wait":
             return [Frame({}, e.ms or 0, step)]
         if v == "parallel":
-            merged = Frame(step=step)
-            for c in e.children:
-                for f in self.frames(c, step, i):
-                    merged.set.update(f.set)
-                    merged.edges.update(f.edges)
-                    merged.dur = max(merged.dur, f.dur)
-            return [merged]
+            # Lockstep: frame k plays every child's k-th frame together and lasts as long as the slowest of them,
+            # so flows side by side advance one hop at a time.
+            lanes = [self.frames(c, step, i) for c in e.children]
+            out = []
+            for k in range(max((len(lane) for lane in lanes), default=0)):
+                merged = Frame(step=step)
+                for lane in lanes:
+                    if k < len(lane):
+                        merged.set.update(lane[k].set)
+                        merged.edges.update(lane[k].edges)
+                        merged.dur = max(merged.dur, lane[k].dur)
+                out.append(merged)
+            return out or [Frame(step=step)]
         if v == "repeat":
             out = []
             for n in range(1, e.count + 1):

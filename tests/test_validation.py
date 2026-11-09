@@ -67,8 +67,8 @@ class Flow(Case):
         )
         self.assertReports(problems(yml), "several edges go from 'a' to 'b'")
 
-    def test_not_inside_parallel(self):
-        self.assertReports(problems(self.step("parallel: [flow a -> b]")), "'flow' cannot run inside 'parallel'")
+    def test_inside_parallel(self):
+        self.assertClean(problems(self.step("parallel: [flow a -> b]")))
 
 
 class Cells(Case):
