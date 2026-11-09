@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from diagr.icons import _import_svg
 from tests.support import Case, problems
 
 BASE = """
@@ -155,6 +156,39 @@ class IconFolders(Case):
         found = self.icons({"x.svg": '<svg viewBox="0 0 10 10"><path/></svg>', "icons.yml": "recolour: {x: text}\n"},
                            "icon: x")
         self.assertClean(found)
+
+
+    def test_single_quoted_attributes(self):
+        svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path id='p'/><use href='#p'/></svg>"
+        ic = _import_svg("x", svg, None)
+        self.assertEqual(ic.view_box, "0 0 24 24")
+        self.assertIn('id="i-x-p"', ic.body)
+        self.assertIn('href="#i-x-p"', ic.body)
+
+    def test_unsafe_svg_icons_are_refused(self):
+        cases = {
+            "script": '<svg viewBox="0 0 10 10"><script>alert(1)</script></svg>',
+            "event handler": '<svg viewBox="0 0 10 10"><rect onclick="alert(1)"/></svg>',
+            "javascript: URL": '<svg viewBox="0 0 10 10"><a href=" JavaScript:alert(1)"><rect/></a></svg>',
+            "html breakout": '<svg viewBox="0 0 10 10"><p/></svg>',
+            "foreign object": '<svg viewBox="0 0 10 10"><foreignObject/></svg>',
+            "cdata": '<svg viewBox="0 0 10 10"><text><![CDATA[x]]></text></svg>',
+            "not xml": '<svg viewBox="0 0 10 10"><rect></svg>',
+        }
+        for why, svg in cases.items():
+            with self.subTest(why):
+                self.assertReports(self.icons({"x.svg": svg}, "icon: x"), "icon 'x' cannot be read")
+
+    def test_editor_metadata_is_allowed(self):
+        svg = ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
+               'xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10"><inkscape:grid/>'
+               '<defs><linearGradient id="g"/></defs><rect fill="url(#g)" xlink:href="#g"/></svg>')
+        self.assertClean(self.icons({"x.svg": svg}, "icon: x"))
+
+    def test_unsafe_tile_glyph_is_refused(self):
+        found = self.icons({"icons.yml": "tiles:\n  x: {tone: blue, glyph: '<path onload=\"alert(1)\"/>'}\n"},
+                           "icon: server")
+        self.assertReports(found, "tile 'x': glyph has an event handler")
 
 
 if __name__ == "__main__":
