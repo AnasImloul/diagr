@@ -71,6 +71,7 @@
         items.forEach(function (li, idx) {
           li.classList.toggle("done", idx < n - 1 || n > steps.length);
           li.classList.toggle("active", idx === n - 1);
+          attr(li, "aria-current", idx === n - 1 ? "step" : null);
         });
         if (panel) panel.classList.toggle("idle", !n);
         break;

@@ -10,6 +10,7 @@ import unittest
 from diagr import prepare
 from diagr.cli import STARTER, main
 from diagr.parse import from_tree
+from diagr.render.html import render_html
 from diagr.render.svg import render_static
 from diagr.source import load
 from tests.support import ROOT, Case
@@ -60,6 +61,21 @@ class Render(Case):
         svg = render_static(prepared(yml).scene(), prepared(yml).theme, "light")
         self.assertNotIn('data-id="b"', svg)
         self.assertNotIn('data-id="a->b"', svg)
+
+
+class Accessibility(Case):
+    def test_svg_with_triggers_is_a_group(self):
+        html = render_html(prepared(BASE.replace("title: A}", "title: A, trigger: Run}")
+                                    + "scenario:\n  steps:\n    - {title: go, do: [done a]}\n"))
+        self.assertIn('role="group"', html)
+        self.assertIn('role="button"', html)
+
+    def test_svg_without_triggers_is_an_image(self):
+        self.assertIn('role="img"', render_html(prepared(BASE)))
+
+    def test_steps_are_buttons(self):
+        html = render_html(prepared(BASE + "scenario:\n  steps:\n    - {title: go, do: [done a]}\n"))
+        self.assertIn('<button type="button" aria-label="Step 1: go">go</button>', html)
 
 
 class Cli(Case):

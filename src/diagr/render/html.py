@@ -52,9 +52,11 @@ def render_html(p: Prepared) -> str:
         return f"p-{prop}-{token}"
 
     label = escape(d.description or d.title or d.id, quote=True)
+    # role=img would hide the trigger buttons inside from assistive tech.
+    role = "group" if any(n.trigger for n in d.nodes.values()) else "img"
     svg = (f'<svg class="diagr" id="dg-{escape(d.id)}" xmlns="http://www.w3.org/2000/svg" '
            f'viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(b.h)}" font-family="{escape(t.font, quote=True)}" '
-           f'role="img" aria-label="{label}">' + serialise(defs, "html", paint) + serialise(body, "html", paint)
+           f'role="{role}" aria-label="{label}">' + serialise(defs, "html", paint) + serialise(body, "html", paint)
            + "</svg>")
 
     paint_css = "\n".join(f".p-{prop}-{tok} {{ {PROPS[prop]}: var(--{tok}); }}" for prop, tok in sorted(used))
@@ -67,7 +69,8 @@ def render_html(p: Prepared) -> str:
     comp = p.compiled
     if comp:
         items = "\n".join(
-            f'<li data-s="{i}"><span class="num">{i}</span><div><h3>{escape(s.title)}</h3>'
+            f'<li data-s="{i}"><span class="num" aria-hidden="true">{i}</span><div><h3><button type="button" '
+            f'aria-label="Step {i}: {escape(s.title, quote=True)}">{escape(s.title)}</button></h3>'
             + (f"<p>{escape(s.text)}</p>" if s.text else "") + "</div></li>"
             for i, s in enumerate(comp.steps, 1))
         controls = ('<div class="controls" role="toolbar" aria-label="Scenario" data-playing="0">'
