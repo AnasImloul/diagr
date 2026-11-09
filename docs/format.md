@@ -183,4 +183,5 @@ p = diagr.prepare(d)
 ```
 
 `prepare` validates, lays out and compiles; `diagr.render.svg.render_static(p.scene(), p.theme, "dark")` and
-`diagr.render.html.render_html(p)` return the outputs as strings.
+`diagr.render.html.render_html(p)` return the outputs as strings. `d.scenarios` maps scenario ids to scenarios
+(`d.scenario` is the first one), and `p.scenarios` holds each one compiled to frames.

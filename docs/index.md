@@ -26,8 +26,8 @@ self-contained HTML page where the diagram can play a scenario step by step.
 - **Static first.** The SVGs are hand-laid-out on a grid, with rounded orthogonal edges, label pills and tinted
   groups. Icons are inlined and colours are baked in, so they work in READMEs, docs and slides.
 - **Interactive on top.** The HTML page has a scenario player: Run, play and pause, step forward and back, scrub,
-  speed, keyboard shortcuts. The state at each step is computed from the step number, so stepping back and scrubbing
-  show exactly what playing would.
+  speed, keyboard shortcuts. A diagram can have several scenarios, each with its own trigger button. The state at
+  each step is computed from the step number, so stepping back and scrubbing show exactly what playing would.
 - **One HTML file.** Inline SVG, CSS and JavaScript. No CDN, no framework, nothing to load at runtime.
 - **Domain-neutral.** Nothing in the format assumes pipelines or a vendor. Vendor icons go in an icon folder next to
   the diagram.
@@ -64,4 +64,5 @@ folder.
 ## Player keys
 
 ++space++ plays or pauses. ++arrow-left++ and ++arrow-right++ go to the previous or next step; with ++shift++ they
-move one frame. ++home++ resets, ++end++ jumps to the end. Clicking a step in the list jumps to it.
+move one frame. ++home++ resets, ++end++ jumps to the end. Clicking a step in the list jumps to it. With several
+scenarios, the buttons above the progress bar switch between them.
