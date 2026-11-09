@@ -85,6 +85,25 @@ def cmd_check(args) -> int:
     return status
 
 
+def cmd_expand(args) -> int:
+    import yaml
+
+    from .unparse import to_yaml
+
+    try:
+        d = load_file(args.file)
+        source = yaml.safe_load(Path(args.file).read_text(encoding="utf-8"))
+    except DiagramError as e:
+        _report(e.problems)
+        return 1
+    text = to_yaml(d, source)
+    if args.out:
+        Path(args.out).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
 def cmd_icons(args) -> int:
     folders: list[Path] = []
     if args.file:
@@ -239,6 +258,11 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("file", nargs="?", default="diagram.yml")
     i.add_argument("--id", help="diagram id; default: the file name, or the folder name for diagram.yml")
     i.set_defaults(fn=cmd_init)
+
+    x = sub.add_parser("expand", help="print the diagram with components expanded into plain groups, nodes and edges")
+    x.add_argument("file")
+    x.add_argument("--out", "-o")
+    x.set_defaults(fn=cmd_expand)
 
     n = sub.add_parser("icons", help="list the icons a diagram can use")
     n.add_argument("file", nargs="?", help="a diagram, to include its icon folders")

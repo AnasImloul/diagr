@@ -41,6 +41,28 @@ class Examples(Case):
                         f"{f.name} differs from tests/golden; if intended, run with DIAGR_UPDATE_GOLDEN=1",
                     )
 
+    def test_expand_round_trips(self):
+        """`diagr expand` output builds to exactly the same files as the original."""
+        import shutil
+
+        import yaml
+
+        from diagr import load_file
+        from diagr.unparse import to_yaml
+
+        for example in EXAMPLES:
+            with self.subTest(example=example.parent.name):
+                folder = self.tmp()
+                if (example.parent / "icons").is_dir():
+                    shutil.copytree(example.parent / "icons", folder / "icons")
+                expanded = folder / "diagram.yml"
+                source = yaml.safe_load(example.read_text(encoding="utf-8"))
+                expanded.write_text(to_yaml(load_file(example), source), encoding="utf-8")
+                for original, again in zip(
+                    build_files(example, self.tmp())[0], build_files(expanded, self.tmp())[0], strict=True
+                ):
+                    self.assertEqual(original.read_text(encoding="utf-8"), again.read_text(encoding="utf-8"))
+
 
 class Schema(unittest.TestCase):
     def test_committed_schema_is_up_to_date(self):

@@ -111,6 +111,10 @@ class Errors(Case):
     def test_place_in_unknown_group(self):
         self.assertReports(problems(BASE.replace("in: outer, with", "in: nowhere, with")), "unknown group 'nowhere'")
 
+    def test_copy_name_clash(self):
+        yml = BASE.replace("  lb: {at: [-1, 1]", "  a/api: {at: [5, 5], icon: api, title: X}\n  lb: {at: [-1, 1]")
+        self.assertReports(problems(yml), "place 'a': a/api already defined elsewhere")
+
     def test_typos_get_suggestions(self):
         yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (
             "scenario:\n  steps:\n"

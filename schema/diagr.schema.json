@@ -50,7 +50,7 @@
     "groups": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)$"
       },
       "additionalProperties": {
         "type": "object",
@@ -105,7 +105,7 @@
     "nodes": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)$"
       },
       "additionalProperties": {
         "type": "object",
@@ -207,7 +207,7 @@
     "edges": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*))?)$"
+        "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?))?)$"
       },
       "additionalProperties": {
         "oneOf": [
@@ -454,7 +454,7 @@
           "edges": {
             "type": "object",
             "propertyNames": {
-              "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*))?)$"
+              "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?))?)$"
             },
             "additionalProperties": {
               "oneOf": [

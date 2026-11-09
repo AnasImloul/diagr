@@ -130,6 +130,8 @@ edges:
   unknown `{param}`, an edge to a node it does not have) is reported once; a problem that depends on the copy, like
   an overlap, names the copy's ids (`a/api`).
 - Components cannot contain other components, and scenarios stay at the top level.
+- `diagr expand FILE` prints the file with every copy written out as plain groups, nodes and edges, to check what
+  a component turned into. Its ids keep the `copy/id` form, which the format accepts.
 
 ## Scenario
 

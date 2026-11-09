@@ -12,9 +12,10 @@ from .source import DiagramError, Problem, Y, YScalar, YSeq, load
 ID = r"[A-Za-z_][A-Za-z0-9_-]*"
 REF = rf"{ID}(?:/{ID})?"
 PARAM_NAME = r"[A-Za-z_][A-Za-z0-9_]*"
+IDS = "an id: letters, digits, _ and -, optionally 'copy/id' as `diagr expand` writes"
 SIDE = r"left|right|top|bottom"
 PORT = rf"({REF})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
-EDGE_KEY = rf"{PORT}\s*->\s*{PORT}(?:\s+as\s+({ID}))?"
+EDGE_KEY = rf"{PORT}\s*->\s*{PORT}(?:\s+as\s+({REF}))?"
 MOVE = r"(up|down|left|right)(?:\s+(\d+(?:\.\d+)?)(px)?)?"
 MARKS = ("new", "removed", "changed")
 FORMAT_VERSION = 1
@@ -192,8 +193,8 @@ DIAGRAM = f.Obj(
         "grid": f.F(
             f.Obj("grid", {"col": f.F(f.Num(minimum=1)), "row": f.F(f.Num(minimum=1))}, description="Cell size in px")
         ),
-        "groups": f.F(f.MapOf(GROUP)),
-        "nodes": f.F(f.MapOf(NODE, min_items=1), required=True),
+        "groups": f.F(f.MapOf(GROUP, key_pattern=REF, key_description=IDS)),
+        "nodes": f.F(f.MapOf(NODE, min_items=1, key_pattern=REF, key_description=IDS), required=True),
         "edges": f.F(EDGES),
         "components": f.F(f.MapOf(COMPONENT)),
         "place": f.F(f.MapOf(PLACEMENT)),

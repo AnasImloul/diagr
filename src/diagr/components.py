@@ -48,7 +48,7 @@ def _check(c: Component, problems: list[Problem]) -> None:
                 )
 
 
-def _place(d: Diagram, c: Component, p: Placement) -> None:
+def _place(d: Diagram, c: Component, p: Placement, problems: list[Problem]) -> None:
     values = {k: v for k, v in c.params.items() if v is not None} | p.values
     ox, oy = p.at
 
@@ -61,6 +61,10 @@ def _place(d: Diagram, c: Component, p: Placement) -> None:
     def shift(at: tuple[float, float]) -> tuple[float, float]:
         return (at[0] + ox, at[1] + oy)
 
+    taken = [name(k) for k in c.groups if name(k) in d.groups] + [name(k) for k in c.nodes if name(k) in d.nodes]
+    if taken:
+        problems.append(Problem(p.loc, f"place '{p.id}': {', '.join(taken)} already defined elsewhere in the file"))
+        return
     for g in c.groups.values():
         d.groups[name(g.id)] = replace(
             g,
@@ -111,7 +115,7 @@ def expand(d: Diagram, components: dict[str, Component], places: dict[str, Place
             problems.append(Problem(p.loc, f"place '{p.id}': component '{c.id}' has no parameter {', '.join(unknown)}"))
         if missing:
             problems.append(Problem(p.loc, f"place '{p.id}': component '{c.id}' needs {', '.join(missing)}"))
-        _place(d, c, p)
+        _place(d, c, p, problems)
     for p in places.values():
         if p.parent and p.parent not in d.groups:
             problems.append(
