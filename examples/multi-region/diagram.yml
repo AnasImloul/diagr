@@ -8,54 +8,49 @@ description: >-
   failover and a rolling deploy.
 grid: {col: 200, row: 150}
 
+# One region, defined once. Its cells are relative: [0, 0] is the checkout API.
+components:
+  region:
+    params: {name: , role: primary, database: primary}
+    groups:
+      region: {title: "{name}", sub: "{role}", tone: neutral}
+      cluster: {title: Cluster, in: region, tone: blue}
+      checkout: {title: Checkout, in: cluster, tone: teal}
+      catalog: {title: Catalog, in: cluster, tone: violet}
+      data: {title: Data, in: region, tone: amber}
+    nodes:
+      api: {in: checkout, at: [0, 0], icon: api, title: Checkout API}
+      worker: {in: checkout, at: [1, 0], icon: server, title: Workers, sub: v1, stack: 2}
+      prices: {in: catalog, at: [2, 0], icon: function, title: Pricing}
+      db: {in: data, at: [3, 0], icon: database, title: Orders, sub: "{database}"}
+    edges:
+      api -> worker: jobs
+      api -> prices: {label: prices, route: [up 40px, right, down]}
+      worker -> db@bottom-16: {label: write, route: [down 56px, right, up]}
+
+# Two copies. Their nodes are a/api, a/worker, ... and b/api, b/worker, ...
+place:
+  a: {component: region, at: [2.2, 0], with: {name: Region A}}
+  b: {component: region, at: [2.2, 2.4], with: {name: Region B, role: standby, database: replica}}
+
 groups:
   edge: {title: Global edge, tone: neutral}
-  region-a: {title: Region A, sub: primary, tone: neutral}
-  cluster-a: {title: Cluster, in: region-a, tone: blue}
-  checkout-a: {title: Checkout, in: cluster-a, tone: teal}
-  catalog-a: {title: Catalog, in: cluster-a, tone: violet}
-  data-a: {title: Data, in: region-a, tone: amber}
-  region-b: {title: Region B, sub: standby, tone: neutral}
-  cluster-b: {title: Cluster, in: region-b, tone: blue}
-  checkout-b: {title: Checkout, in: cluster-b, tone: teal}
-  catalog-b: {title: Catalog, in: cluster-b, tone: violet}
-  data-b: {title: Data, in: region-b, tone: amber}
   delivery: {title: Delivery, tone: green}
 
 nodes:
   health: {at: [0, 0], icon: clock, title: Health checks, sub: every 10 s, trigger: Fail region A, plays: failover}
   user: {at: [0, 1.2], icon: browser, title: Customer, trigger: Place order, plays: checkout}
   lb: {in: edge, at: [1, 1.2], icon: globe, title: Load balancer, sub: anycast}
-
-  api-a: {in: checkout-a, at: [2.2, 0], icon: api, title: Checkout API}
-  worker-a: {in: checkout-a, at: [3.2, 0], icon: server, title: Workers, sub: v1, stack: 2}
-  prices-a: {in: catalog-a, at: [4.2, 0], icon: function, title: Pricing}
-  db-a: {in: data-a, at: [5.2, 0], icon: database, title: Orders, sub: primary}
-
-  api-b: {in: checkout-b, at: [2.2, 2.4], icon: api, title: Checkout API}
-  worker-b: {in: checkout-b, at: [3.2, 2.4], icon: server, title: Workers, sub: v1, stack: 2}
-  prices-b: {in: catalog-b, at: [4.2, 2.4], icon: function, title: Pricing}
-  db-b: {in: data-b, at: [5.2, 2.4], icon: database, title: Orders, sub: replica}
-
   ci: {in: delivery, at: [6.4, 1.2], icon: pipeline, title: Deploy pipeline, cells: [build, test, canary, rollout], trigger: Deploy, plays: deploy}
 
 edges:
   user -> lb: HTTPS
-  health -> api-a@left-12: {label: probe, dashed: true}
-  lb -> api-a@left+12: {label: active, route: [right 0.39, up, right]}
-  lb -> api-b@left: {label: standby, route: [right 0.39, down, right], dashed: true}
-
-  api-a -> worker-a: jobs
-  api-a -> prices-a: {label: prices, route: [up 40px, right, down]}
-  worker-a -> db-a@bottom-16: {label: write, route: [down 56px, right, up]}
-  api-b -> worker-b: jobs
-  api-b -> prices-b: {label: prices, route: [up 40px, right, down]}
-  worker-b -> db-b@bottom-16: {label: write, route: [down 56px, right, up]}
-
-  db-a@bottom+16 -> db-b@top+16: {label: replication, dashed: true}
-
-  ci -> worker-a: {label: rollout, route: [up, left, down 130px], hidden: true}
-  ci -> worker-b: {label: canary, route: [down, left, up 130px], hidden: true}
+  health -> a/api@left-12: {label: probe, dashed: true}
+  lb -> a/api@left+12: {label: active, route: [right 0.39, up, right]}
+  lb -> b/api@left: {label: standby, route: [right 0.39, down, right], dashed: true}
+  a/db@bottom+16 -> b/db@top+16: {label: replication, dashed: true}
+  ci -> a/worker: {label: rollout, route: [up, left, down 130px], hidden: true}
+  ci -> b/worker: {label: canary, route: [down, left, up 130px], hidden: true}
 
 scenarios:
   checkout:
@@ -70,24 +65,24 @@ scenarios:
       - title: Route to region A
         at: lb
         text: Region A is active, so the load balancer sends the request there.
-        do: [activate lb 300ms, draw lb->api-a, done lb]
+        do: [activate lb 300ms, draw lb->a/api, done lb]
       - title: Price and accept
-        at: api-a
+        at: a/api
         text: The checkout API asks the pricing service for the total, then queues the order for the workers.
         do:
-          - activate api-a
-          - parallel: [draw api-a->prices-a, activate prices-a]
-          - done prices-a
-          - draw api-a->worker-a
-          - done api-a
+          - activate a/api
+          - parallel: [draw a/api->a/prices, activate a/prices]
+          - done a/prices
+          - draw a/api->a/worker
+          - done a/api
       - title: Persist
-        at: worker-a
+        at: a/worker
         text: A worker writes the order to the primary database.
-        do: [activate worker-a 400ms, draw worker-a->db-a, done worker-a, activate db-a 300ms, done db-a]
+        do: [activate a/worker 400ms, draw a/worker->a/db, done a/worker, activate a/db 300ms, done a/db]
       - title: Replicate
-        at: db-b
+        at: b/db
         text: The write is replicated to region B, which stays ready to take over.
-        do: [draw db-a->db-b, "set db-b.sub: replica, in sync", done db-b]
+        do: [draw a/db->b/db, "set b/db.sub: replica, in sync", done b/db]
 
   failover:
     title: Region failover
@@ -97,26 +92,26 @@ scenarios:
       - title: Probe fails
         at: health
         text: The health check stops getting answers from region A.
-        do: [activate health, draw health->api-a, fail api-a, fail worker-a, "set health.sub: region A down"]
+        do: [activate health, draw health->a/api, fail a/api, fail a/worker, "set health.sub: region A down"]
       - title: Drain region A
         at: lb
         text: The load balancer stops sending traffic to region A.
-        do: [focus lb api-a worker-a, hide lb->api-a, "set lb.sub: draining A", wait 600ms, focus none]
+        do: [focus lb a/api a/worker, hide lb->a/api, "set lb.sub: draining A", wait 600ms, focus none]
       - title: Promote the replica
-        at: db-b
+        at: b/db
         text: Region B's database is promoted from replica to primary.
-        do: [activate db-b 600ms, "set db-b.sub: primary", done db-b]
+        do: [activate b/db 600ms, "set b/db.sub: primary", done b/db]
       - title: Reroute
-        at: api-b
+        at: b/api
         text: All traffic now goes to region B.
         do:
-          - draw lb->api-b
-          - "set lb->api-b.label: all traffic"
+          - draw lb->b/api
+          - "set lb->b/api.label: all traffic"
           - "set lb.sub: anycast, to B"
-          - activate api-b
-          - draw api-b->worker-b
-          - draw worker-b->db-b
-          - done api-b worker-b health
+          - activate b/api
+          - draw b/api->b/worker
+          - draw b/worker->b/db
+          - done b/api b/worker health
 
   deploy:
     title: Rolling deploy
@@ -128,25 +123,25 @@ scenarios:
         text: The pipeline builds the new version and runs the tests.
         do: [activate ci, cells ci 1..2]
       - title: Canary in region B
-        at: worker-b
+        at: b/worker
         text: The standby region gets the new version first, as a canary with no customer traffic.
         do:
-          - show ci->worker-b
-          - draw ci->worker-b
+          - show ci->b/worker
+          - draw ci->b/worker
           - cells ci 3..3
-          - activate worker-b 500ms
-          - "set worker-b.sub: v2 canary"
-          - done worker-b
+          - activate b/worker 500ms
+          - "set b/worker.sub: v2 canary"
+          - done b/worker
       - title: Roll out to region A
-        at: worker-a
+        at: a/worker
         text: Region A is updated one replica at a time, so it keeps serving during the rollout.
         do:
-          - show ci->worker-a
-          - draw ci->worker-a
+          - show ci->a/worker
+          - draw ci->a/worker
           - cells ci 4..4
-          - activate worker-a
+          - activate a/worker
           - repeat: 2
-            do: ["set worker-a.sub: replica {i} of 2 on v2", wait 500ms]
-          - "set worker-a.sub: v2"
-          - "set worker-b.sub: v2"
-          - done worker-a ci
+            do: ["set a/worker.sub: replica {i} of 2 on v2", wait 500ms]
+          - "set a/worker.sub: v2"
+          - "set b/worker.sub: v2"
+          - done a/worker ci

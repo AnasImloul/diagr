@@ -116,6 +116,26 @@ class Scenario:
 
 
 @dataclass
+class Component:
+    id: str
+    params: dict[str, str | None] = field(default_factory=dict)
+    groups: dict[str, Group] = field(default_factory=dict)
+    nodes: dict[str, Node] = field(default_factory=dict)
+    edges: dict[str, Edge] = field(default_factory=dict)
+    loc: Loc | None = None
+
+
+@dataclass
+class Placement:
+    id: str
+    component: str
+    at: tuple[float, float] = (0, 0)
+    parent: str | None = None
+    values: dict[str, str] = field(default_factory=dict)
+    loc: Loc | None = None
+
+
+@dataclass
 class Diagram:
     id: str
     title: str = ""

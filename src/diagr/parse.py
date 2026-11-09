@@ -4,13 +4,16 @@ import re
 from pathlib import Path
 
 from . import fields as f
+from .components import expand
 from .effects import EFFECT_SCHEMA, parse_effects
-from .model import Diagram, Edge, Grid, Group, Move, Node, Port, Scenario, Step
-from .source import DiagramError, Problem, Y, YSeq, load
+from .model import Component, Diagram, Edge, Grid, Group, Move, Node, Placement, Port, Scenario, Step
+from .source import DiagramError, Problem, Y, YScalar, YSeq, load
 
 ID = r"[A-Za-z_][A-Za-z0-9_-]*"
+REF = rf"{ID}(?:/{ID})?"
+PARAM_NAME = r"[A-Za-z_][A-Za-z0-9_]*"
 SIDE = r"left|right|top|bottom"
-PORT = rf"({ID})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
+PORT = rf"({REF})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
 EDGE_KEY = rf"{PORT}\s*->\s*{PORT}(?:\s+as\s+({ID}))?"
 MOVE = r"(up|down|left|right)(?:\s+(\d+(?:\.\d+)?)(px)?)?"
 MARKS = ("new", "removed", "changed")
@@ -34,6 +37,21 @@ class Cells(f.T):
             {"oneOf": [{"type": "array", "items": {"type": "string"}}, {"type": "integer", "minimum": 1}]},
             self.description,
         )
+
+
+class Param(f.T):
+    description = "Default value; leave it empty to make the parameter required"
+
+    def kind(self) -> str:
+        return "text, or nothing for a required parameter"
+
+    def check(self, y, problems):
+        if isinstance(y, YScalar) and y.null:
+            return None
+        return f.Str().check(y, problems)
+
+    def schema(self):
+        return f._describe({"type": ["string", "null"]}, self.description)
 
 
 GROUP = f.Obj(
@@ -124,6 +142,44 @@ SCENARIO = f.Obj(
     },
 )
 
+EDGES = f.MapOf(EDGE, key_pattern=EDGE_KEY, key_description="an edge key like 'a -> b'")
+
+COMPONENT = f.Obj(
+    "component",
+    {
+        "params": f.F(
+            f.MapOf(
+                Param(),
+                key_pattern=PARAM_NAME,
+                key_description="a parameter name: letters, digits and _",
+                description="Text parameters, used as {name} in titles, sub text, labels, tooltips and triggers",
+            )
+        ),
+        "groups": f.F(f.MapOf(GROUP)),
+        "nodes": f.F(f.MapOf(NODE, min_items=1), required=True),
+        "edges": f.F(EDGES),
+    },
+    description="A reusable block of groups, nodes and edges in its own grid cells; 'place' puts copies of it",
+)
+
+PLACEMENT = f.Obj(
+    "placement",
+    {
+        "component": f.F(f.Str(pattern=ID, description="Component id"), required=True),
+        "at": f.F(f.Pair(description="Grid cell where the component's [0, 0] goes; default [0, 0]")),
+        "in": f.F(f.Str(description="Group that holds the copy's outermost groups and nodes")),
+        "with": f.F(
+            f.MapOf(
+                f.Str(),
+                key_pattern=PARAM_NAME,
+                key_description="a parameter name: letters, digits and _",
+                description="Parameter values",
+            )
+        ),
+    },
+    description="A copy of a component; its groups, nodes and edges are named '<copy>/<id>'",
+)
+
 DIAGRAM = f.Obj(
     "diagram",
     {
@@ -138,7 +194,9 @@ DIAGRAM = f.Obj(
         ),
         "groups": f.F(f.MapOf(GROUP)),
         "nodes": f.F(f.MapOf(NODE, min_items=1), required=True),
-        "edges": f.F(f.MapOf(EDGE, key_pattern=EDGE_KEY, key_description="an edge key like 'a -> b'")),
+        "edges": f.F(EDGES),
+        "components": f.F(f.MapOf(COMPONENT)),
+        "place": f.F(f.MapOf(PLACEMENT)),
         "scenario": f.F(SCENARIO),
         "scenarios": f.F(
             f.MapOf(SCENARIO, min_items=1, description="Several scenarios by id; the first is the default")
@@ -175,6 +233,70 @@ def _scenario(sid: str, sc: f.Rec, problems: list[Problem]) -> Scenario:
     return Scenario(steps, sc.get("ready", ""), sc.get("end", ""), sc.loc, sid, sc.get("title", ""))
 
 
+def _group(e: f.Entry) -> Group:
+    g = e.value
+    return Group(
+        e.key,
+        g.get("title"),
+        g.get("sub", ""),
+        g.get("icon"),
+        g.get("tone", "neutral"),
+        g.get("at"),
+        g.get("span"),
+        e.loc,
+        parent=g.get("in"),
+    )
+
+
+def _node(e: f.Entry) -> Node:
+    n = e.value
+    return Node(
+        id=e.key,
+        at=n.get("at"),
+        title=n.get("title", ""),
+        sub=n.get("sub", []),
+        icon=n.get("icon"),
+        tone=n.get("tone"),
+        group=n.get("in"),
+        junction=n.get("junction", False),
+        trigger=n.get("trigger"),
+        cells=n.get("cells", []),
+        stack=n.get("stack", 1),
+        mark=n.get("mark"),
+        hidden=n.get("hidden", False),
+        tooltip=n.get("tooltip"),
+        loc=e.loc,
+        plays=n.get("plays"),
+    )
+
+
+def _edges(entries: list[f.Entry], out: dict[str, Edge], problems: list[Problem]) -> None:
+    for e in entries:
+        m = re.fullmatch(EDGE_KEY, e.key)
+        assert m
+        src = Port(m.group(1), m.group(2), float(m.group(3) or 0))
+        dst = Port(m.group(4), m.group(5), float(m.group(6) or 0))
+        eid = m.group(7) or f"{src.node}->{dst.node}"
+        if eid in out:
+            problems.append(Problem(e.loc, f"edge '{eid}' is defined twice; give one an id with 'as <name>'"))
+            continue
+        v = e.value
+        out[eid] = Edge(
+            id=eid,
+            src=src,
+            dst=dst,
+            label=v.get("label", ""),
+            route=_moves(v.get("route")) if v.get("route") is not None else None,
+            via=v.get("via"),
+            dashed=v.get("dashed", False),
+            mark=v.get("mark"),
+            label_at=v.get("label_at"),
+            hidden=v.get("hidden", False),
+            tooltip=v.get("tooltip"),
+            loc=e.loc,
+        )
+
+
 def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     problems: list[Problem] = []
     rec = f.check(DIAGRAM, tree, problems)
@@ -194,62 +316,24 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         file=file,
     )
     for e in rec.get("groups", []):
-        g = e.value
-        d.groups[e.key] = Group(
-            e.key,
-            g.get("title"),
-            g.get("sub", ""),
-            g.get("icon"),
-            g.get("tone", "neutral"),
-            g.get("at"),
-            g.get("span"),
-            e.loc,
-            parent=g.get("in"),
-        )
+        d.groups[e.key] = _group(e)
     for e in rec.get("nodes", []):
-        n = e.value
-        d.nodes[e.key] = Node(
-            id=e.key,
-            at=n.get("at"),
-            title=n.get("title", ""),
-            sub=n.get("sub", []),
-            icon=n.get("icon"),
-            tone=n.get("tone"),
-            group=n.get("in"),
-            junction=n.get("junction", False),
-            trigger=n.get("trigger"),
-            cells=n.get("cells", []),
-            stack=n.get("stack", 1),
-            mark=n.get("mark"),
-            hidden=n.get("hidden", False),
-            tooltip=n.get("tooltip"),
-            loc=e.loc,
-            plays=n.get("plays"),
-        )
-    for e in rec.get("edges", []):
-        m = re.fullmatch(EDGE_KEY, e.key)
-        assert m
-        src = Port(m.group(1), m.group(2), float(m.group(3) or 0))
-        dst = Port(m.group(4), m.group(5), float(m.group(6) or 0))
-        eid = m.group(7) or f"{src.node}->{dst.node}"
-        if eid in d.edges:
-            problems.append(Problem(e.loc, f"edge '{eid}' is defined twice; give one an id with 'as <name>'"))
-            continue
+        d.nodes[e.key] = _node(e)
+    _edges(rec.get("edges", []), d.edges, problems)
+    components = {}
+    for e in rec.get("components", []):
+        c = e.value
+        comp = Component(e.key, {p.key: p.value for p in c.get("params", [])}, loc=e.loc)
+        comp.groups = {g.key: _group(g) for g in c.get("groups", [])}
+        comp.nodes = {n.key: _node(n) for n in c.get("nodes", [])}
+        _edges(c.get("edges", []), comp.edges, problems)
+        components[e.key] = comp
+    places = {}
+    for e in rec.get("place", []):
         v = e.value
-        d.edges[eid] = Edge(
-            id=eid,
-            src=src,
-            dst=dst,
-            label=v.get("label", ""),
-            route=_moves(v.get("route")) if v.get("route") is not None else None,
-            via=v.get("via"),
-            dashed=v.get("dashed", False),
-            mark=v.get("mark"),
-            label_at=v.get("label_at"),
-            hidden=v.get("hidden", False),
-            tooltip=v.get("tooltip"),
-            loc=e.loc,
-        )
+        values = {p.key: p.value for p in v.get("with", [])}
+        places[e.key] = Placement(e.key, v.get("component"), v.get("at") or (0, 0), v.get("in"), values, e.loc)
+    expand(d, components, places, problems)
 
     if rec.get("scenario") is not None and rec.get("scenarios") is not None:
         problems.append(Problem(rec.at("scenarios"), "use either 'scenario' or 'scenarios', not both"))

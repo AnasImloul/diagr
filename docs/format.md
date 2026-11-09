@@ -92,6 +92,45 @@ edges:
 - Other keys: `dashed`, `mark`, `label_at` (0 to 1 along the path; the default is the middle of the longest
   horizontal run), `hidden`, `tooltip`.
 
+## Components
+
+A component is a block of groups, nodes and edges defined once; `place` puts named copies of it.
+
+```yaml
+components:
+  region:
+    params: {name: , role: primary}      # an empty value makes the parameter required
+    groups:
+      region:  {title: "{name}", sub: "{role}", tone: neutral}
+      cluster: {title: Cluster, in: region, tone: blue}
+    nodes:
+      api: {in: cluster, at: [0, 0], icon: api, title: Checkout API}
+      db:  {in: region, at: [1, 0], icon: database, title: Orders, sub: "{role}"}
+    edges:
+      api -> db: write
+
+place:
+  a: {component: region, at: [2, 0], with: {name: Region A}}
+  b: {component: region, at: [2, 2], with: {name: Region B, role: standby}, in: cloud}
+
+edges:
+  a/db -> b/db: replication
+```
+
+- **Names.** Inside a component, ids are local (`api`, `db`). Each copy prefixes them with its own name, so the rest
+  of the file refers to `a/api` and `b/db`: in edges (`lb -> a/api@left`), effects (`fail a/api`,
+  `set b/db.sub: primary`, `draw a/api->a/db`), `step.at` and `plays`. Edge ids follow: `a/api->a/db`, or
+  `a/<name>` for an edge declared with `as <name>`.
+- **Positions.** A component's cells are relative; the copy's `at` moves all of them, fixed group areas and `via`
+  points included.
+- **Parameters.** `{param}` in titles, sub text, labels, tooltips and trigger labels is replaced by the copy's `with`
+  value or the default from `params`. Parameters are text only: ids, positions and numbers cannot be parameters.
+- **`in`** on a placement puts the copy's outermost groups and nodes inside an existing group.
+- A component's nodes and edges can only use its own groups and nodes. A problem in a component's definition (an
+  unknown `{param}`, an edge to a node it does not have) is reported once; a problem that depends on the copy, like
+  an overlap, names the copy's ids (`a/api`).
+- Components cannot contain other components, and scenarios stay at the top level.
+
 ## Scenario
 
 ```yaml
@@ -164,13 +203,14 @@ active.
 
 ## Validation
 
-`diagr check` reports problems as `file:line:col: error: message`: unknown keys (with a suggestion), duplicate
-keys and ids, unknown nodes, groups, icons and tones, edges to nowhere, edges from a node to itself without a
-`route` or `via`, routes that cannot reach their target, diagonal segments, two nodes on one cell, nodes outside their
-group, groups outside their parent or inside themselves, triggers that play an unknown scenario, effects that reference
-nothing, a format version newer than this diagr, and broken theme or `icons.yml` files. Overlapping nodes, labels
-over nodes, overlapping groups, edges through a node they do not connect or across a group's title, hidden nodes or
-edges that no `show` reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
+`diagr check` reports problems as `file:line:col: error: message`: unknown keys (with a suggestion), duplicate keys
+and ids, unknown nodes, groups, icons and tones, edges to nowhere, edges from a node to itself without a `route` or
+`via`, routes that cannot reach their target, diagonal segments, two nodes on one cell, nodes outside their group,
+groups outside their parent or inside themselves, triggers that play an unknown scenario, effects that reference
+nothing, unknown components or parameters, a format version newer than this diagr, and broken theme or `icons.yml`
+files. Overlapping nodes, labels over nodes, overlapping groups, edges through a node they do not connect or across
+a group's title, hidden nodes or edges that no `show` reveals, and visible edges into hidden nodes are warnings;
+`--strict` makes them fail.
 
 ## Python
 

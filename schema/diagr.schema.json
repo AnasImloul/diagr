@@ -207,7 +207,7 @@
     "edges": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*))?)$"
+        "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*))?)$"
       },
       "additionalProperties": {
         "oneOf": [
@@ -270,6 +270,305 @@
           }
         ],
         "description": "An edge; the key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'"
+      }
+    },
+    "components": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*)$"
+            },
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Default value; leave it empty to make the parameter required"
+            },
+            "description": "Text parameters, used as {name} in titles, sub text, labels, tooltips and triggers"
+          },
+          "groups": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "description": "Shown at the bottom left of the group"
+                },
+                "sub": {
+                  "type": "string",
+                  "description": "Muted text after the title"
+                },
+                "icon": {
+                  "type": "string",
+                  "description": "Icon name, shown before the title"
+                },
+                "tone": {
+                  "type": "string",
+                  "description": "Theme tone: blue, teal, green, violet, amber, orange, neutral"
+                },
+                "at": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "description": "Top-left cell [col, row]; default: fit the member nodes and groups"
+                },
+                "span": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 1
+                  },
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "description": "Size in cells [cols, rows]"
+                },
+                "in": {
+                  "type": "string",
+                  "description": "Parent group id"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "title"
+              ],
+              "description": "A titled, tinted container around nodes and other groups"
+            }
+          },
+          "nodes": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "at": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "description": "Grid cell [col, row]; fractions allowed"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "sub": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ],
+                  "description": "Muted text under the title"
+                },
+                "icon": {
+                  "type": "string",
+                  "description": "Icon name from the diagram's icon folders or the core set"
+                },
+                "tone": {
+                  "type": "string",
+                  "description": "Tile colour for generated icons"
+                },
+                "in": {
+                  "type": "string",
+                  "description": "Group id"
+                },
+                "junction": {
+                  "type": "boolean",
+                  "description": "A dot where edges meet (a bus); has no icon or text"
+                },
+                "trigger": {
+                  "type": "string",
+                  "description": "Label of a button under the node that plays a scenario"
+                },
+                "plays": {
+                  "type": "string",
+                  "description": "Scenario id the trigger plays; default: the first scenario"
+                },
+                "cells": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  ],
+                  "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+                },
+                "stack": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "description": "Draw the icon as a stack of N"
+                },
+                "mark": {
+                  "type": "string",
+                  "enum": [
+                    "new",
+                    "removed",
+                    "changed"
+                  ]
+                },
+                "hidden": {
+                  "type": "boolean",
+                  "description": "Start hidden; a scenario can show it"
+                },
+                "tooltip": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "at"
+              ],
+              "description": "A node: icon, title and sub text, centred on a grid cell"
+            },
+            "minProperties": 1
+          },
+          "edges": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*))?)$"
+            },
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "The label"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "route": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
+                        "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
+                      },
+                      "description": "Moves from the start node. Moves without a length on the same axis share what is left"
+                    },
+                    "via": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "description": "Explicit waypoints in grid cells (escape hatch)"
+                    },
+                    "dashed": {
+                      "type": "boolean"
+                    },
+                    "mark": {
+                      "type": "string",
+                      "enum": [
+                        "new",
+                        "removed",
+                        "changed"
+                      ]
+                    },
+                    "label_at": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
+                    },
+                    "hidden": {
+                      "type": "boolean"
+                    },
+                    "tooltip": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "An edge; the key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "nodes"
+        ],
+        "description": "A reusable block of groups, nodes and edges in its own grid cells; 'place' puts copies of it"
+      }
+    },
+    "place": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$",
+            "description": "Component id"
+          },
+          "at": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Grid cell where the component's [0, 0] goes; default [0, 0]"
+          },
+          "in": {
+            "type": "string",
+            "description": "Group that holds the copy's outermost groups and nodes"
+          },
+          "with": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*)$"
+            },
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Parameter values"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "component"
+        ],
+        "description": "A copy of a component; its groups, nodes and edges are named '<copy>/<id>'"
       }
     },
     "scenario": {
