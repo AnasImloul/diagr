@@ -128,3 +128,7 @@ uv run mkdocs build --strict # writes site/
 | `schema/` | Generated JSON Schema |
 | `tests/` | Unit tests and golden files for the examples |
 | `tools/measure_text.py` | Regenerates the text width table from installed fonts (needs Chrome) |
+
+## License
+
+MIT, see [LICENSE](LICENSE).

@@ -3,6 +3,8 @@ name = "diagr"
 version = "0.1.0"
 description = "Declarative diagrams in YAML: static SVG in light and dark, and a self-contained interactive HTML page."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = ["pyyaml>=6.0"]
 keywords = ["diagram", "svg", "yaml", "architecture", "documentation"]
