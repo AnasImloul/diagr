@@ -122,9 +122,9 @@ uv run mkdocs build --strict # writes site/
 
 - [Diagram format and effects](docs/format.md)
 - [Themes and icons](docs/themes-and-icons.md)
-- [Examples](examples/): `order-flow`, `cloud-architecture` (pull-based workers, dead-letter queue, retries, a parallel captions path),
-  `dashboard-refresh` (a pipeline with progress cells), `multi-region` (nested groups, a component used twice, three scenarios), `data-platform` (a three-instance
-  component, three-level nesting, a merge junction, four scenarios)
+- [Examples](examples/): `order-flow`, `cloud-architecture` (pull-based workers, dead-letter queue, retries, a
+  parallel captions path), `multi-region` (nested groups, a component used twice, three scenarios), `data-platform`
+  (a three-instance component, three-level nesting, a merge junction, four scenarios)
 
 ## Layout of this repo
 

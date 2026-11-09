@@ -224,9 +224,15 @@ class Cli(Case):
         self.assertRegex(out, r"(?m)^server\s+tile\s+core$")
 
     def test_icons_includes_the_diagram_folders(self):
-        code, out, _ = cli("icons", str(ROOT / "examples/dashboard-refresh/diagram.yml"))
+        base = self.tmp()
+        (base / "icons").mkdir()
+        (base / "icons" / "icons.yml").write_text("tiles:\n  mine: {tone: blue, glyph: '<path/>'}\n", encoding="utf-8")
+        (base / "d.yml").write_text(
+            "id: t\nicons: [./icons]\nnodes:\n  a: {at: [0, 0], icon: mine}\n", encoding="utf-8"
+        )
+        code, out, _ = cli("icons", str(base / "d.yml"))
         self.assertEqual(code, 0)
-        self.assertRegex(out, r"(?m)^devops\s+tile\s+.*icons$")
+        self.assertRegex(out, r"(?m)^mine\s+tile\s+.*icons$")
 
     def test_init_writes_a_clean_diagram(self):
         path = self.tmp() / "my flow" / "diagram.yml"
