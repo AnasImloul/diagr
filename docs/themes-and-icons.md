@@ -7,14 +7,15 @@ built in, in `src/diagr/themes/`:
 
 - **`default`**, used when a diagram names none.
 - **`contrast`**, for projectors, printouts and readers who need more contrast: black or white text, darker lines and
-  group borders, thicker edges and slightly larger text. Try it on any diagram with `diagr build --theme contrast`;
-  every [example](examples/index.md) shows it in its Contrast tab.
+  group borders and thicker edges. It changes colours and line widths only, so every player page can switch to it
+  live with its contrast button (or ++c++), whatever theme the diagram uses. For static images, build with
+  `diagr build --theme contrast`; every [example](examples/index.md) shows them in its Contrast tab.
 
 Either way, the colours reach both outputs:
 
 - Static SVGs bake the colours in, one file per scheme, so they work in slides, PDF tools and `<img>` tags.
-- The HTML page writes the tokens as CSS variables and switches between them with the theme toggle (or the
-  reader's system setting on first visit).
+- The HTML page writes the tokens as CSS variables and switches between them with the light and dark button (or the
+  reader's system setting on first visit). The contrast button next to it swaps in the `contrast` tokens.
 
 A brand theme only needs the tokens it changes:
 

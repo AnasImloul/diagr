@@ -1,15 +1,10 @@
-# High contrast: darker text and lines, stronger group borders, thicker edges and slightly larger text, for
-# projectors, printouts and readers who need more contrast. Everything else comes from the default theme.
+# High contrast: darker text and lines, stronger group borders and thicker edges, for projectors, printouts and
+# readers who need more contrast. It changes colours and line widths only, never text sizes, so the player's contrast
+# button can switch to it without moving anything. Everything else comes from the default theme.
 extends: default
 name: contrast
 
 sizes:
-  title: 15
-  sub: 13
-  line: 17
-  label: 13
-  group_title: 16
-  group_sub: 13
   edge: 2
   flow: 4.5
 

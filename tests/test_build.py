@@ -109,6 +109,12 @@ class Authoring(Case):
         self.assertIn("a [0, 0]", html)
         self.assertIn("a-&gt;b: point 1 of 2", html)
 
+    def test_contrast_switch_unless_already_contrast(self):
+        html = render_html(prepared(BASE))
+        self.assertIn('id="contrast"', html)
+        self.assertIn(':root[data-contrast="on"][data-theme="dark"] { --bg: #010409;', html)
+        self.assertNotIn('id="contrast"', render_html(prepared(BASE, theme="contrast")))
+
     def test_every_page_can_zoom(self):
         html = render_html(prepared(BASE))
         self.assertIn('<div class="stage"><svg class="diagr"', html)

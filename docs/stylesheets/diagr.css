@@ -199,11 +199,6 @@ html {
   letter-spacing: -0.01em;
 }
 
-/* Prose keeps a reading measure; code, tables and diagrams use the full column. */
-.md-typeset > :is(p, ul, ol, dl, blockquote, h1, h2, h3, h4, h5, h6) {
-  max-width: 42em;
-}
-
 .md-typeset a {
   text-underline-offset: 0.2em;
 }

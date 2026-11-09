@@ -8,6 +8,7 @@ from ..build import Prepared
 from ..live import SCRIPT as LIVE
 from ..scenario import Compiled
 from ..scene import num, serialise
+from ..theme import Theme, load_theme
 from .debug import TOGGLE as DEBUG_TOGGLE
 from .debug import overlay
 
@@ -29,10 +30,28 @@ TOGGLE = (
     '<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4'
     'M17.7 6.3l1.4-1.4"/></svg></button>'
 )
+CONTRAST = (
+    '<button id="contrast" type="button" aria-pressed="false" aria-label="High contrast (C)" '
+    'title="High contrast (C)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/>'
+    '<path class="half" d="M8 2a6 6 0 0 1 0 12z"/></svg></button>'
+)
 THEME_BOOT = (
-    '<script>(function(){var t=null;try{t=localStorage.getItem("diagr-theme")}catch(e){}'
+    '<script>(function(){var t=null,c=null;try{t=localStorage.getItem("diagr-theme");'
+    'c=localStorage.getItem("diagr-contrast")}catch(e){}'
     'if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches'
-    '?"dark":"light";document.documentElement.setAttribute("data-theme",t)})();</script>'
+    '?"dark":"light";var r=document.documentElement;r.setAttribute("data-theme",t);'
+    'if(c==="on")r.setAttribute("data-contrast","on")})();</script>'
+)
+# The contrast button switches to the built-in contrast theme's colours and line widths, live; text sizes stay the
+# same, so the layout does not move. C does the same from the keyboard.
+CONTRAST_TOGGLE = (
+    '<script>(function(){var b=document.getElementById("contrast"),r=document.documentElement;if(!b)return;'
+    'function sync(){b.setAttribute("aria-pressed",r.getAttribute("data-contrast")==="on"?"true":"false")}'
+    'function flip(){var on=r.getAttribute("data-contrast")!=="on";if(on)r.setAttribute("data-contrast","on");'
+    'else r.removeAttribute("data-contrast");try{localStorage.setItem("diagr-contrast",on?"on":"off")}catch(e){}'
+    'sync()}b.addEventListener("click",flip);document.addEventListener("keydown",function(e){'
+    'var g=(e.target&&e.target.tagName)||"";if(g==="INPUT"||g==="SELECT"||g==="TEXTAREA"||e.metaKey||e.ctrlKey'
+    '||e.altKey)return;if(e.key==="c"||e.key==="C")flip()});sync()})();</script>'
 )
 ZOOM_ICONS = {
     "in": '<path d="M7 3v10M2 8h10"/>',
@@ -41,19 +60,15 @@ ZOOM_ICONS = {
     "full": '<path class="enter" d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/>'
     '<path class="leave" d="M6 2v4H2M10 2v4h4M10 14v-4h4M6 14v-4H2"/>',
 }
-ZOOM = (
-    '<div class="zoom" role="toolbar" aria-label="Zoom">'
-    + "".join(
-        f'<button type="button" data-zoom="{act}" aria-label="{label}" title="{label}">'
-        f'<svg viewBox="0 0 16 16" aria-hidden="true">{ZOOM_ICONS[act]}</svg></button>'
-        for act, label in (
-            ("in", "Zoom in (+)"),
-            ("out", "Zoom out (-)"),
-            ("fit", "Fit the whole diagram (0)"),
-            ("full", "Full screen (F)"),
-        )
+ZOOM_BUTTONS = "".join(
+    f'<button type="button" data-zoom="{act}" aria-label="{label}" title="{label}">'
+    f'<svg viewBox="0 0 16 16" aria-hidden="true">{ZOOM_ICONS[act]}</svg></button>'
+    for act, label in (
+        ("in", "Zoom in (+)"),
+        ("out", "Zoom out (-)"),
+        ("fit", "Fit the whole diagram (0)"),
+        ("full", "Full screen (F)"),
     )
-    + "</div>"
 )
 
 THEME_TOGGLE = (
@@ -61,6 +76,21 @@ THEME_TOGGLE = (
     'documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);'
     'try{localStorage.setItem("diagr-theme",n)}catch(e){}});</script>'
 )
+
+
+def _contrast(t: Theme, base: Path) -> str:
+    """CSS for the contrast switch: the contrast theme's tokens and line widths under data-contrast="on"; nothing when
+    the diagram already uses that theme."""
+    if t.name == "contrast":
+        return ""
+    c = load_theme("contrast", base)
+    on = ':root[data-contrast="on"]'
+    return (
+        f"{on} {{ {c.css_vars('light')} }}\n"
+        f'{on}[data-theme="dark"] {{ {c.css_vars("dark")} }}\n'
+        f"{on} svg.diagr .edge .base, {on} svg.diagr .grp > rect {{ stroke-width: {num(c.size('edge'))}px; }}\n"
+        f"{on} svg.diagr .edge .flow {{ stroke-width: {num(c.size('flow'))}px; }}\n"
+    )
 
 
 def _button(act: str, label: str) -> str:
@@ -117,7 +147,8 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
         f":root {{ --font: {t.font}; --page-width: {num(b.w)}px; {t.css_vars('light')} }}\n"
         f':root[data-theme="dark"] {{ {t.css_vars("dark")} }}\n'
     )
-    css = root + (ASSETS / "page.css").read_text(encoding="utf-8") + "\n" + paint_css
+    contrast = _contrast(t, d.base)
+    css = root + contrast + (ASSETS / "page.css").read_text(encoding="utf-8") + "\n" + paint_css
 
     panel = ""
     script = ""
@@ -172,6 +203,7 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
             for c in comps
         )
 
+    toolbar = f'<div class="zoom" role="toolbar" aria-label="View">{CONTRAST if contrast else ""}{ZOOM_BUTTONS}</div>'
     title = escape(d.title or d.id)
     return f"""<!doctype html>
 <html lang="en">
@@ -187,10 +219,10 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
 <body>
 {TOGGLE}
 <div class="wrap">
-<div class="stage">{svg}{ZOOM}</div>
+<div class="stage">{svg}{toolbar}</div>
 {panel}
 </div>
-{THEME_TOGGLE}{DEBUG_TOGGLE if debug else ""}
+{THEME_TOGGLE}{CONTRAST_TOGGLE if contrast else ""}{DEBUG_TOGGLE if debug else ""}
 <script>
 {(ASSETS / "zoom.js").read_text(encoding="utf-8")}</script>
 {script}{LIVE if live else ""}

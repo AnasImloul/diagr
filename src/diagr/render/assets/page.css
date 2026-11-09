@@ -10,7 +10,8 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 
 #toggle:focus-visible, .controls button:focus-visible, .trigger:focus-visible .btnbg { outline: 2px solid var(--text); outline-offset: 2px; }
 
 svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y; }
-.stage { position: relative; }
+/* Room under the diagram for the toolbar, so it never covers a label. */
+.stage { position: relative; padding-bottom: 40px; }
 .stage.zoomed svg.diagr { cursor: grab; }
 .stage.panning svg.diagr { cursor: grabbing; }
 .zoom { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 4px; transition: opacity 150ms; }
@@ -19,6 +20,8 @@ svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y
 .zoom button:hover { background: var(--hover); }
 .zoom button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .zoom svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.zoom .half { fill: currentColor; stroke: none; }
+.zoom #contrast[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
 .stage:not(.zoomed) [data-zoom="fit"] { display: none; }
 .zoom .leave, .wrap:fullscreen .zoom .enter { display: none; }
 .wrap:fullscreen .zoom .leave { display: inline; }

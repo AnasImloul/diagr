@@ -49,7 +49,7 @@ edges:
 
 - **Without a scenario** the block becomes the static SVG, in light or dark to match the site.
 - **With a scenario** it becomes the player, in an iframe that grows to fit and follows the site's light and dark
-  toggle. Its own theme toggle is hidden, since the site's applies.
+  toggle. Its own light and dark button is hidden, since the site's applies; its contrast button stays.
 - `mode="static"` or `mode="player"` on the opening line (```` ```diagr mode="static" ````) picks one regardless.
 - A diagram with errors shows them in place of the picture, with line numbers counted from the top of the block, and
   MkDocs logs them as warnings, so `mkdocs build --strict` fails on them.
