@@ -80,3 +80,4 @@ nav:
       - Cloud architecture: examples/cloud-architecture.md
       - Dashboard refresh: examples/dashboard-refresh.md
       - Multi-region platform: examples/multi-region.md
+      - Data platform: examples/data-platform.md

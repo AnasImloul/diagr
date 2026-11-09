@@ -1,0 +1,182 @@
+# yaml-language-server: $schema=../../schema/diagr.schema.json
+id: data-platform
+title: Data platform
+description: >-
+  Three source feeds are ingested, validated and merged into a lakehouse, where a batch engine cleans and curates
+  the data through bronze, silver and gold zones before a warehouse serves it to dashboards and an API. Four
+  scenarios: the nightly batch, a bad record, a self-serve query and a backfill.
+grid: {col: 200, row: 150}
+
+# One source feed: where the data comes from, ingestion and validation.
+components:
+  feed:
+    params: {name: {required: true}, source: {required: true}, format: JSON, version: "3"}
+    groups:
+      feed: {title: "{name}", sub: "{format}", tone: blue}
+    nodes:
+      src: {in: feed, at: [0, 0], icon: file, title: "{source}"}
+      ingest: {in: feed, at: [1, 0], icon: upload, title: Ingest}
+      check: {in: feed, at: [2, 0], icon: check, title: Validate, sub: "schema v{version}"}
+    edges:
+      src -> ingest: pull
+      ingest -> check: records
+
+instances:
+  orders: {component: feed, at: [0, 0], in: ingestion, with: {name: Orders, source: Order DB, format: CDC}}
+  clicks: {component: feed, at: [0, 1.6], in: ingestion, with: {name: Clickstream, source: Web events}}
+  stock: {component: feed, at: [0, 3.2], in: ingestion, with: {name: Inventory, source: ERP export, format: CSV, version: "1"}}
+
+groups:
+  ingestion: {title: Ingestion, tone: neutral}
+  account: {title: Data platform, sub: one cloud account, tone: neutral}
+  lakehouse: {title: Lakehouse, in: account, tone: teal}
+  bronze: {title: Bronze, sub: raw, in: lakehouse, tone: orange}
+  silver: {title: Silver, sub: clean, in: lakehouse, tone: neutral}
+  gold: {title: Gold, sub: curated, in: lakehouse, tone: amber}
+  serving: {title: Serving, in: account, tone: violet}
+  governance: {title: Governance, in: account, tone: green}
+
+nodes:
+  bus: {at: [2.9, 1.6], junction: true}
+  quarantine: {at: [3.55, 2.35], icon: folder, title: Quarantine, sub: bad records, hidden: true}
+  oncall: {at: [3.55, 3.2], icon: mail, title: On-call, sub: paged on errors, trigger: Send a bad record, plays: bad-record}
+
+  raw: {in: bronze, at: [4.6, 1.6], icon: lake, title: Raw tables}
+  clean: {in: silver, at: [5.6, 1.6], icon: database, title: Clean tables}
+  marts: {in: gold, at: [6.6, 1.6], icon: layers, title: Data marts}
+  spark: {in: lakehouse, at: [5.1, 3], icon: cube, title: Batch engine, cells: [dedupe, join, enrich, aggregate], trigger: Backfill, plays: backfill}
+
+  api: {in: serving, at: [7.8, 0.2], icon: api, title: Metrics API}
+  warehouse: {in: serving, at: [7.8, 1.6], icon: database, title: Warehouse, stack: 2}
+  dashboards: {in: serving, at: [8.8, 1.6], icon: chart, title: Dashboards, sub: refreshed daily}
+
+  catalog: {in: governance, at: [5.6, 5.2], icon: folder, title: Catalog, sub: lineage and owners}
+  access: {in: governance, at: [7.8, 5.2], icon: lock, title: Access control}
+
+  app: {at: [10, 0.2], icon: browser, title: Web app}
+  analyst: {at: [10, 1.6], icon: user, title: Analyst, trigger: Run a query, plays: query}
+
+edges:
+  orders/check -> bus: {route: [right, down]}
+  clicks/check -> bus: {}
+  stock/check -> bus: {route: [right, up]}
+  bus -> raw: land
+  clicks/check -> quarantine: {label: rejected, route: [down, right], hidden: true}
+  quarantine -> oncall: {label: alert, hidden: true}
+
+  raw@bottom+30 -> spark: {label: read, route: [down, right]}
+  spark -> clean@bottom+30: {label: write, route: [right, up]}
+  clean -> marts: model
+  marts -> warehouse: publish
+
+  api -> warehouse: {label: reads}
+  app -> api: metrics
+  warehouse@right-10 -> dashboards@left-10: data
+  dashboards@left+10 -> warehouse@right+10: {label: query, dashed: true}
+  analyst -> dashboards: opens
+
+  catalog -> spark: {label: lineage, dashed: true}
+  access -> warehouse: {label: grants, dashed: true}
+
+  app@top -> clicks/src@left: {label: click events, dashed: true, via: [[10, -0.95], [-0.8, -0.95], [-0.8, 1.6]]}
+
+scenarios:
+  nightly:
+    title: Nightly batch
+    ready: Press Play to run the nightly batch.
+    end: Fresh data is on the dashboards.
+    steps:
+      - title: Pull the feeds
+        at: orders/src
+        text: All three feeds are pulled at once.
+        do:
+          - parallel: [activate orders/src, activate clicks/src, activate stock/src]
+          - parallel: [draw orders/src->orders/ingest, draw clicks/src->clicks/ingest, draw stock/src->stock/ingest]
+          - parallel: [done orders/src clicks/src stock/src, activate orders/ingest clicks/ingest stock/ingest]
+      - title: Validate
+        at: orders/check
+        text: Each feed checks its records against the feed's schema.
+        do:
+          - parallel: [draw orders/ingest->orders/check, draw clicks/ingest->clicks/check, draw stock/ingest->stock/check]
+          - parallel: [done orders/ingest clicks/ingest stock/ingest, activate orders/check clicks/check stock/check]
+          - wait 400ms
+          - done orders/check clicks/check stock/check
+      - title: Land in bronze
+        at: raw
+        text: The validated records are merged and landed as raw tables.
+        do:
+          - parallel: [draw orders/check->bus, draw clicks/check->bus, draw stock/check->bus]
+          - draw bus->raw
+          - done raw
+      - title: Clean and curate
+        at: spark
+        text: The batch engine deduplicates, joins, enriches and aggregates, writing clean tables.
+        do: [activate spark, draw raw->spark, cells spark, draw spark->clean, done spark clean]
+      - title: Publish
+        at: marts
+        text: The data marts are rebuilt and published to the warehouse.
+        do: [flow clean -> marts -> warehouse, done warehouse]
+      - title: Refresh the dashboards
+        at: dashboards
+        do: [draw warehouse->dashboards, "set dashboards.sub: refreshed 02:14", done dashboards]
+
+  bad-record:
+    title: Bad record
+    ready: Press Send a bad record to follow one through validation.
+    end: The record was fixed and loaded.
+    steps:
+      - title: Validation fails
+        at: clicks/check
+        text: A click event arrives without a session id and fails the schema check.
+        do: [flow clicks/src -> clicks/ingest -> clicks/check, fail clicks/check, "set clicks/check.sub: missing session_id"]
+      - title: Quarantine it
+        at: quarantine
+        text: The record is set aside instead of blocking the feed.
+        do: [show quarantine clicks/check->quarantine quarantine->oncall, draw clicks/check->quarantine, "set quarantine.sub: 1 record"]
+      - title: Page on-call
+        at: oncall
+        do: [draw quarantine->oncall, activate oncall 600ms, done oncall]
+      - title: Fix and retry
+        at: clicks/check
+        text: The fixed record goes through validation again.
+        do:
+          - activate clicks/check
+          - repeat: 2
+            do: ["set clicks/check.sub: retry {i} of 2", wait 400ms]
+          - "set clicks/check.sub: schema v3"
+          - done clicks/check
+          - draw clicks/check->bus
+          - draw bus->raw
+
+  query:
+    title: Self-serve query
+    ready: Press Run a query to follow one question.
+    end: Answer on screen.
+    steps:
+      - title: Open a dashboard
+        at: analyst
+        do: [flow analyst -> dashboards -> warehouse]
+      - title: Check access
+        at: access
+        text: The warehouse checks the analyst's grants before running the query.
+        do: [focus warehouse access, draw access->warehouse, wait 500ms, focus none]
+      - title: Answer
+        at: warehouse
+        do: [activate warehouse 600ms, draw warehouse->dashboards, done warehouse dashboards, "set analyst.sub: answer in 1.2 s"]
+
+  backfill:
+    title: Backfill
+    ready: Press Backfill to reprocess the last three days.
+    end: Three days reprocessed.
+    steps:
+      - title: Reprocess day by day
+        at: spark
+        text: The batch engine rereads each day's raw tables and rewrites the clean ones.
+        do:
+          - activate spark
+          - repeat: 3
+            do: ["set raw.sub: day {i} of 3", draw raw->spark, cells spark, draw spark->clean]
+          - done spark
+      - title: Record lineage
+        at: catalog
+        do: [draw catalog->spark, "set catalog.sub: backfill recorded", done catalog]
