@@ -27,6 +27,8 @@ SPIN_GLYPH = (
     '<path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/>'
 )
 MARK_TEXT = {"new": "NEW", "removed": "REMOVED", "changed": "CHANGED"}
+# The colour token each mark is drawn in.
+MARK_TOKEN = {"new": "new", "changed": "changed", "removed": "fail"}
 
 
 @dataclass
@@ -54,6 +56,16 @@ def num(v: float) -> str:
 
 def safe_id(s: str) -> str:
     return "".join(c if c.isalnum() or c in "_-" else "_" for c in s)
+
+
+def _flag(el: El, mark: str | None, hidden: bool) -> None:
+    """Mark a node or edge as new, changed or removed (removed ones fade), and as starting hidden."""
+    if mark:
+        el.attrs["data-mark"] = mark
+        if mark == "removed":
+            el.attrs["opacity"] = ".45"
+    if hidden:
+        el.attrs["data-hidden"] = "1"
 
 
 class SceneBuilder:
@@ -192,39 +204,39 @@ class SceneBuilder:
     def edge_badge(self, text: str, x: float, y: float) -> El:
         """A dynamic view's step numbers on an edge, centred on (x, y) and styled like a node's step badge, for the
         view's scenario (its first)."""
-        r, w = self.t.size("badge"), badge_width(text, self.t)
         first = next(iter(self.scenarios), "")
-        return El(
-            "g",
-            {"data-badges": first},
-            [
-                El(
-                    "rect",
-                    {
-                        "class": "badge",
-                        "x": num(x - w / 2),
-                        "y": num(y - r),
-                        "width": num(w),
-                        "height": num(2 * r),
-                        "rx": num(r),
-                    },
-                    paint={"fill": "badge"},
-                ),
-                El(
-                    "text",
-                    {
-                        "class": "badget",
-                        "x": num(x),
-                        "y": num(y + 3.8),
-                        "font-size": 11,
-                        "font-weight": 600,
-                        "text-anchor": "middle",
-                    },
-                    [text],
-                    paint={"fill": "on-badge"},
-                ),
-            ],
-        )
+        return El("g", {"data-badges": first}, self._badge(text, x, y))
+
+    def _badge(self, text: str, x: float, y: float) -> list[El | Raw | str]:
+        """Step numbers in a pill centred on (x, y)."""
+        r, w = self.t.size("badge"), badge_width(text, self.t)
+        return [
+            El(
+                "rect",
+                {
+                    "class": "badge",
+                    "x": num(x - w / 2),
+                    "y": num(y - r),
+                    "width": num(w),
+                    "height": num(2 * r),
+                    "rx": num(r),
+                },
+                paint={"fill": "badge"},
+            ),
+            El(
+                "text",
+                {
+                    "class": "badget",
+                    "x": num(x),
+                    "y": num(y + 3.8),
+                    "font-size": 11,
+                    "font-weight": 600,
+                    "text-anchor": "middle",
+                },
+                [text],
+                paint={"fill": "on-badge"},
+            ),
+        ]
 
     def badge_numbers(self) -> dict[str, dict[str, list[int]]]:
         """node -> scenario -> the step numbers its badge shows."""
@@ -350,7 +362,7 @@ class SceneBuilder:
     def edge(self, eid: str, p: EdgePath) -> El:
         d, t, e = self.d, self.t, p.edge
         dash = {"stroke-dasharray": "5 4"} if e.dashed else {}
-        stroke = {"new": "new", "changed": "changed", "removed": "fail"}.get(e.mark or "", "line")
+        stroke = MARK_TOKEN.get(e.mark or "", "line")
         path = rounded(p.points, t.size("corner"))
         el = El(
             "g",
@@ -362,12 +374,7 @@ class SceneBuilder:
                 "data-to": e.dst.node,
             },
         )
-        if e.mark:
-            el.attrs["data-mark"] = e.mark
-            if e.mark == "removed":
-                el.attrs["opacity"] = ".45"
-        if e.hidden:
-            el.attrs["data-hidden"] = "1"
+        _flag(el, e.mark, e.hidden)
         el.add(
             El(
                 "path",
@@ -433,12 +440,7 @@ class SceneBuilder:
         t, n = self.t, nb.node
         x, y = nb.x, nb.y
         el = El("g", {"class": "node" + (" junction" if n.junction else ""), "id": f"n-{safe_id(k)}", "data-id": k})
-        if n.mark:
-            el.attrs["data-mark"] = n.mark
-            if n.mark == "removed":
-                el.attrs["opacity"] = ".45"
-        if n.hidden:
-            el.attrs["data-hidden"] = "1"
+        _flag(el, n.mark, n.hidden)
         if n.tooltip:
             el.add(El("title", {}, [escape(n.tooltip)]))
         if n.junction:
@@ -506,7 +508,7 @@ class SceneBuilder:
                         "letter-spacing": ".04em",
                     },
                     [MARK_TEXT[n.mark]],
-                    paint={"fill": {"removed": "fail"}.get(n.mark, n.mark)},
+                    paint={"fill": MARK_TOKEN[n.mark]},
                 )
             )
         for j, sy in enumerate(nb.sub_ys):
@@ -589,41 +591,12 @@ class SceneBuilder:
 
     def _badges(self, nb: NodeBox, badges: dict[str, list[int]]) -> list[El]:
         """The step numbers by the node's top-left corner, one set per scenario."""
-        t, x, y = self.t, nb.x, nb.y
-        half, r = t.size("icon") / 2, t.size("badge")
+        half = self.t.size("icon") / 2
+        x, y = nb.x - half - 8, nb.y - half - 4
         first = next(iter(self.scenarios), None)
         out = []
         for sid, numbers in badges.items():
-            label = ",".join(str(i) for i in numbers)
-            w = max(2 * r, text_width(label, 11, 600) + 10)
-            bx = x - half - 8
-            parts: list[El | Raw | str] = [
-                El(
-                    "rect",
-                    {
-                        "class": "badge",
-                        "x": num(bx - w / 2),
-                        "y": num(y - half - 4 - r),
-                        "width": num(w),
-                        "height": num(2 * r),
-                        "rx": num(r),
-                    },
-                    paint={"fill": "badge"},
-                ),
-                El(
-                    "text",
-                    {
-                        "class": "badget",
-                        "x": num(bx),
-                        "y": num(y - half - 4 + 3.8),
-                        "font-size": 11,
-                        "font-weight": 600,
-                        "text-anchor": "middle",
-                    },
-                    [label],
-                    paint={"fill": "on-badge"},
-                ),
-            ]
+            parts = self._badge(",".join(str(i) for i in numbers), x, y)
             # The player shows one scenario's badges at a time; static output has only the first's.
             out.append(El("g", {"data-badges": sid}, parts, only=None if sid == first else "html"))
         return out

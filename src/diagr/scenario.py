@@ -115,6 +115,11 @@ class _Compiler:
             if v == "hidden" or (v is None and getattr(item, "hidden", False)):
                 f.set[f"v:{k}"] = "shown"
 
+    def _ids(self, targets: list[str]) -> list[str]:
+        """Node and group ids as given, and each edge reference as the id of its edge."""
+        d = self.d
+        return [t if t in d.nodes or t in d.groups else resolve_edge(d, t) or t for t in targets]
+
     def frames(self, e: Effect, step: int, i: int = 0) -> list[Frame]:
         d, v = self.d, e.verb
         if v in ("activate", "done", "fail"):
@@ -168,12 +173,12 @@ class _Compiler:
             off = e.targets[-1] == "off"
             return [Frame({f"s:{t}": None if off else 1 for t in e.targets if t != "off"}, e.ms or 0, step)]
         if v in ("show", "hide"):
-            ids = [t if t in d.nodes or t in d.groups else resolve_edge(d, t) or t for t in e.targets]
+            ids = self._ids(e.targets)
             return [Frame({f"v:{t}": "shown" if v == "show" else "hidden" for t in ids}, e.ms or 0, step)]
         if v == "focus":
             if e.targets == ["none"]:
                 return [Frame({"focus": None}, e.ms or 0, step)]
-            ids = [t if t in d.nodes or t in d.groups else resolve_edge(d, t) or t for t in e.targets]
+            ids = self._ids(e.targets)
             ids += [k for k, ed in d.edges.items() if k not in ids and {ed.src.node, ed.dst.node} <= set(ids)]
             return [Frame({"focus": ids}, e.ms or 0, step)]
         if v == "flow":

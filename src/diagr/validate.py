@@ -183,6 +183,11 @@ def _check_hidden(d: Diagram, p: list[Problem]) -> None:
             _warn(p, e.loc, f"edge '{e.id}' is hidden and nothing shows it")
 
 
+def _joining(d: Diagram, a: str, b: str) -> list[str]:
+    """The edges from a to b."""
+    return [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
+
+
 def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
     v = e.verb
     if v in ("activate", "done", "fail", "run", "spin", "cells"):
@@ -202,7 +207,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
         for x in e.targets:
             if resolve_edge(d, x) is None:
                 a, _, b = x.partition("->")
-                pairs = [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
+                pairs = _joining(d, a, b)
                 hint = (
                     f" (several edges match; use one of: {', '.join(pairs)})"
                     if len(pairs) > 1
@@ -225,7 +230,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                 p.append(Problem(e.loc, f"'flow': unknown node or group '{x}'{did_you_mean(x, ends)}"))
         for a, b in e.links():
             if a in ends and b in ends and resolve_edge(d, f"{a}->{b}") is None:
-                pairs = [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
+                pairs = _joining(d, a, b)
                 why = f"several edges go from '{a}' to '{b}'; use 'draw' with one of: {', '.join(pairs)}"
                 p.append(Problem(e.loc, f"'flow': {why if pairs else f'no edge from {a!r} to {b!r}'}"))
     elif v in ("show", "hide", "focus"):
