@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import yaml
@@ -122,19 +123,51 @@ def _held(d: Diagram, parent: str | None, pad: str) -> list[str]:
 
 
 def _pin(d: Diagram) -> None:
-    """Give edges drawn for placed nodes the route they were drawn with, and what else routing chose for them: the
-    port they end at and where their label sits. The nodes already carry their positions."""
+    """Pin the diagram as it is drawn: every node and fitted box where it ends up, after alignment and recentring,
+    and each edge drawn for a placed node with its route and what else routing chose for it, the port it ends at and
+    where its label sits. Pinning the boxes too keeps alignment from lining them up a second time, differently."""
     from .build import prepare
-    from .layout.route import as_route
+    from .layout.flow import laid_out
+    from .layout.route import ENTER, EXIT, as_route
 
-    for k, path in prepare(d).layout.edges.items():
+    def side(node: str, at: tuple[float, float], offset: float) -> str | None:
+        """The side of node whose port, at offset, is the point at."""
+        nb = lay.nodes.get(node)
+        sides = ("left", "right", "top", "bottom")
+        return next((s for s in sides if nb and math.dist(nb.port(s, offset), at) < 0.01), None)
+
+    p = prepare(d)
+    lay = p.layout
+    for k, path in lay.edges.items():
         e = d.edges[k]
         if e.route is None and e.via is None and (d.nodes[e.src.node].auto or d.nodes[e.dst.node].auto):
             e.route = as_route(path.points) if len(path.points) > 2 else None
             if path.port and not e.dst.side:
                 e.dst = path.port
+            # A route's first and last moves imply the sides it leaves and enters by; a path that turns back
+            # before its first turn, or comes into a side moving away from it, needs its sides written down.
+            if e.route:
+                s = side(e.src.node, path.points[0], e.src.offset)
+                if not e.src.side and s and s != EXIT[e.route[0].dir]:
+                    e.src = Port(e.src.node, s, e.src.offset)
+                s = side(e.dst.node, path.points[-1], e.dst.offset)
+                if not e.dst.side and s and s != ENTER[e.route[-1].dir]:
+                    e.dst = Port(e.dst.node, s, e.dst.offset)
             if path.label_frac is not None and e.label_at is None:
                 e.label_at = path.label_frac
+    # What a `layout` box places stays its to place.
+    flowed, flowed_groups = laid_out(d)
+    col, row = d.grid.col, d.grid.row
+    for k, nb in lay.nodes.items():
+        if k not in flowed:
+            d.nodes[k].at = (nb.x / col, nb.y / row)
+    # A box's cells, from the rectangle group_rect() draws for them.
+    inset, top, bottom = (p.theme.size(s) for s in ("group_inset", "group_top", "group_bottom"))
+    for k, r in lay.groups.items():
+        g = d.groups[k]
+        if g.at is None and k not in flowed_groups:
+            g.at = ((r.x - inset + col / 2) / col, (r.y + top + row / 2) / row)
+            g.span = ((r.w + 2 * inset) / col, (r.h - top - bottom) / row)
 
 
 def to_yaml(d: Diagram, source: dict[str, Any]) -> str:
