@@ -77,6 +77,8 @@ class EdgePath:
     label_at: Point | None
     label_box: Rect | None
     problems: list[str] = field(default_factory=list)
+    badge_at: Point | None = None
+    badge_box: Rect | None = None
 
 
 @dataclass
@@ -237,6 +239,7 @@ def layout(d: Diagram, t: Theme) -> Layout:
 
     rects = list(groups.values()) + [b.box for b in nodes.values()]
     rects += [p.label_box for p in edges.values() if p.label_box]
+    rects += [p.badge_box for p in edges.values() if p.badge_box]
     for p in edges.values():
         xs, ys = [q[0] for q in p.points], [q[1] for q in p.points]
         rects.append(Rect(min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)))

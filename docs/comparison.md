@@ -68,7 +68,8 @@ None of these is unique on its own; the combination is what diagr is for.
   typos, and they cover layout problems you would otherwise only spot in the picture: edges through nodes, edges
   across a group's title, nodes over groups they are not in.
 - **Reuse within a file.** Components with text parameters, nested groups, views that build parts of the diagram on
-  their own, several scenarios with their own triggers, and looping for screens nobody touches.
+  their own (including dynamic views that number a scenario's edges by step), several scenarios with their own
+  triggers, and looping for screens nobody touches.
 - **In the docs build.** A ```` ```diagr ```` block in MkDocs becomes the picture or the player when the site is
   built, and a GitHub Actions workflow keeps committed SVGs in step with their diagrams.
 

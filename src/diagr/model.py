@@ -145,6 +145,7 @@ class View:
     include: list[str] | None = None
     exclude: list[str] = field(default_factory=list)
     scenarios: list[str] = field(default_factory=list)
+    scenario: str | None = None
     loc: Loc | None = None
 
 
@@ -163,6 +164,8 @@ class Diagram:
     step_list: bool = True
     direction: str = "right"
     views: dict[str, View] = field(default_factory=dict)
+    # Edge id -> the step numbers its badge shows, for a dynamic view: "2" or "2,5".
+    numbers: dict[str, str] = field(default_factory=dict)
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
 

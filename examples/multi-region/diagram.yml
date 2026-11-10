@@ -144,3 +144,7 @@ scenarios:
           - "set a/worker.sub: v2"
           - "set b/worker.sub: v2"
           - done a/worker ci
+
+# A dynamic view: only what the checkout scenario uses, with each edge numbered by the step that draws it.
+views:
+  checkout-flow: {title: Checkout request, scenario: checkout}

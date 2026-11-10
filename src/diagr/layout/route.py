@@ -324,7 +324,51 @@ def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme, auto: l
         w = text_width(e.label, t.size("label")) + 10
         label = label_point(pts, e.label_at, w)
         box = Rect(label[0] - w / 2, label[1] - 9, w, 18)
-    return EdgePath(e, pts, label, box, problems)
+    path = EdgePath(e, pts, label, box, problems)
+    if e.id in d.numbers:
+        _place_badge(path, d.numbers[e.id], t)
+    return path
+
+
+def _place_badge(path: EdgePath, number: str, t: Theme) -> None:
+    """A dynamic view's step badge: just left of the label when its run has room for both, otherwise on the last
+    segment, just before the arrow, where no other edge runs."""
+    bw, r = badge_width(number, t), t.size("badge")
+    pts, lab, box = path.points, path.label_at, path.label_box
+    if lab and box:
+        whole = bw + 4 + box.w
+        for a, b in zip(pts, pts[1:], strict=False):
+            flat = abs(a[1] - b[1]) < 0.5 and abs(a[1] - lab[1]) < 0.5 and min(a[0], b[0]) <= lab[0] <= max(a[0], b[0])
+            if flat and abs(b[0] - a[0]) >= whole + 20:
+                left = lab[0] - whole / 2
+                path.label_at = (left + bw + 4 + box.w / 2, lab[1])
+                path.label_box = Rect(left + bw + 4, box.y, box.w, box.h)
+                path.badge_at = (left + bw / 2, lab[1])
+                break
+            upright = (
+                abs(a[0] - b[0]) < 0.5 and abs(a[0] - lab[0]) < 0.5 and min(a[1], b[1]) <= lab[1] <= max(a[1], b[1])
+            )
+            if upright:
+                # A label on a vertical run: the badge goes just before it, on the side the edge comes from.
+                y = box.y - 4 - r if b[1] > a[1] else box.y1 + 4 + r
+                if min(a[1], b[1]) + r <= y <= max(a[1], b[1]) - r:
+                    path.badge_at = (lab[0], y)
+                break
+    if path.badge_at is None:
+        (ax, ay), (bx, by) = pts[-2], pts[-1]
+        length = math.dist((ax, ay), (bx, by)) or 1
+        back = min(length / 2, 10.5 + 6 + (bw / 2 if abs(ay - by) < 0.5 else r))
+        path.badge_at = (bx - (bx - ax) / length * back, by - (by - ay) / length * back)
+        if box and abs(ay - by) < 0.5 and abs(box.y + box.h / 2 - by) < 0.5:
+            # The label is on that last run too: sit just before it instead, on the side the edge comes from.
+            x = box.x - 4 - bw / 2 if bx > ax else box.x1 + 4 + bw / 2
+            path.badge_at = (x, by)
+    x, y = path.badge_at
+    path.badge_box = Rect(x - bw / 2, y - r, bw, 2 * r)
+
+
+def badge_width(text: str, t: Theme) -> float:
+    return max(2 * t.size("badge"), text_width(text, 11, 600) + 10)
 
 
 def rounded(points: list[Point], r: float = 8) -> str:

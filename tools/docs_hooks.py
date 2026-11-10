@@ -63,7 +63,7 @@ diagram's.
 
 VIEW = """### {title}
 
-`{key}`: written as `{id}-{key}-light.svg`, `{id}-{key}-dark.svg` and [`{id}-{key}.html`]({id}/{id}-{key}.html).
+{kind}`{key}`: written as `{id}-{key}-light.svg`, `{id}-{key}-dark.svg` and [`{id}-{key}.html`]({id}/{id}-{key}.html).
 
 ![{title}]({id}/{id}-{key}-light.svg#only-light){{ .dg-shot .dg-view }}
 ![{title}]({id}/{id}-{key}-dark.svg#only-dark){{ .dg-shot .dg-view }}
@@ -118,7 +118,8 @@ def on_files(files, config):
             for key, v in data["views"].items():
                 for name in (f"{id_}-{key}.html", f"{id_}-{key}-light.svg", f"{id_}-{key}-dark.svg"):
                     files.append(File.generated(config, f"examples/{id_}/{name}", abs_src_path=str(built / name)))
-                items.append(VIEW.format(id=id_, key=key, title=v.get("title") or title))
+                kind = f"A dynamic view of the `{v['scenario']}` scenario. " if v.get("scenario") else ""
+                items.append(VIEW.format(id=id_, key=key, kind=kind, title=v.get("title") or title))
             views = VIEWS.format(items="\n".join(items)) + "\n"
         lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
         page = PAGE.format(id=id_, title=title, description=description, views=views, source="\n".join(lines).strip())

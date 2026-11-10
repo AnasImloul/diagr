@@ -64,3 +64,5 @@ scenarios:
 # placed again for the view, which closes up around them.
 views:
   consumers: {title: Consumers, include: [bus, consumers, monitor]}
+  # A dynamic view: what the order scenario uses, laid out again, with its edges numbered by step.
+  order-flow: {title: One order, scenario: order}

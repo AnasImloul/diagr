@@ -733,6 +733,10 @@
               "type": "string"
             },
             "description": "Scenarios the view keeps; default: none"
+          },
+          "scenario": {
+            "type": "string",
+            "description": "Make it a dynamic view: show what this scenario uses, keep it, and number its edges by step"
           }
         },
         "additionalProperties": false

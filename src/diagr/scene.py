@@ -7,7 +7,7 @@ from html import escape
 
 from .icons import Icons, SvgIcon, Tile
 from .layout.geometry import Layout, NodeBox, Rect
-from .layout.route import rounded
+from .layout.route import badge_width, rounded
 from .layout.text import text_width
 from .model import Diagram
 from .scenario import Compiled
@@ -148,6 +148,43 @@ class SceneBuilder:
             defs.add(El("symbol", {"id": sid, "viewBox": ic.view_box}, [inner]))
         return defs
 
+    def edge_badge(self, text: str, x: float, y: float) -> El:
+        """A dynamic view's step numbers on an edge, centred on (x, y) and styled like a node's step badge, for the
+        view's scenario (its first)."""
+        r, w = self.t.size("badge"), badge_width(text, self.t)
+        first = next(iter(self.scenarios), "")
+        return El(
+            "g",
+            {"data-badges": first},
+            [
+                El(
+                    "rect",
+                    {
+                        "class": "badge",
+                        "x": num(x - w / 2),
+                        "y": num(y - r),
+                        "width": num(w),
+                        "height": num(2 * r),
+                        "rx": num(r),
+                    },
+                    paint={"fill": "badge"},
+                ),
+                El(
+                    "text",
+                    {
+                        "class": "badget",
+                        "x": num(x),
+                        "y": num(y + 3.8),
+                        "font-size": 11,
+                        "font-weight": 600,
+                        "text-anchor": "middle",
+                    },
+                    [text],
+                    paint={"fill": "on-badge"},
+                ),
+            ],
+        )
+
     def badge_numbers(self) -> dict[str, dict[str, list[int]]]:
         """node -> scenario -> the step numbers its badge shows."""
         out: dict[str, dict[str, list[int]]] = {}
@@ -255,12 +292,12 @@ class SceneBuilder:
             if e.tooltip:
                 el.add(El("title", {}, [escape(e.tooltip)]))
             body.add(el)
+            lab = El("g", {"class": "elab", "data-edge": eid})
+            if e.hidden:
+                lab.attrs["data-hidden"] = "1"
             if e.label and p.label_at and p.label_box:
                 x, y = p.label_at
                 lb = p.label_box
-                lab = El("g", {"class": "elab", "data-edge": eid})
-                if e.hidden:
-                    lab.attrs["data-hidden"] = "1"
                 lab.add(
                     El(
                         "rect",
@@ -284,6 +321,10 @@ class SceneBuilder:
                         paint={"fill": "muted"},
                     )
                 )
+            if p.badge_at and eid in d.numbers:
+                # In the label's group, so the player dims and highlights it along with the edge.
+                lab.add(self.edge_badge(d.numbers[eid], *p.badge_at))
+            if lab.children:
                 labels.add(lab)
         body.add(labels)
 

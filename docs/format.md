@@ -269,6 +269,32 @@ views:
 The [data platform example](examples/data-platform.md#views) has two views of a pinned diagram, and the
 [event-driven example](examples/event-driven.md#views) one of a diagram placed automatically.
 
+### Dynamic views
+
+A dynamic view shows one scenario as a numbered story, like a dynamic view in the C4 model: only the parts the
+scenario uses, with each edge numbered by the step that draws it.
+
+```yaml
+views:
+  checkout-flow: {title: Checkout request, scenario: checkout}
+```
+
+- **What it shows.** `scenario` picks the nodes and edges the scenario uses: those it flows along, draws, activates,
+  shows, focuses or changes the text of, and each step's `at` node, with the groups around them. Edges the scenario
+  never touches are left out, even between nodes it shows.
+- **`include`** adds context the story does not touch, such as a node and the edges between it and the other included
+  nodes. `exclude` takes nodes out as usual.
+- **Numbers.** Each edge the scenario flows along or draws gets a badge with the number of the step that does it, the
+  same number as in the step list and on the node badges. Edges used in one step share its number, whether in one
+  flow or in parallel; an edge used again later shows both numbers (`1,3`). With `step_list: false` there are no
+  badges.
+- The badge sits beside the edge's label when the run has room, otherwise on the label's line or just before the
+  arrow. `diagr check` warns if it covers another label or a node.
+- The view keeps its scenario, first, so its page plays the story; `scenarios` can keep others as well.
+
+The [multi-region example](examples/multi-region.md#views) has a dynamic view of a pinned diagram, and the
+[event-driven example](examples/event-driven.md#views) one that is laid out again.
+
 ## Validation
 
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and
@@ -276,7 +302,7 @@ scenarios (each with a "did you mean" suggestion for typos), duplicate keys and 
 nowhere, edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal
 segments, two nodes on one cell, nodes outside their group, groups outside their parent or inside themselves,
 triggers that play an unknown scenario, effects that reference nothing, unknown components or parameters, and broken
-theme or `icons.yml` files. Overlapping nodes, labels over nodes, overlapping groups, nodes over a group they are
+theme or `icons.yml` files. Overlapping nodes, labels over nodes or over other labels, overlapping groups, nodes over a group they are
 not in, edges through a node they do not connect or across a group's title, hidden nodes or edges that no `show`
 reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
 

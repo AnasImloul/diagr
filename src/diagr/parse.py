@@ -211,6 +211,12 @@ VIEW = f.Obj(
         "include": f.F(f.List(f.Str(), description="Group and node ids to show, groups with everything inside them")),
         "exclude": f.F(f.List(f.Str(), description="Group and node ids to leave out of what include selects")),
         "scenarios": f.F(f.List(f.Str(), description="Scenarios the view keeps; default: none")),
+        "scenario": f.F(
+            f.Str(
+                description="Make it a dynamic view: show what this scenario uses, keep it, and number its edges "
+                "by step"
+            )
+        ),
     },
 )
 
@@ -403,7 +409,13 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     for e in rec.get("views") or []:
         v = e.value
         d.views[e.key] = View(
-            e.key, v.get("title", ""), v.get("include"), v.get("exclude", []), v.get("scenarios", []), e.loc
+            e.key,
+            v.get("title", ""),
+            v.get("include"),
+            v.get("exclude", []),
+            v.get("scenarios", []),
+            v.get("scenario"),
+            e.loc,
         )
     problems += check_views(d)
 

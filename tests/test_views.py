@@ -78,5 +78,63 @@ class Views(Case):
         self.assertEqual(len(names), 9)
 
 
+DYNAMIC = """
+id: d
+nodes:
+  web: {icon: browser, title: Web}
+  api: {icon: api, title: API}
+  db: {icon: database, title: DB}
+  cache: {icon: cache, title: Cache}
+  ops: {icon: user, title: Ops}
+edges:
+  web -> api: request
+  api -> db: write
+  api -> cache: {}
+  ops -> db: {}
+  web -> ops: {}
+scenarios:
+  go:
+    steps:
+      - title: Ask
+        do: [flow web -> api]
+      - title: Store
+        do:
+          - parallel: [flow api -> db, flow api -> cache]
+      - title: Again
+        do: [draw web->api]
+views:
+  story: {scenario: go}
+"""
+
+
+class DynamicViews(Case):
+    def test_keeps_what_the_scenario_uses(self):
+        v = views(DYNAMIC)["d-story"].diagram
+        self.assertEqual(set(v.nodes), {"web", "api", "db", "cache"})
+        self.assertEqual(set(v.edges), {"web->api", "api->db", "api->cache"})
+        self.assertEqual(list(v.scenarios), ["go"])
+
+    def test_edges_are_numbered_by_step(self):
+        v = views(DYNAMIC)["d-story"]
+        self.assertEqual(v.diagram.numbers, {"web->api": "1,3", "api->db": "2", "api->cache": "2"})
+        self.assertTrue(all(v.layout.edges[k].badge_box for k in v.diagram.numbers))
+        self.assertEqual(views(DYNAMIC)["d"].diagram.numbers, {})
+
+    def test_no_numbers_without_a_step_list(self):
+        self.assertEqual(views(DYNAMIC.replace("id: d", "id: d\nstep_list: false"))["d-story"].diagram.numbers, {})
+
+    def test_include_adds_context(self):
+        v = views(DYNAMIC.replace("{scenario: go}", "{scenario: go, include: [ops, db]}"))["d-story"].diagram
+        self.assertIn("ops", v.nodes)
+        self.assertIn("ops->db", v.edges)
+        self.assertNotIn("web->ops", v.edges)
+
+    def test_unknown_scenario(self):
+        self.assertReports(problems(DYNAMIC.replace("{scenario: go}", "{scenario: og}")), "unknown scenario 'og'")
+
+    def test_clean(self):
+        self.assertClean(problems(DYNAMIC))
+
+
 if __name__ == "__main__":
     unittest.main()

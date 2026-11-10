@@ -209,6 +209,11 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         if parent in lay.groups and not _inside(r, lay.groups[parent]):
             p.append(Problem(d.groups[k].loc, f"group '{k}' is outside its parent group '{parent}'"))
     labels = [(k, e.label_box) for k, e in lay.edges.items() if e.label_box]
+    labels += [(k, e.badge_box) for k, e in lay.edges.items() if e.badge_box]
+    for i, (k, box) in enumerate(labels):
+        for k2, box2 in labels[i + 1 :]:
+            if box.overlaps(box2) and not (d.edges[k].hidden or d.edges[k2].hidden):
+                _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps the label of '{k2}'")
     for k, box in labels:
         for n, b in lay.nodes.items():
             if n in (d.edges[k].src.node, d.edges[k].dst.node) or b.node.junction:
