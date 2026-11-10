@@ -5,10 +5,11 @@ import unittest
 
 import yaml
 
-from diagr import DiagramError, build_files
-from diagr.migrations import VERSION, upgrade
+from diagr import DiagramError, Problem, build_files
+from diagr.migrations import STEPS, VERSION, upgrade
+from diagr.migrations.changes import Forbid, Report
 from diagr.parse import loads
-from diagr.source import data, load
+from diagr.source import YMap, data, load
 from diagr.unparse import to_yaml
 from tests.support import ROOT, Case, problems
 
@@ -93,11 +94,11 @@ class Upgrade(Case):
 
     def test_each_rewrite_is_a_warning_at_its_line(self):
         found = loads(V1, "t.yml", ROOT).upgraded
-        self.assertEqual(len(found), 11)
-        self.assertTrue(all(p.level == "warning" and p.message.startswith("version 2 ") for p in found))
-        self.assertReports(found, "writes node 'a' inside group 'inner', in place of 'in: inner'")
-        self.assertEqual([p.loc and p.loc.line for p in found if "'repeat 2: [...]'" in p.message], [23])
-        self.assertReports(problems(V1), "writes the trigger on scenario 'second'", "warning")
+        self.assertEqual(len(found), 10)
+        self.assertTrue(all(p.level == "warning" and p.message.startswith("version 2: ") for p in found))
+        self.assertReports(found, "move node 'a' into group 'inner', without 'in'")
+        self.assertEqual([p.loc and p.loc.line for p in found if "write 'repeat 2: [...]'" in p.message], [23])
+        self.assertReports(problems(V1), "write 'scenarios.second.trigger: {at: b, label: Again}'", "warning")
 
     def test_current_files_without_a_version_pass_unchanged(self):
         for example in sorted((ROOT / "examples").glob("*/diagram.yml")):
@@ -132,6 +133,22 @@ class Upgrade(Case):
         self.assertReports(problems("version: two\nid: v\nnodes: {a: {icon: api}}\n"), "'version' is a whole number")
 
 
+class Examples(Case):
+    def test_every_change_does_what_its_example_shows(self):
+        for migration in STEPS:
+            for change in migration.changes:
+                with self.subTest(version=migration.version, change=change.summary):
+                    if isinstance(change, Forbid):
+                        continue
+                    self.assertTrue(change.before and change.after, "give the change a before and after example")
+                    tree = load(textwrap.dedent(change.before), "example.yml")
+                    assert isinstance(tree, YMap)
+                    found: list[Problem] = []
+                    change.apply(tree, Report(migration.version, change.summary, found))
+                    self.assertEqual(data(tree), yaml.safe_load(textwrap.dedent(change.after)))
+                    self.assertTrue(found and all(p.level == "warning" for p in found))
+
+
 class Version2(Case):
     def test_unknown_or_circular_groups(self):
         unknown = "id: n\ngroups:\n  g: {title: G}\nnodes:\n  a: {icon: api, in: h}\n"
@@ -148,7 +165,7 @@ class Version2(Case):
         scenarios:
           go: {steps: [{title: Go, do: [activate a]}]}
         """
-        self.assertReports(problems(yml), "scenario 'go' has two triggers")
+        self.assertReports(problems(yml), "'scenarios.go.trigger' is already set")
 
     def test_no_triggers_in_components(self):
         yml = """
@@ -162,13 +179,13 @@ class Version2(Case):
         scenarios:
           go: {steps: [{title: Go, do: [activate i/x]}]}
         """
-        self.assertReports(problems(yml), "no triggers in components")
+        self.assertReports(problems(yml), "nodes in components have no triggers: give the scenario 'trigger: {at: <in")
 
     def test_upgrade_problems_come_with_parse_errors(self):
         try:
             loads("id: t\nnodes:\n  a: {icon: api, in: g, bad: 1}\ngroups:\n  g: {title: G}\n", "t.yml", ROOT)
         except DiagramError as e:
-            self.assertReports(e.problems, "writes node 'a' inside group 'g'", "warning")
+            self.assertReports(e.problems, "move node 'a' into group 'g'", "warning")
             self.assertReports(e.problems, "unknown key 'bad'", "error")
         else:
             self.fail("expected an error")

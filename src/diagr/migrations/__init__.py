@@ -1,15 +1,15 @@
 """Older versions of the diagram format, and how each is upgraded to the next.
 
 A file says which version it is written in with `version: N`; a file without it is version 1. Before parsing,
-`upgrade` runs the steps from the file's version up to the current one, so the parser only ever sees the current
+`upgrade` runs the migrations from the file's version up to the current one, so the parser only ever sees the current
 format and knows nothing about older ones.
 
-Each step is a module `vN.py` with `up(tree, problems)`, which rewrites a version N-1 tree into version N in place.
-It works on the YAML tree, so what it moves keeps its line numbers, and it reports each rewrite as a warning, so the
-author can update the file. A step only rewrites what version N rejects: a file written for version N without a
-`version` key passes through it unchanged.
+Each version is a module `vN.py` holding a `Migration`: the list of changes from version N-1, declared with the
+building blocks in `changes.py`, each with a summary and an example. A change only rewrites what version N rejects,
+so a file written for version N without a `version` key passes through unchanged.
 
-A breaking change to the format adds a step here and appends it to STEPS. That bumps VERSION; nothing else changes.
+A breaking change to the format adds a module here and appends its migration to STEPS. That bumps VERSION; nothing
+else changes.
 """
 
 from __future__ import annotations
@@ -17,8 +17,9 @@ from __future__ import annotations
 from ..source import DiagramError, Problem, Y, YMap, YScalar
 from . import v2
 
-STEPS = [v2.up]
+STEPS = [v2.MIGRATION]
 VERSION = len(STEPS) + 1
+assert [m.version for m in STEPS] == list(range(2, VERSION + 1)), "STEPS must hold versions 2, 3, ... in order"
 
 
 def _version(tree: YMap) -> int:
@@ -40,8 +41,8 @@ def upgrade(tree: Y) -> tuple[Y, list[Problem]]:
     if not isinstance(tree, YMap):
         return tree, []
     problems: list[Problem] = []
-    for step in STEPS[_version(tree) - 1 :]:
-        step(tree, problems)
+    for migration in STEPS[_version(tree) - 1 :]:
+        migration.up(tree, problems)
     if any(p.level == "error" for p in problems):
         raise DiagramError(problems)
     value = YScalar(tree.loc, str(VERSION), False, False)
