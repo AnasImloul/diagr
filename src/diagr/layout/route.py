@@ -269,117 +269,159 @@ def auto_routes(
     A forward edge follows its source's row and turns midway through the gap before the target, with lanes from
     different sources into one gap spread apart so their lines do not lie on each other. A backward edge leaves its
     source on the far side, runs back above (or beside) everything and comes in on the target's near side."""
-    down = d.direction == "down"
-    main, cross = (1, 0) if down else (0, 1)
-    cell = d.grid.row if down else d.grid.col
-    found: dict[str, tuple[float, float, float, float]] = {}
-    room: dict[str, tuple[float, float]] = {}
-    back: list[str] = []
-    for k, e in d.edges.items():
-        a, b = nodes.get(e.src.node), nodes.get(e.dst.node)
-        if a is None or b is None or e.via or e.route or not (a.node.auto or b.node.auto):
-            continue
-        if _forward(a, b, d) and _along(e, d):
-            p0, p1 = _ends(e, a, b, d)
-            ga, gb = set(boxes_around(d, a.node.group)), set(boxes_around(d, b.node.group))
-            lo, hi = _gap(d, groups, ga, gb, p0[main], p1[main], *sorted((p0[cross], p1[cross])))
-            if hi - lo < 8:
-                # No clear gap: any turn between the two ends will do, so it can join the source's other lanes.
-                room[k] = (p0[main] + 8, p1[main] - 8)
-                mid = max(p0[main], (b.y if down else b.x) - cell / 2)
-                lo, hi = mid - 12, mid + 12
-            found[k] = (lo, hi, p0[cross], p1[cross])
-        elif (b.y < a.y - 0.5 if down else b.x < a.x - 0.5) and _behind(e, d):
-            back.append(k)
-    # Lanes from one source share one turn where their gaps overlap, so they leave as a single trunk.
-    by_source: dict[str, list[str]] = {}
-    for k in found:
-        by_source.setdefault(d.edges[k].src.node, []).append(k)
-    for keys in by_source.values():
-        if len(keys) > 1:
-            lo = max(room[k][0] if k in room else found[k][0] for k in keys)
-            hi = min(room[k][1] if k in room else found[k][1] for k in keys)
-            if hi - lo >= 8:
-                for k in keys:
-                    found[k] = (lo, hi, found[k][2], found[k][3])
-    rects = list(groups.values()) + [n.box for n in nodes.values()]
-    edges = {
-        "before": min((r.x if down else r.y) for r in rects) - 24,
-        "after": max((r.x1 if down else r.y1) for r in rects) + 24,
-    }
-    sides = {"before": "left" if down else "top", "after": "right" if down else "bottom"}
-    ways: dict[str, str] = {}
-    for k in back:
-        e = d.edges[k]
-        a = nodes[e.src.node]
-        ga = boxes_around(d, a.node.group)
-        others = [r for r in rects if r is not a.box and all(r is not groups.get(g) for g in ga)]
-        clear = {w: _clear(a.port(sides[w], e.src.offset), edges[w], down, others) for w in edges}
-        if e.src.side:
-            ways[k] = "before" if e.src.side == sides["before"] else "after"
-        else:
-            ways[k] = "before" if clear["before"] or not clear["after"] else "after"
+    r = _Router(d, nodes, groups, t)
+    r.sort_edges()
+    trunks = r.share_trunks()
+    r.pick_ways()
+    r.spread_ends()
+    out = r.forward_lanes() | r.back_lanes()
+    near = "top" if r.down else "left"
+    ports = {k: Port(d.edges[k].dst.node, near, round(d.edges[k].dst.offset + v, 2)) for k, v in r.shift.items() if v}
+    return out, trunks, ports
 
-    # Edges that come into a node on one side meet it side by side, in the order they come from, rather than on one
-    # point; an edge with a port of its own keeps it.
-    coming: dict[str, list[tuple[float, str]]] = {}
-    for k in [*found, *back]:
-        e = d.edges[k]
-        if e.dst.side is None and not e.dst.offset and not nodes[e.dst.node].point:
-            if k in found:
-                at = found[k][2]
+
+class _Router:
+    """What the phases of `auto_routes` share: the gap each forward edge turns in, the backward edges and the side
+    each goes round, and how far each edge's end moves along the side it meets."""
+
+    def __init__(self, d: Diagram, nodes: dict[str, NodeBox], groups: dict[str, Rect], t: Theme):
+        self.d, self.nodes, self.groups, self.t = d, nodes, groups, t
+        self.down = down = d.direction == "down"
+        self.main, self.cross = (1, 0) if down else (0, 1)
+        self.cell = d.grid.row if down else d.grid.col
+        # Forward edge -> the stretch of the main axis it turns in, and where it starts and ends on the cross axis.
+        self.found: dict[str, tuple[float, float, float, float]] = {}
+        # Forward edge with no clear gap -> the stretch it could turn anywhere in.
+        self.room: dict[str, tuple[float, float]] = {}
+        self.back: list[str] = []
+        self.rects = list(groups.values()) + [n.box for n in nodes.values()]
+        # Where backward edges run past everything, before it or after it on the cross axis, and the side they leave.
+        self.outside = {
+            "before": min((r.x if down else r.y) for r in self.rects) - 24,
+            "after": max((r.x1 if down else r.y1) for r in self.rects) + 24,
+        }
+        self.sides = {"before": "left" if down else "top", "after": "right" if down else "bottom"}
+        self.ways: dict[str, str] = {}
+        self.shift: dict[str, float] = {}
+
+    def sort_edges(self) -> None:
+        """Forward edges, with the gap each turns in, and backward edges."""
+        d, nodes, main, cross, down = self.d, self.nodes, self.main, self.cross, self.down
+        for k, e in d.edges.items():
+            a, b = nodes.get(e.src.node), nodes.get(e.dst.node)
+            if a is None or b is None or e.via or e.route or not (a.node.auto or b.node.auto):
+                continue
+            if _forward(a, b, d) and _along(e, d):
+                p0, p1 = _ends(e, a, b, d)
+                ga, gb = set(boxes_around(d, a.node.group)), set(boxes_around(d, b.node.group))
+                lo, hi = _gap(d, self.groups, ga, gb, p0[main], p1[main], *sorted((p0[cross], p1[cross])))
+                if hi - lo < 8:
+                    # No clear gap: any turn between the two ends will do, so it can join the source's other lanes.
+                    self.room[k] = (p0[main] + 8, p1[main] - 8)
+                    mid = max(p0[main], (b.y if down else b.x) - self.cell / 2)
+                    lo, hi = mid - 12, mid + 12
+                self.found[k] = (lo, hi, p0[cross], p1[cross])
+            elif (b.y < a.y - 0.5 if down else b.x < a.x - 0.5) and _behind(e, d):
+                self.back.append(k)
+
+    def share_trunks(self) -> set[str]:
+        """Lanes from one source share one turn where their gaps overlap, so they leave as a single trunk. The edges
+        of each source with more than one lane."""
+        found, room = self.found, self.room
+        by_source: dict[str, list[str]] = {}
+        for k in found:
+            by_source.setdefault(self.d.edges[k].src.node, []).append(k)
+        for keys in by_source.values():
+            if len(keys) > 1:
+                lo = max(room[k][0] if k in room else found[k][0] for k in keys)
+                hi = min(room[k][1] if k in room else found[k][1] for k in keys)
+                if hi - lo >= 8:
+                    for k in keys:
+                        found[k] = (lo, hi, found[k][2], found[k][3])
+        return {k for keys in by_source.values() if len(keys) > 1 for k in keys}
+
+    def pick_ways(self) -> None:
+        """The side each backward edge goes round: the one its source's side names, or the one that is clear."""
+        d, nodes, sides = self.d, self.nodes, self.sides
+        for k in self.back:
+            e = d.edges[k]
+            a = nodes[e.src.node]
+            ga = boxes_around(d, a.node.group)
+            others = [r for r in self.rects if r is not a.box and all(r is not self.groups.get(g) for g in ga)]
+            clear = {
+                w: _clear(a.port(sides[w], e.src.offset), self.outside[w], self.down, others) for w in self.outside
+            }
+            if e.src.side:
+                self.ways[k] = "before" if e.src.side == sides["before"] else "after"
             else:
-                at = -math.inf if ways[k] == "before" else math.inf
-            coming.setdefault(e.dst.node, []).append((at, k))
-    shift: dict[str, float] = {}
-    for ins in coming.values():
-        if len(ins) > 1:
-            step = min(20.0, (t.size("icon") - 12) / (len(ins) - 1))
-            for i, (_, k) in enumerate(sorted(ins)):
-                shift[k] = (i - (len(ins) - 1) / 2) * step
+                self.ways[k] = "before" if clear["before"] or not clear["after"] else "after"
 
-    out: dict[str, list[Point]] = {}
-    gaps: dict[tuple[int, int], list[str]] = {}
-    for k, (lo, hi, _, _) in found.items():
-        gaps.setdefault((round(lo), round(hi)), []).append(k)
-    for (lo, hi), keys in gaps.items():
-        # One turn per source; a lane heading towards higher cross values turns later the lower it starts.
-        sources = sorted(
-            {(d.edges[k].src.node, found[k][2], found[k][3] > found[k][2]) for k in keys},
-            key=lambda s: (s[2], -s[1] if s[2] else s[1]),
-        )
-        # A little before the middle, so the run after the turn is the longest and carries the label: the run before
-        # it is often shared with the source's other edges.
-        step = min(12.0, (hi - lo) / (len(sources) + 1))
-        mid = lo + (hi - lo) * 0.4
-        at = {s[0]: mid + (i - (len(sources) - 1) / 2) * step for i, s in enumerate(sources)}
-        for k in keys:
+    def spread_ends(self) -> None:
+        """Edges that come into a node on one side meet it side by side, in the order they come from, rather than on
+        one point; an edge with a port of its own keeps it."""
+        d, nodes = self.d, self.nodes
+        coming: dict[str, list[tuple[float, str]]] = {}
+        for k in [*self.found, *self.back]:
             e = d.edges[k]
-            a, b = nodes[e.src.node], nodes[e.dst.node]
-            out[k] = _lane(e, a, b, d, at[e.src.node], shift.get(k, 0.0))
-            if down:
-                left = set(boxes_around(d, a.node.group)) - set(boxes_around(d, b.node.group))
-                out[k] = _jog(out[k], [group_title_box(d.groups[g], groups[g], t) for g in left if g in groups])
-    if back:
+            if e.dst.side is None and not e.dst.offset and not nodes[e.dst.node].point:
+                if k in self.found:
+                    at = self.found[k][2]
+                else:
+                    at = -math.inf if self.ways[k] == "before" else math.inf
+                coming.setdefault(e.dst.node, []).append((at, k))
+        for ins in coming.values():
+            if len(ins) > 1:
+                step = min(20.0, (self.t.size("icon") - 12) / (len(ins) - 1))
+                for i, (_, k) in enumerate(sorted(ins)):
+                    self.shift[k] = (i - (len(ins) - 1) / 2) * step
+
+    def forward_lanes(self) -> dict[str, list[Point]]:
+        d, nodes, found = self.d, self.nodes, self.found
+        out: dict[str, list[Point]] = {}
+        gaps: dict[tuple[int, int], list[str]] = {}
+        for k, (lo, hi, _, _) in found.items():
+            gaps.setdefault((round(lo), round(hi)), []).append(k)
+        for (lo, hi), keys in gaps.items():
+            # One turn per source; a lane heading towards higher cross values turns later the lower it starts.
+            sources = sorted(
+                {(d.edges[k].src.node, found[k][2], found[k][3] > found[k][2]) for k in keys},
+                key=lambda s: (s[2], -s[1] if s[2] else s[1]),
+            )
+            # A little before the middle, so the run after the turn is the longest and carries the label: the run
+            # before it is often shared with the source's other edges.
+            step = min(12.0, (hi - lo) / (len(sources) + 1))
+            mid = lo + (hi - lo) * 0.4
+            at = {s[0]: mid + (i - (len(sources) - 1) / 2) * step for i, s in enumerate(sources)}
+            for k in keys:
+                e = d.edges[k]
+                a, b = nodes[e.src.node], nodes[e.dst.node]
+                out[k] = _lane(e, a, b, d, at[e.src.node], self.shift.get(k, 0.0))
+                if self.down:
+                    left = set(boxes_around(d, a.node.group)) - set(boxes_around(d, b.node.group))
+                    titles = [group_title_box(d.groups[g], self.groups[g], self.t) for g in left if g in self.groups]
+                    out[k] = _jog(out[k], titles)
+        return out
+
+    def back_lanes(self) -> dict[str, list[Point]]:
+        d, nodes, main, cross, down = self.d, self.nodes, self.main, self.cross, self.down
+        out: dict[str, list[Point]] = {}
         count = {"before": 0, "after": 0}
-        for k in back:
+        for k in self.back:
             e = d.edges[k]
             a, b = nodes[e.src.node], nodes[e.dst.node]
             ga, gb = set(boxes_around(d, a.node.group)), set(boxes_around(d, b.node.group))
-            way = ways[k]
-            p0 = a.port(sides[way], e.src.offset)
-            p1 = b.port("top" if down else "left", e.dst.offset + shift.get(k, 0.0))
-            side = edges[way] + (-12 if way == "before" else 12) * count[way]
+            way = self.ways[k]
+            p0 = a.port(self.sides[way], e.src.offset)
+            p1 = b.port("top" if down else "left", e.dst.offset + self.shift.get(k, 0.0))
+            side = self.outside[way] + (-12 if way == "before" else 12) * count[way]
             count[way] += 1
-            lo, hi = _gap(d, groups, ga, gb, p1[main] - cell, p1[main], *sorted((side, p1[cross])))
+            lo, hi = _gap(d, self.groups, ga, gb, p1[main] - self.cell, p1[main], *sorted((side, p1[cross])))
             turn = (lo + hi) / 2
             if down:
                 out[k] = [p0, (side, p0[1]), (side, turn), (p1[0], turn), p1]
             else:
                 out[k] = [p0, (p0[0], side), (turn, side), (turn, p1[1]), p1]
-    near = "top" if down else "left"
-    ports = {k: Port(d.edges[k].dst.node, near, round(d.edges[k].dst.offset + v, 2)) for k, v in shift.items() if v}
-    return out, {k for keys in by_source.values() if len(keys) > 1 for k in keys}, ports
+        return out
 
 
 def _fraction(pts: list[Point], at: Point) -> float:
