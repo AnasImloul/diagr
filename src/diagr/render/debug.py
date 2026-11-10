@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import math
 from html import escape
+from typing import TYPE_CHECKING
 
-from ..build import Prepared
 from ..scene import num
+
+if TYPE_CHECKING:
+    from ..build import Prepared
 
 INK = "#d6336c"
 

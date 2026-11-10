@@ -5,9 +5,12 @@ from pathlib import Path
 
 from .icons import Icons
 from .layout.auto import place
-from .layout.geometry import Layout, layout, sub_slots
+from .layout.engine import layout, sub_slots
+from .layout.geometry import Layout
 from .model import Diagram
 from .parse import load_file
+from .render.html import render_html
+from .render.svg import render_static
 from .scenario import Compiled, compile_scenarios
 from .scene import SceneBuilder
 from .source import DiagramError, Problem
@@ -71,9 +74,6 @@ def build_files(
 
 def write_files(p: Prepared, out: str | Path, debug: bool = False, live: bool = False) -> list[Path]:
     """The two static SVGs and the HTML page; debug adds the authoring overlay, live the reload script."""
-    from .render.html import render_html
-    from .render.svg import render_static
-
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     written = []

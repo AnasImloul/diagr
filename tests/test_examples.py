@@ -60,8 +60,8 @@ class Examples(Case):
                 source = yaml.safe_load(example.read_text(encoding="utf-8"))
                 d = load_file(example)
                 main = {f"{d.id}-light.svg", f"{d.id}-dark.svg", f"{d.id}.html"}
-                placed = any(n.auto for n in d.nodes.values())
                 expanded.write_text(to_yaml(d, source), encoding="utf-8")
+                placed = any(n.auto for n in d.nodes.values())
                 for original, again in zip(
                     build_files(example, self.tmp())[0], build_files(expanded, self.tmp())[0], strict=True
                 ):

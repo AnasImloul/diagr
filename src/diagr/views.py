@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 
-from .layout.auto import place
 from .model import Diagram, Effect
 from .scenario import resolve_edge
 from .source import Problem, did_you_mean
@@ -86,9 +85,9 @@ def _chosen(d: Diagram, vid: str) -> set[str]:
 
 
 def view(d: Diagram, vid: str) -> Diagram:
-    """The diagram cut down to one view. Nodes that were placed automatically are placed again, so the view closes
-    up; pinned nodes keep their cells. Scenarios are dropped unless the view lists them, and so are triggers that
-    would play a dropped one.
+    """The diagram cut down to one view. Nodes that were placed automatically lose their cells, so `prepare` places
+    them again and the view closes up; pinned nodes keep theirs. Scenarios are dropped unless the view lists them,
+    and so are triggers that would play a dropped one.
 
     A dynamic view (`scenario`) shows what its scenario uses, plus anything `include` adds, and keeps that scenario
     first. Its edges are the scenario's, plus those between included nodes, and each edge the scenario draws is
@@ -125,5 +124,4 @@ def view(d: Diagram, vid: str) -> Diagram:
                 n.plays = plays
             else:
                 n.trigger, n.plays = None, None
-    place(out)
     return out

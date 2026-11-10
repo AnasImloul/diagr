@@ -8,6 +8,7 @@ from typing import Any
 import yaml
 
 from .effects import effect_data
+from .layout.auto import place
 from .model import Diagram, Edge, Effect, Flow, Group, Move, Node, Port
 from .parse import PAIR_GAP, held
 
@@ -230,6 +231,7 @@ def _pin(d: Diagram) -> None:
 def to_yaml(d: Diagram, source: dict[str, Any]) -> str:
     """source is the file as plain YAML data: its other keys, such as the scenarios, are kept as written. Placed
     nodes are written with their positions and their edges with routes, so the output draws the same picture."""
+    place(d)
     if any(n.auto for n in d.nodes.values()):
         _pin(d)
     head = {k: source[k] for k in HEAD if k in source}

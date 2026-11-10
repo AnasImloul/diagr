@@ -3,14 +3,17 @@ from __future__ import annotations
 import json
 from html import escape
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from ..build import Prepared
 from ..live import SCRIPT as LIVE
 from ..scenario import Compiled
 from ..scene import num, serialise
 from ..theme import Theme, load_theme
 from .debug import TOGGLE as DEBUG_TOGGLE
 from .debug import overlay
+
+if TYPE_CHECKING:
+    from ..build import Prepared
 
 ASSETS = Path(__file__).resolve().parent / "assets"
 PROPS = {"fill": "fill", "stroke": "stroke", "stop-color": "stop-color"}

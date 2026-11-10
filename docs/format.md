@@ -548,7 +548,7 @@ edges into hidden nodes are warnings; `--strict` makes them fail.
 ```python
 import diagr
 
-d = diagr.Diagram.from_yaml("diagram.yml")
+d = diagr.load_file("diagram.yml")
 d.nodes["nb"].cells = ["ingest", "clean", "join"]  # e.g. stage names read from another file
 p = diagr.prepare(d)
 ```

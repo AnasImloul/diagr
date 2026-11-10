@@ -215,9 +215,3 @@ class Diagram:
     component_actions: dict[str, dict[str, Effect]] = field(default_factory=dict)
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
-
-    @staticmethod
-    def from_yaml(path: str | Path) -> Diagram:
-        from .parse import load_file
-
-        return load_file(path)

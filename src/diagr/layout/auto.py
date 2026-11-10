@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 from ..model import Diagram, Node
+from .flow import laid_out
 from .geometry import BUTTON_H, STRIP_H
 
 # How far a box reaches past its cells, in px, for the default theme: (before, after) on the cross axis. A node sits
@@ -79,8 +80,6 @@ def _topological(order: list[str], edges: list[tuple[str, str]]) -> list[str]:
 
 
 def place(d: Diagram) -> None:
-    from .flow import laid_out
-
     flowed = laid_out(d)[0]
     free = [k for k, n in d.nodes.items() if n.at is None and k not in flowed]
     if not free:

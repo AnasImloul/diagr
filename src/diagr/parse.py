@@ -7,7 +7,6 @@ from pathlib import Path
 from . import fields as f
 from .components import expand, instance_fill
 from .effects import EFFECT_SCHEMA, Actions, Ctx, parse_effects
-from .layout.auto import place
 from .model import (
     Component,
     Diagram,
@@ -709,7 +708,6 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         problems.append(Problem(rec.loc, "the diagram needs at least one node"))
         raise DiagramError(problems)
     _triggers(d, rec.get("scenarios") or [], problems)
-    place(d)
 
     actions = Actions(problems)
     for e in rec.get("actions", []):
