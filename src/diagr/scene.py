@@ -6,7 +6,16 @@ from dataclasses import dataclass, field
 from html import escape
 
 from .icons import Icons, SvgIcon, Tile
-from .layout.geometry import Layout, NodeBox, Rect, behind_title_box, group_title_box, heading_size, title_place
+from .layout.geometry import (
+    EdgePath,
+    Layout,
+    NodeBox,
+    Rect,
+    behind_title_box,
+    group_title_box,
+    heading_size,
+    title_place,
+)
 from .layout.route import badge_width, rounded
 from .layout.text import text_width
 from .model import Diagram, Group
@@ -228,182 +237,197 @@ class SceneBuilder:
         return out
 
     def build(self) -> tuple[El, Rect]:
-        d, t, lay = self.d, self.t, self.lay
-        b = lay.bounds
+        lay = self.lay
         body = El("g", {"class": "dg-body"})
-
         for gid, r in lay.groups.items():
-            g = d.groups[gid]
-            if not g.box:
-                continue
-            el = El("g", {"class": "grp", "data-id": gid, "id": f"g-{safe_id(gid)}"})
-            # Boxes stacked behind, deepest first, each with its title in the strip the box in front leaves showing.
-            for lid, lr in reversed(lay.layers.get(gid, [])):
-                el.add(
-                    El(
-                        "rect",
-                        {
-                            "x": num(lr.x),
-                            "y": num(lr.y),
-                            "width": num(lr.w),
-                            "height": num(lr.h),
-                            "rx": num(t.size("group_radius")),
-                            "stroke-width": num(t.size("edge")),
-                            "data-layer": lid,
-                        },
-                        paint={"fill": f"tone-{g.tone}-fill", "stroke": f"tone-{g.tone}-stroke"},
-                    )
-                )
-                tb = behind_title_box(g, g.behind[lid], lr, t)
-                el.add(
-                    El(
-                        "text",
-                        {
-                            "class": "gtitle",
-                            "x": num(tb.x),
-                            "y": num(tb.y1 - 4),
-                            "font-size": num(t.size("group_title")),
-                            "font-weight": 600,
-                        },
-                        [escape(g.behind[lid])],
-                        paint={"fill": "text"},
-                    )
-                )
-            el.add(
+            if self.d.groups[gid].box:
+                body.add(self.group(gid, r))
+        labels = El("g", {"class": "labels"})
+        for eid, p in lay.edges.items():
+            body.add(self.edge(eid, p))
+            lab = self.edge_label(eid, p)
+            if lab.children:
+                labels.add(lab)
+        body.add(labels)
+        badges = self.badge_numbers()
+        for k, nb in lay.nodes.items():
+            body.add(self.node(k, nb, badges.get(k, {})))
+        return body, lay.bounds
+
+    def group(self, gid: str, r: Rect) -> El:
+        g, t = self.d.groups[gid], self.t
+        el = El("g", {"class": "grp", "data-id": gid, "id": f"g-{safe_id(gid)}"})
+        el.add(*self._behind(g))
+        el.add(
+            El(
+                "rect",
+                {
+                    "x": num(r.x),
+                    "y": num(r.y),
+                    "width": num(r.w),
+                    "height": num(r.h),
+                    "rx": num(t.size("group_radius")),
+                    "stroke-width": num(t.size("edge")),
+                },
+                paint={"fill": f"tone-{g.tone}-fill", "stroke": f"tone-{g.tone}-stroke"},
+            )
+        )
+        own = [nb.box for nb in self.lay.nodes.values() if nb.node.group == gid]
+        tb = group_title_box(g, r, t, own)
+        if title_place(g) == "middle":
+            return el.add(*self.heading(g, tb))
+        return el.add(*self.title(g, tb))
+
+    def _behind(self, g: Group) -> list[El]:
+        """Boxes stacked behind, deepest first, each with its title in the strip the box in front leaves showing."""
+        t, out = self.t, []
+        for lid, lr in reversed(self.lay.layers.get(g.id, [])):
+            out.append(
                 El(
                     "rect",
                     {
-                        "x": num(r.x),
-                        "y": num(r.y),
-                        "width": num(r.w),
-                        "height": num(r.h),
+                        "x": num(lr.x),
+                        "y": num(lr.y),
+                        "width": num(lr.w),
+                        "height": num(lr.h),
                         "rx": num(t.size("group_radius")),
                         "stroke-width": num(t.size("edge")),
+                        "data-layer": lid,
                     },
                     paint={"fill": f"tone-{g.tone}-fill", "stroke": f"tone-{g.tone}-stroke"},
                 )
             )
-            own = [nb.box for nb in lay.nodes.values() if nb.node.group == gid]
-            tb = group_title_box(g, r, t, own)
-            if title_place(g) == "middle":
-                el.add(*self.heading(g, tb))
-                body.add(el)
-                continue
-            hx, hy = tb.x, tb.y + max(t.size("group_title"), t.size("group_icon") if g.icon else 0)
-            tx = hx
-            if g.icon:
-                gs = t.size("group_icon")
-                el.add(*self.icon(g.icon, hx + gs / 2, hy - 16 + gs / 2, gs))
-                tx = hx + gs + 8
-            title = El(
-                "text",
-                {
-                    "class": "gtitle",
-                    "x": num(tx),
-                    "y": num(hy),
-                    "font-size": num(t.size("group_title")),
-                    "font-weight": 600,
-                },
-                [escape(g.title)],
-                paint={"fill": "text"},
-            )
-            if g.sub:
-                title.add(
-                    El(
-                        "tspan",
-                        {"class": "gsub", "dx": 8, "font-size": num(t.size("group_sub")), "font-weight": 400},
-                        [escape(g.sub)],
-                        paint={"fill": "muted"},
-                    )
-                )
-            el.add(title)
-            body.add(el)
-
-        labels = El("g", {"class": "labels"})
-        for eid, p in lay.edges.items():
-            e = p.edge
-            dash = {"stroke-dasharray": "5 4"} if e.dashed else {}
-            stroke = {"new": "new", "changed": "changed", "removed": "fail"}.get(e.mark or "", "line")
-            path = rounded(p.points, t.size("corner"))
-            el = El(
-                "g",
-                {
-                    "class": "edge",
-                    "id": f"e-{safe_id(eid)}",
-                    "data-id": eid,
-                    "data-from": e.src.node,
-                    "data-to": e.dst.node,
-                },
-            )
-            if e.mark:
-                el.attrs["data-mark"] = e.mark
-                if e.mark == "removed":
-                    el.attrs["opacity"] = ".45"
-            if e.hidden:
-                el.attrs["data-hidden"] = "1"
-            el.add(
+            tb = behind_title_box(g, g.behind[lid], lr, t)
+            out.append(
                 El(
-                    "path",
-                    {"class": "base", "d": path, "fill": "none", "stroke-width": num(t.size("edge")), **dash},
-                    paint={"stroke": stroke},
+                    "text",
+                    {
+                        "class": "gtitle",
+                        "x": num(tb.x),
+                        "y": num(tb.y1 - 4),
+                        "font-size": num(t.size("group_title")),
+                        "font-weight": 600,
+                    },
+                    [escape(g.behind[lid])],
+                    paint={"fill": "text"},
                 )
             )
-            into_junction = e.dst.node in d.nodes and d.nodes[e.dst.node].junction
-            if not into_junction and p.tip:
-                el.add(El("path", {"class": "head", "d": arrow(p.points)}, paint={"fill": stroke}))
-            el.add(
-                El(
-                    "path",
-                    {"class": "flow", "d": path, "fill": "none", "pathLength": 1, "stroke-width": num(t.size("flow"))},
-                    paint={"stroke": "accent"},
-                    only="html",
-                )
-            )
-            if not into_junction and p.tip:
-                el.add(El("path", {"class": "head-ok", "d": arrow(p.points)}, paint={"fill": "accent"}, only="html"))
-            if e.tooltip:
-                el.add(El("title", {}, [escape(e.tooltip)]))
-            body.add(el)
-            lab = El("g", {"class": "elab", "data-edge": eid})
-            if e.hidden:
-                lab.attrs["data-hidden"] = "1"
-            if e.label and p.label_at and p.label_box:
-                x, y = p.label_at
-                lb = p.label_box
-                lab.add(
-                    El(
-                        "rect",
-                        {"x": num(lb.x), "y": num(lb.y), "width": num(lb.w), "height": num(lb.h), "rx": 4},
-                        paint={"fill": self.fill_at(x, y)},
-                    )
-                )
-                lab.add(
-                    El(
-                        "text",
-                        {
-                            "class": "elabel",
-                            "x": num(x),
-                            "y": num(y + 4),
-                            "font-size": num(t.size("label")),
-                            "text-anchor": "middle",
-                            "data-key": f"t:{eid}:label",
-                            "data-default": e.label,
-                        },
-                        [escape(e.label)],
-                        paint={"fill": "muted"},
-                    )
-                )
-            if p.badge_at and eid in d.numbers:
-                # In the label's group, so the player dims and highlights it along with the edge.
-                lab.add(self.edge_badge(d.numbers[eid], *p.badge_at))
-            if lab.children:
-                labels.add(lab)
-        body.add(labels)
+        return out
 
-        badges = self.badge_numbers()
-        for k, nb in lay.nodes.items():
-            body.add(self.node(k, nb, badges.get(k, {})))
-        return body, b
+    def title(self, g: Group, tb: Rect) -> list[El]:
+        """A group's title in its corner or along its top or bottom edge: icon, title, then the sub text after it."""
+        t, out = self.t, []
+        hx, hy = tb.x, tb.y + max(t.size("group_title"), t.size("group_icon") if g.icon else 0)
+        tx = hx
+        if g.icon:
+            gs = t.size("group_icon")
+            out += self.icon(g.icon, hx + gs / 2, hy - 16 + gs / 2, gs)
+            tx = hx + gs + 8
+        title = El(
+            "text",
+            {
+                "class": "gtitle",
+                "x": num(tx),
+                "y": num(hy),
+                "font-size": num(t.size("group_title")),
+                "font-weight": 600,
+            },
+            [escape(g.title)],
+            paint={"fill": "text"},
+        )
+        if g.sub:
+            title.add(
+                El(
+                    "tspan",
+                    {"class": "gsub", "dx": 8, "font-size": num(t.size("group_sub")), "font-weight": 400},
+                    [escape(g.sub)],
+                    paint={"fill": "muted"},
+                )
+            )
+        out.append(title)
+        return out
+
+    def edge(self, eid: str, p: EdgePath) -> El:
+        d, t, e = self.d, self.t, p.edge
+        dash = {"stroke-dasharray": "5 4"} if e.dashed else {}
+        stroke = {"new": "new", "changed": "changed", "removed": "fail"}.get(e.mark or "", "line")
+        path = rounded(p.points, t.size("corner"))
+        el = El(
+            "g",
+            {
+                "class": "edge",
+                "id": f"e-{safe_id(eid)}",
+                "data-id": eid,
+                "data-from": e.src.node,
+                "data-to": e.dst.node,
+            },
+        )
+        if e.mark:
+            el.attrs["data-mark"] = e.mark
+            if e.mark == "removed":
+                el.attrs["opacity"] = ".45"
+        if e.hidden:
+            el.attrs["data-hidden"] = "1"
+        el.add(
+            El(
+                "path",
+                {"class": "base", "d": path, "fill": "none", "stroke-width": num(t.size("edge")), **dash},
+                paint={"stroke": stroke},
+            )
+        )
+        into_junction = e.dst.node in d.nodes and d.nodes[e.dst.node].junction
+        if not into_junction and p.tip:
+            el.add(El("path", {"class": "head", "d": arrow(p.points)}, paint={"fill": stroke}))
+        el.add(
+            El(
+                "path",
+                {"class": "flow", "d": path, "fill": "none", "pathLength": 1, "stroke-width": num(t.size("flow"))},
+                paint={"stroke": "accent"},
+                only="html",
+            )
+        )
+        if not into_junction and p.tip:
+            el.add(El("path", {"class": "head-ok", "d": arrow(p.points)}, paint={"fill": "accent"}, only="html"))
+        if e.tooltip:
+            el.add(El("title", {}, [escape(e.tooltip)]))
+        return el
+
+    def edge_label(self, eid: str, p: EdgePath) -> El:
+        """An edge's label and step numbers, drawn after every edge so no edge runs over them."""
+        e = p.edge
+        lab = El("g", {"class": "elab", "data-edge": eid})
+        if e.hidden:
+            lab.attrs["data-hidden"] = "1"
+        if e.label and p.label_at and p.label_box:
+            x, y = p.label_at
+            lb = p.label_box
+            lab.add(
+                El(
+                    "rect",
+                    {"x": num(lb.x), "y": num(lb.y), "width": num(lb.w), "height": num(lb.h), "rx": 4},
+                    paint={"fill": self.fill_at(x, y)},
+                )
+            )
+            lab.add(
+                El(
+                    "text",
+                    {
+                        "class": "elabel",
+                        "x": num(x),
+                        "y": num(y + 4),
+                        "font-size": num(self.t.size("label")),
+                        "text-anchor": "middle",
+                        "data-key": f"t:{eid}:label",
+                        "data-default": e.label,
+                    },
+                    [escape(e.label)],
+                    paint={"fill": "muted"},
+                )
+            )
+        if p.badge_at and eid in self.d.numbers:
+            # In the label's group, so the player dims and highlights it along with the edge.
+            lab.add(self.edge_badge(self.d.numbers[eid], *p.badge_at))
+        return lab
 
     def node(self, k: str, nb: NodeBox, badges: dict[str, list[int]]) -> El:
         t, n = self.t, nb.node
@@ -439,25 +463,38 @@ class SceneBuilder:
             )
         )
         el.add(*self.icon(n.icon, x, y, t.size("icon"), n.tone, n.stack))
-        title = El(
-            "text",
-            {
-                "class": "ntitle",
-                "x": num(x),
-                "y": num(nb.title_y),
-                "font-size": num(t.size("title")),
-                "font-weight": 600,
-                "text-anchor": "middle",
-                "data-key": f"t:{k}:title",
-                "data-default": n.title,
-            },
-            [escape(n.title)],
-            paint={"fill": "text"},
-        )
-        el.add(title)
+        el.add(*self._node_text(k, nb))
+        if nb.strip:
+            el.add(*self._strip(k, nb, nb.strip))
+        if nb.button:
+            el.add(self.button(k, nb.button, n.trigger or ""))
+        el.add(*self._badges(nb, badges))
+        el.add(*self._status(nb))
+        return el
+
+    def _node_text(self, k: str, nb: NodeBox) -> list[El]:
+        """The title, its NEW / REMOVED / CHANGED mark, and the sub lines under it."""
+        t, n, x = self.t, nb.node, nb.x
+        out = [
+            El(
+                "text",
+                {
+                    "class": "ntitle",
+                    "x": num(x),
+                    "y": num(nb.title_y),
+                    "font-size": num(t.size("title")),
+                    "font-weight": 600,
+                    "text-anchor": "middle",
+                    "data-key": f"t:{k}:title",
+                    "data-default": n.title,
+                },
+                [escape(n.title)],
+                paint={"fill": "text"},
+            )
+        ]
         if n.mark:
             mx = x + text_width(n.title, t.size("title"), 600) / 2 + 6
-            el.add(
+            out.append(
                 El(
                     "text",
                     {
@@ -474,7 +511,7 @@ class SceneBuilder:
             )
         for j, sy in enumerate(nb.sub_ys):
             line = n.sub[j] if j < len(n.sub) else ""
-            el.add(
+            out.append(
                 El(
                     "text",
                     {
@@ -490,65 +527,72 @@ class SceneBuilder:
                     paint={"fill": "muted"},
                 )
             )
-        if nb.strip:
-            s = nb.strip
-            strip = El("g", {"class": "cells"})
+        return out
+
+    def _strip(self, k: str, nb: NodeBox, s: Rect) -> list[El]:
+        """The node's row of cells, and the caption under it that a scenario fills."""
+        n = nb.node
+        strip = El("g", {"class": "cells"})
+        strip.add(
+            El(
+                "rect",
+                {
+                    "class": "cellbox",
+                    "x": num(s.x),
+                    "y": num(s.y),
+                    "width": num(s.w),
+                    "height": num(s.h),
+                    "rx": 9,
+                    "stroke-width": 1.2,
+                },
+                paint={"fill": "bg", "stroke": self._cell_stroke(k)},
+            )
+        )
+        for i in range(len(n.cells)):
             strip.add(
                 El(
                     "rect",
                     {
-                        "class": "cellbox",
-                        "x": num(s.x),
-                        "y": num(s.y),
-                        "width": num(s.w),
-                        "height": num(s.h),
-                        "rx": 9,
+                        "class": "cell",
+                        "data-key": f"c:{k}:{i}",
+                        "x": num(s.x + 8 + i * 23),
+                        "y": num(s.y + 7),
+                        "width": 18,
+                        "height": 18,
+                        "rx": 4,
+                        "fill": "none",
                         "stroke-width": 1.2,
+                        "stroke-opacity": ".55",
                     },
-                    paint={"fill": "bg", "stroke": self._cell_stroke(k)},
+                    paint={"stroke": "muted"},
                 )
             )
-            for i in range(len(n.cells)):
-                strip.add(
-                    El(
-                        "rect",
-                        {
-                            "class": "cell",
-                            "data-key": f"c:{k}:{i}",
-                            "x": num(s.x + 8 + i * 23),
-                            "y": num(s.y + 7),
-                            "width": 18,
-                            "height": 18,
-                            "rx": 4,
-                            "fill": "none",
-                            "stroke-width": 1.2,
-                            "stroke-opacity": ".55",
-                        },
-                        paint={"stroke": "muted"},
-                    )
+        out = [strip]
+        if nb.caption_y is not None:
+            out.append(
+                El(
+                    "text",
+                    {
+                        "class": "cap nsub",
+                        "x": num(nb.x),
+                        "y": num(nb.caption_y),
+                        "font-size": num(self.t.size("sub")),
+                        "text-anchor": "middle",
+                        "data-key": f"cap:{k}",
+                        "data-default": "",
+                    },
+                    [],
+                    paint={"fill": "muted"},
                 )
-            el.add(strip)
-            if nb.caption_y is not None:
-                el.add(
-                    El(
-                        "text",
-                        {
-                            "class": "cap nsub",
-                            "x": num(x),
-                            "y": num(nb.caption_y),
-                            "font-size": num(t.size("sub")),
-                            "text-anchor": "middle",
-                            "data-key": f"cap:{k}",
-                            "data-default": "",
-                        },
-                        [],
-                        paint={"fill": "muted"},
-                    )
-                )
-        if nb.button:
-            el.add(self.button(k, nb.button, n.trigger or ""))
-        r = t.size("badge")
+            )
+        return out
+
+    def _badges(self, nb: NodeBox, badges: dict[str, list[int]]) -> list[El]:
+        """The step numbers by the node's top-left corner, one set per scenario."""
+        t, x, y = self.t, nb.x, nb.y
+        half, r = t.size("icon") / 2, t.size("badge")
         first = next(iter(self.scenarios), None)
+        out = []
         for sid, numbers in badges.items():
             label = ",".join(str(i) for i in numbers)
             w = max(2 * r, text_width(label, 11, 600) + 10)
@@ -581,8 +625,14 @@ class SceneBuilder:
                 ),
             ]
             # The player shows one scenario's badges at a time; static output has only the first's.
-            el.add(El("g", {"data-badges": sid}, parts, only=None if sid == first else "html"))
-        cx, cy = x + half + 8, y - half - 4
+            out.append(El("g", {"data-badges": sid}, parts, only=None if sid == first else "html"))
+        return out
+
+    def _status(self, nb: NodeBox) -> list[El]:
+        """The spinner, tick and cross by the node's top-right corner, which the player shows as it runs."""
+        t = self.t
+        half, r = t.size("icon") / 2, t.size("badge")
+        cx, cy = nb.x + half + 8, nb.y - half - 4
         spin = El("g", {"class": "st st-spin"}, only="html")
         spin.add(El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "accent"}))
         spin.add(
@@ -605,49 +655,44 @@ class SceneBuilder:
                 ],
             )
         )
-        el.add(spin)
-        el.add(
-            El(
-                "g",
-                {"class": "st st-done"},
-                [
-                    El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "accent"}),
-                    El(
-                        "path",
-                        {
-                            "d": f"M{num(cx - 4.5)} {num(cy)}l3.2 3.2 6-6.4",
-                            "fill": "none",
-                            "stroke": "#fff",
-                            "stroke-width": 2,
-                            "stroke-linecap": "round",
-                            "stroke-linejoin": "round",
-                        },
-                    ),
-                ],
-                only="html",
-            )
+        done = El(
+            "g",
+            {"class": "st st-done"},
+            [
+                El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "accent"}),
+                El(
+                    "path",
+                    {
+                        "d": f"M{num(cx - 4.5)} {num(cy)}l3.2 3.2 6-6.4",
+                        "fill": "none",
+                        "stroke": "#fff",
+                        "stroke-width": 2,
+                        "stroke-linecap": "round",
+                        "stroke-linejoin": "round",
+                    },
+                ),
+            ],
+            only="html",
         )
-        el.add(
-            El(
-                "g",
-                {"class": "st st-fail"},
-                [
-                    El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "fail"}),
-                    El(
-                        "path",
-                        {
-                            "d": f"M{num(cx - 3.5)} {num(cy - 3.5)}l7 7M{num(cx + 3.5)} {num(cy - 3.5)}l-7 7",
-                            "fill": "none",
-                            "stroke": "#fff",
-                            "stroke-width": 2,
-                            "stroke-linecap": "round",
-                        },
-                    ),
-                ],
-                only="html",
-            )
+        fail = El(
+            "g",
+            {"class": "st st-fail"},
+            [
+                El("circle", {"cx": num(cx), "cy": num(cy), "r": num(r)}, paint={"fill": "fail"}),
+                El(
+                    "path",
+                    {
+                        "d": f"M{num(cx - 3.5)} {num(cy - 3.5)}l7 7M{num(cx + 3.5)} {num(cy - 3.5)}l-7 7",
+                        "fill": "none",
+                        "stroke": "#fff",
+                        "stroke-width": 2,
+                        "stroke-linecap": "round",
+                    },
+                ),
+            ],
+            only="html",
         )
-        return el
+        return [spin, done, fail]
 
     def _cell_stroke(self, k: str) -> str:
         gid = self.d.nodes[k].group
