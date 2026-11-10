@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import fields, replace
+from typing import Any
 
 from .model import Component, Diagram, Instance, Loc
 from .source import Problem, did_you_mean
@@ -66,42 +67,32 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
     if taken:
         problems.append(Problem(p.loc, f"instance '{p.id}': {', '.join(taken)} already defined elsewhere in the file"))
         return
+    roles: dict[str, Callable[[Any], Any]] = {"text": fill, "id": name, "cell": shift}
+
+    def own(x: Any) -> Any:
+        """x with its text filled, its ids renamed and its cells moved, as its fields' metadata say."""
+        changes = {}
+        for fl in fields(x):
+            v, role = getattr(x, fl.name), fl.metadata.get("instance")
+            if role is not None and v is not None:
+                one = roles[role]
+                changes[fl.name] = [one(i) for i in v] if isinstance(v, list) else one(v)
+        return replace(x, **changes)
+
     for g in c.groups.values():
         d.groups[name(g.id)] = replace(
-            g,
+            own(g),
             id=name(g.id),
-            title=fill(g.title),
-            sub=fill(g.sub),
-            at=shift(g.at) if g.at else None,
             parent=name(g.parent) if g.parent else p.parent,
             behind={name(k): fill(v) for k, v in g.behind.items()},
         )
     for n in c.nodes.values():
-        d.nodes[name(n.id)] = replace(
-            n,
-            id=name(n.id),
-            at=shift(n.at) if n.at else None,
-            title=fill(n.title),
-            sub=[fill(s) for s in n.sub],
-            tooltip=fill(n.tooltip) if n.tooltip else None,
-            align_x=name(n.align_x) if n.align_x else None,
-            align_y=name(n.align_y) if n.align_y else None,
-            group=name(n.group) if n.group else p.parent,
-        )
+        d.nodes[name(n.id)] = replace(own(n), id=name(n.id), group=name(n.group) if n.group else p.parent)
     for e in c.edges.values():
         src, dst = replace(e.src, node=name(e.src.node)), replace(e.dst, node=name(e.dst.node))
         named = e.id != f"{e.src.node}->{e.dst.node}"
         eid = name(e.id) if named else f"{src.node}->{dst.node}"
-        d.edges[eid] = replace(
-            e,
-            id=eid,
-            src=src,
-            dst=dst,
-            label=fill(e.label),
-            tooltip=fill(e.tooltip) if e.tooltip else None,
-            via=[shift(v) for v in e.via] if e.via else e.via,
-            twin=f"{dst.node}->{src.node}" if e.twin else None,
-        )
+        d.edges[eid] = replace(own(e), id=eid, src=src, dst=dst, twin=f"{dst.node}->{src.node}" if e.twin else None)
 
 
 def expand(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from ..model import Diagram, Edge, Move
+from ..model import Diagram, Edge, Move, Port
 from ..theme import Theme
 from .geometry import EdgePath, NodeBox, Point, Rect, group_title_box
 from .text import text_width
@@ -270,9 +270,9 @@ def _jog(pts: list[Point], titles: list[Rect]) -> list[Point]:
 
 def auto_routes(
     d: Diagram, nodes: dict[str, NodeBox], groups: dict[str, Rect], t: Theme
-) -> tuple[dict[str, list[Point]], set[str]]:
-    """Routes for edges between placed nodes that have no route of their own, and the edges whose first run is a
-    trunk shared with the source's other lanes.
+) -> tuple[dict[str, list[Point]], set[str], dict[str, Port]]:
+    """Routes for edges between placed nodes that have no route of their own, the edges whose first run is a trunk
+    shared with the source's other lanes, and the port each edge ends at that meets a side along with others.
 
     A forward edge follows its source's row and turns midway through the gap before the target, with lanes from
     different sources into one gap spread apart so their lines do not lie on each other. A backward edge leaves its
@@ -385,7 +385,20 @@ def auto_routes(
                 out[k] = [p0, (side, p0[1]), (side, turn), (p1[0], turn), p1]
             else:
                 out[k] = [p0, (p0[0], side), (turn, side), (turn, p1[1]), p1]
-    return out, {k for keys in by_source.values() if len(keys) > 1 for k in keys}
+    near = "top" if down else "left"
+    ports = {k: Port(d.edges[k].dst.node, near, round(d.edges[k].dst.offset + v, 2)) for k, v in shift.items() if v}
+    return out, {k for keys in by_source.values() if len(keys) > 1 for k in keys}, ports
+
+
+def _fraction(pts: list[Point], at: Point) -> float:
+    """How far along pts the point at lies, from 0 to 1."""
+    lens = [math.dist(a, b) for a, b in zip(pts, pts[1:], strict=False)]
+    done = 0.0
+    for (a, b), ln in zip(zip(pts, pts[1:], strict=False), lens, strict=True):
+        if ln and abs(math.dist(a, at) + math.dist(at, b) - ln) < 0.01:
+            return round((done + math.dist(a, at)) / sum(lens), 6)
+        done += ln
+    return 0.5
 
 
 def as_route(pts: list[Point]) -> list[Move]:
@@ -445,6 +458,7 @@ def route_edge(
     covers: dict[str, list[Rect]] | None = None,
     titles: list[Rect] | None = None,
     trunk: bool = False,
+    port: Port | None = None,
 ) -> EdgePath:
     a, b = nodes[e.src.node], nodes[e.dst.node]
     problems: list[str] = []
@@ -494,7 +508,7 @@ def route_edge(
         pts, tip = cut, False
     if covers and e.src.node in covers and (cut := _cut(pts[::-1], covers[e.src.node])):
         pts = cut[::-1]
-    label = box = None
+    label = box = frac = None
     if e.label:
         w = text_width(e.label, t.size("label")) + 10
         # The first run of a trunk is shared with the source's other lanes: the label goes after it when it fits.
@@ -502,7 +516,9 @@ def route_edge(
         fits = any(abs(p[1] - q[1]) < 0.5 and abs(p[0] - q[0]) >= w + 20 for p, q in zip(rest, rest[1:], strict=False))
         label = label_point(rest if fits else pts, e.label_at, w)
         box = Rect(label[0] - w / 2, label[1] - 9, w, 18)
-    path = EdgePath(e, pts, label, box, problems, tip=tip)
+        if fits and math.dist(label, label_point(pts, None, w)) > 0.01:
+            frac = _fraction(pts, label)
+    path = EdgePath(e, pts, label, box, problems, tip=tip, port=port, label_frac=frac)
     if e.id in d.numbers:
         _place_badge(path, d.numbers[e.id], t)
     return path

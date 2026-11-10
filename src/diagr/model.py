@@ -8,6 +8,13 @@ if TYPE_CHECKING:
     from .source import Problem
 
 
+# What a field holds, so an instance of a component can make its own copy: text whose {params} it fills, the id of a
+# node it renames, or a cell (or cells) it moves to the instance's place.
+TEXT = {"instance": "text"}
+REF = {"instance": "id"}
+CELL = {"instance": "cell"}
+
+
 @dataclass(frozen=True)
 class Loc:
     file: str
@@ -37,11 +44,11 @@ class Flow:
 @dataclass
 class Group:
     id: str
-    title: str
-    sub: str = ""
+    title: str = field(metadata=TEXT)
+    sub: str = field(default="", metadata=TEXT)
     icon: str | None = None
     tone: str = "neutral"
-    at: tuple[float, float] | None = None
+    at: tuple[float, float] | None = field(default=None, metadata=CELL)
     span: tuple[float, float] | None = None
     loc: Loc | None = None
     parent: str | None = None
@@ -60,9 +67,9 @@ class Group:
 @dataclass
 class Node:
     id: str
-    at: tuple[float, float] | None
-    title: str = ""
-    sub: list[str] = field(default_factory=list)
+    at: tuple[float, float] | None = field(metadata=CELL)
+    title: str = field(default="", metadata=TEXT)
+    sub: list[str] = field(default_factory=list, metadata=TEXT)
     icon: str | None = None
     tone: str | None = None
     group: str | None = None
@@ -72,13 +79,13 @@ class Node:
     stack: int = 1
     mark: str | None = None
     hidden: bool = False
-    tooltip: str | None = None
+    tooltip: str | None = field(default=None, metadata=TEXT)
     loc: Loc | None = None
     plays: str | None = None
     auto: bool = False
     # Line the node up with another node, wherever each is: same x (one above the other) or same y (side by side).
-    align_x: str | None = None
-    align_y: str | None = None
+    align_x: str | None = field(default=None, metadata=REF)
+    align_y: str | None = field(default=None, metadata=REF)
 
 
 @dataclass
@@ -100,14 +107,14 @@ class Edge:
     id: str
     src: Port
     dst: Port
-    label: str = ""
+    label: str = field(default="", metadata=TEXT)
     route: list[Move] | None = None
-    via: list[tuple[float, float]] | None = None
+    via: list[tuple[float, float]] | None = field(default=None, metadata=CELL)
     dashed: bool = False
     mark: str | None = None
     label_at: float | None = None
     hidden: bool = False
-    tooltip: str | None = None
+    tooltip: str | None = field(default=None, metadata=TEXT)
     loc: Loc | None = None
     # The edge going back the other way, for a pair written 'a <-> b'.
     twin: str | None = None
@@ -220,3 +227,16 @@ class Diagram:
     file: str = "<memory>"
     # What upgrading the file from an older format version rewrote, as warnings.
     upgraded: list[Problem] = field(default_factory=list)
+
+
+def _file_order(x: Group | Node) -> tuple[int, int]:
+    return (x.loc.line, x.loc.col) if x.loc else (0, 0)
+
+
+def held(groups: dict[str, Group], nodes: dict[str, Node], parent: str | None) -> list[list[Group] | list[Node]]:
+    """What a box (or, with no parent, the diagram) holds, as its groups and its nodes, each in file order, the one
+    written first first."""
+    gs = sorted((g for g in groups.values() if g.parent == parent), key=_file_order)
+    ns = sorted((n for n in nodes.values() if n.group == parent), key=_file_order)
+    parts: list[list[Group] | list[Node]] = [p for p in (gs, ns) if p]
+    return sorted(parts, key=lambda p: _file_order(p[0]))

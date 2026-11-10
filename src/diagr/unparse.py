@@ -2,92 +2,32 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import yaml
 
+from . import fields as f
 from .effects import effect_data
 from .layout.auto import place
-from .model import Diagram, Edge, Effect, Flow, Group, Move, Node, Port
-from .parse import PAIR_GAP, held
+from .model import Diagram, Edge, Effect, Group, Node, Port, held
+from .syntax import EDGE, GROUP, NODE, PAIR_GAP, num
 
 HEAD = ("version", "id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 
-def _n(v: float) -> float | int:
-    return int(v) if float(v).is_integer() else round(v, 6)
-
-
-def _pair(p: tuple[float, float]) -> list[float | int]:
-    return [_n(p[0]), _n(p[1])]
-
-
 def _group(g: Group) -> dict[str, Any]:
-    out: dict[str, Any] = {"title": g.title}
-    if g.sub:
-        out["sub"] = g.sub
-    if g.icon:
-        out["icon"] = g.icon
-    out["tone"] = g.tone
-    if g.at is not None:
-        out["at"] = _pair(g.at)
-    if g.span is not None:
-        out["span"] = _pair(g.span)
-    if g.title_at:
-        out["title_at"] = g.title_at
-    if g.flow:
-        out["layout"] = _layout(g.flow)
-    if not g.box:
-        out["box"] = False
-    if g.grow:
-        out["grow"] = _n(g.grow)
-    if g.behind:
-        out["behind"] = dict(g.behind)
-    return out
-
-
-def _layout(fl: Flow) -> dict[str, Any] | str:
-    out: dict[str, Any] = {"direction": fl.direction}
-    if fl.gap != 24:
-        out["gap"] = _n(fl.gap)
-    if fl.align != "center":
-        out["align"] = fl.align
-    if fl.justify != "start":
-        out["justify"] = fl.justify
-    return fl.direction if list(out) == ["direction"] else out
+    return f.dump(GROUP, g, skip=("groups", "nodes"))
 
 
 def _node(n: Node) -> dict[str, Any]:
-    out: dict[str, Any] = {"at": _pair(n.at)} if n.at else {}
-    for key in ("icon", "tone", "title"):
-        if getattr(n, key):
-            out[key] = getattr(n, key)
-    if n.sub:
-        out["sub"] = n.sub[0] if len(n.sub) == 1 else list(n.sub)
-    if n.junction:
-        out["junction"] = True
-    if n.cells:
-        out["cells"] = len(n.cells) if not any(n.cells) else list(n.cells)
-    if n.stack != 1:
-        out["stack"] = n.stack
-    for key in ("mark", "hidden", "tooltip", "align_x", "align_y"):
-        if getattr(n, key):
-            out[key] = getattr(n, key)
-    return out
+    return f.dump(NODE, n)
 
 
 def _port(p: Port) -> str:
     if not p.side:
         return p.node
-    return f"{p.node}@{p.side}" + (f"{_n(p.offset):+}" if p.offset else "")
-
-
-def _move(m: Move) -> str:
-    if m.length is None:
-        return m.dir
-    return f"{m.dir} {_n(m.length)}" + ("px" if m.unit == "px" else "")
+    return f"{p.node}@{p.side}" + (f"{num(p.offset):+}" if p.offset else "")
 
 
 def _edge_key(e: Edge) -> str:
@@ -97,18 +37,7 @@ def _edge_key(e: Edge) -> str:
 
 def _edge(e: Edge, arrow: bool = True) -> dict[str, Any] | str:
     """The edge's value; with arrow, a dashed edge is left to its '-->' key."""
-    out: dict[str, Any] = {}
-    if e.label:
-        out["label"] = e.label
-    if e.route is not None:
-        out["route"] = [_move(m) for m in e.route]
-    if e.via is not None:
-        out["via"] = [_pair(v) for v in e.via]
-    for key in ("dashed", "mark", "hidden", "tooltip"):
-        if getattr(e, key) and not (key == "dashed" and arrow):
-            out[key] = getattr(e, key)
-    if e.label_at is not None:
-        out["label_at"] = e.label_at
+    out = f.dump(EDGE, e, skip=("dashed",) if arrow else ())
     return out["label"] if list(out) == ["label"] else out
 
 
@@ -192,40 +121,20 @@ def _held(d: Diagram, parent: str | None, pad: str) -> list[str]:
     return lines
 
 
-def _along(pts: list[tuple[float, float]], at: tuple[float, float]) -> float:
-    """How far along pts the point at lies, from 0 to 1."""
-    lens = [math.dist(a, b) for a, b in zip(pts, pts[1:], strict=False)]
-    done = 0.0
-    for (a, b), ln in zip(zip(pts, pts[1:], strict=False), lens, strict=True):
-        if ln and abs(math.dist(a, at) + math.dist(at, b) - ln) < 0.01:
-            return round((done + math.dist(a, at)) / sum(lens), 6)
-        done += ln
-    return 0.5
-
-
 def _pin(d: Diagram) -> None:
-    """Give edges drawn for placed nodes the route they were drawn with; the nodes already carry their positions."""
+    """Give edges drawn for placed nodes the route they were drawn with, and what else routing chose for them: the
+    port they end at and where their label sits. The nodes already carry their positions."""
     from .build import prepare
-    from .layout.route import ENTER, as_route, label_point
-    from .layout.text import text_width
+    from .layout.route import as_route
 
-    p = prepare(d)
-    for k, path in p.layout.edges.items():
+    for k, path in prepare(d).layout.edges.items():
         e = d.edges[k]
         if e.route is None and e.via is None and (d.nodes[e.src.node].auto or d.nodes[e.dst.node].auto):
             e.route = as_route(path.points) if len(path.points) > 2 else None
-            # Edges into one side are spread along it, and a label can sit past a shared trunk: write both down.
-            (x0, y0), (x1, y1) = path.points[-2:]
-            side = ENTER["right" if x1 > x0 + 0.01 else "left" if x1 < x0 - 0.01 else "down" if y1 > y0 else "up"]
-            b = p.layout.nodes.get(e.dst.node)
-            if b is not None and not e.dst.side:
-                bx, by = b.port(side)
-                if abs(x1 - bx) > 0.01 or abs(y1 - by) > 0.01:
-                    e.dst = Port(e.dst.node, side, round(y1 - by if side in ("left", "right") else x1 - bx, 2))
-            if path.label_at and e.label_at is None:
-                w = text_width(e.label, p.theme.size("label")) + 10
-                if math.dist(path.label_at, label_point(path.points, None, w)) > 0.01:
-                    e.label_at = _along(path.points, path.label_at)
+            if path.port and not e.dst.side:
+                e.dst = path.port
+            if path.label_frac is not None and e.label_at is None:
+                e.label_at = path.label_frac
 
 
 def to_yaml(d: Diagram, source: dict[str, Any]) -> str:

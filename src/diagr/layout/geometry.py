@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ..model import Edge, Group, Node
+from ..model import Edge, Group, Node, Port
 from ..theme import Theme
 from .text import text_width
 
@@ -90,6 +90,10 @@ class EdgePath:
     badge_box: Rect | None = None
     # False when the edge ends at a box behind another and stops where it meets the one in front.
     tip: bool = True
+    # What routing chose that the edge does not say: the port it ends at, when it meets a side along with other edges,
+    # and where along the path (0 to 1) the label sits, when it moved past a trunk.
+    port: Port | None = None
+    label_frac: float | None = None
 
 
 @dataclass

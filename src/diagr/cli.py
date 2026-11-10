@@ -11,8 +11,9 @@ from . import __version__
 from .build import build_files, prepare_all, write_files
 from .icons import CORE, Icons
 from .migrations import upgrade
-from .parse import ID, json_schema, load_file
+from .parse import load_file
 from .source import DiagramError, Problem, data, load
+from .syntax import ID, json_schema
 from .theme import theme_files
 
 

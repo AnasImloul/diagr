@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import difflib
 import math
 import re
@@ -246,6 +247,10 @@ class Ref(T):
 class F:
     type: T
     required: bool = False
+    # The model field the key fills (default: the key's name), and how a checked value becomes the model's and back.
+    attr: str | None = None
+    read: Callable[[Any], Any] | None = None
+    write: Callable[[Any], Any] | None = None
 
 
 @dataclass
@@ -340,6 +345,42 @@ class MapOf(T):
         if self.min_items:
             s["minProperties"] = self.min_items
         return _describe(s, self.description)
+
+
+def build(cls: type, obj: Obj, rec: Rec, skip: tuple[str, ...] = (), **given: Any) -> Any:
+    """An instance of the dataclass cls from what obj checked; given fills the fields no key does, or a key leaves
+    out. Keys in skip are the caller's to handle."""
+    names = {x.name for x in dataclasses.fields(cls)}
+    values = dict(given)
+    for key, spec in obj.fields.items():
+        if key in skip or key not in rec.values:
+            continue
+        name = spec.attr or key
+        assert name in names, f"{cls.__name__} has no field '{name}' for key '{key}'"
+        v = rec.values[key]
+        values[name] = spec.read(v) if spec.read else v
+    return cls(**values)
+
+
+def dump(obj: Obj, x: Any, skip: tuple[str, ...] = ()) -> dict[str, Any]:
+    """The keys obj declares, as YAML data, for the fields of x that differ from their defaults."""
+    defaults = {}
+    for fl in dataclasses.fields(x):
+        if fl.default is not dataclasses.MISSING:
+            defaults[fl.name] = fl.default
+        elif fl.default_factory is not dataclasses.MISSING:
+            defaults[fl.name] = fl.default_factory()
+    out = {}
+    for key, spec in obj.fields.items():
+        name = spec.attr or key
+        if key in skip:
+            continue
+        assert hasattr(x, name), f"{type(x).__name__} has no field '{name}' for key '{key}'"
+        v = getattr(x, name)
+        if not spec.required and (v is None or (name in defaults and v == defaults[name])):
+            continue
+        out[key] = spec.write(v) if spec.write else v
+    return out
 
 
 def check(t: T, y: Y, problems: list[Problem]) -> Any:
