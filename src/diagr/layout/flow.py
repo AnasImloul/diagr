@@ -13,7 +13,6 @@ from ..model import Diagram, Flow, Group, boxes_around
 from ..theme import Theme
 from .geometry import (
     Rect,
-    _title_width,
     group_title_box,
     middle_title_box,
     node_box,
@@ -21,6 +20,7 @@ from .geometry import (
     title_band,
     title_on_top,
     title_place,
+    title_width,
 )
 
 PAD = 20  # Space inside a laid-out box, on the sides without a title.
@@ -126,7 +126,7 @@ class _Layout:
             h = max(h, head.h)
         w, h = w + left + right, h + top + bottom
         if g.box:
-            w = max(w, 32 + _title_width(g, self.t))
+            w = max(w, 32 + title_width(g, self.t))
         # The space a stack takes includes the boxes behind it, up and to the left of the front one.
         ex, ey = stack_reach(g)
         w, h = w + ex, h + ey

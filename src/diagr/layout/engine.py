@@ -10,7 +10,6 @@ from .geometry import (
     Layout,
     NodeBox,
     Rect,
-    _title_width,
     behind_title_box,
     group_title_box,
     middle_title_box,
@@ -19,6 +18,7 @@ from .geometry import (
     stack_reach,
     title_band,
     title_place,
+    title_width,
 )
 from .route import auto_routes, route_edge
 
@@ -97,7 +97,7 @@ def group_rect(
             grow = (head.h + 2 * inset - (y1 - y0)) / 2
             y0, y1 = y0 - grow, y1 + grow
     else:
-        x1 = max(x1, x0 + 32 + _title_width(g, t))
+        x1 = max(x1, x0 + 32 + title_width(g, t))
     return Rect(x0, y0, x1 - x0, y1 - y0)
 
 

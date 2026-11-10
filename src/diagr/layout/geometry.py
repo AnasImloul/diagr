@@ -150,7 +150,7 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
     )
 
 
-def _title_width(g: Group, t: Theme) -> float:
+def title_width(g: Group, t: Theme) -> float:
     w = text_width(g.title, t.size("group_title"), 600)
     if g.icon:
         w += t.size("group_icon") + 8
@@ -210,7 +210,7 @@ def group_title_box(g: Group, r: Rect, t: Theme, members: list[Rect] | None = No
     edge) or the top, at the left or centred, or as a heading in the middle. A stack's top title sits in the same
     strip as those of the boxes behind it. `members` are the boxes of the group's own nodes, which a middle heading
     sits beside."""
-    place, w = title_place(g), _title_width(g, t)
+    place, w = title_place(g), title_width(g, t)
     if place == "middle":
         return middle_title_box(g, r, t, members or [])
     h = max(t.size("group_title"), t.size("group_icon") if g.icon else 0)

@@ -597,21 +597,3 @@ def _place_badge(path: EdgePath, number: str, t: Theme) -> None:
 
 def badge_width(text: str, t: Theme) -> float:
     return max(2 * t.size("badge"), text_width(text, 11, 600) + 10)
-
-
-def rounded(points: list[Point], r: float = 8) -> str:
-    d = [f"M{_n(points[0][0])} {_n(points[0][1])}"]
-    for i in range(1, len(points) - 1):
-        (x0, y0), (x1, y1), (x2, y2) = points[i - 1], points[i], points[i + 1]
-        la, lb = abs(x1 - x0) + abs(y1 - y0), abs(x2 - x1) + abs(y2 - y1)
-        a = min(r, la / 2) / max(1, la)
-        b = min(r, lb / 2) / max(1, lb)
-        d.append(f"L{_n(x1 - (x1 - x0) * a)} {_n(y1 - (y1 - y0) * a)}")
-        d.append(f"Q{_n(x1)} {_n(y1)} {_n(x1 + (x2 - x1) * b)} {_n(y1 + (y2 - y1) * b)}")
-    d.append(f"L{_n(points[-1][0])} {_n(points[-1][1])}")
-    return " ".join(d)
-
-
-def _n(v: float) -> str:
-    s = f"{v:.1f}"
-    return s[:-2] if s.endswith(".0") else s

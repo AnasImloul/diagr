@@ -6,7 +6,7 @@ import math
 from html import escape
 from typing import TYPE_CHECKING
 
-from ..scene import num
+from .scene import num
 
 if TYPE_CHECKING:
     from ..build import Prepared

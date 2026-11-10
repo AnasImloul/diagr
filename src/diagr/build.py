@@ -10,12 +10,13 @@ from .layout.geometry import Layout
 from .model import Diagram
 from .parse import load_file
 from .render.html import render_html
+from .render.scene import SceneBuilder
 from .render.svg import render_static
 from .scenario import Compiled, compile_scenarios
-from .scene import SceneBuilder
 from .source import DiagramError, Problem
 from .theme import SCHEMES, Theme, load_theme
 from .validate import check_layout, check_model
+from .views import view
 
 
 @dataclass
@@ -48,8 +49,6 @@ def prepare(d: Diagram, theme: str | None = None) -> Prepared:
 
 def prepare_all(d: Diagram, theme: str | None = None) -> list[Prepared]:
     """The diagram and each of its views, ready to render. A view's problems name the view."""
-    from .views import view
-
     out = [prepare(d, theme)]
     out[0].warnings = d.upgraded + out[0].warnings
     for vid in d.views:

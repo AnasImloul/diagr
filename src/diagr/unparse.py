@@ -8,8 +8,11 @@ from typing import Any
 import yaml
 
 from . import fields as f
+from .build import prepare
 from .effects import effect_data
 from .layout.auto import place
+from .layout.flow import laid_out
+from .layout.route import ENTER, EXIT, as_route
 from .model import Diagram, Edge, Effect, Group, Node, Port, held
 from .syntax import EDGE, GROUP, NODE, PAIR_GAP, num
 
@@ -126,9 +129,6 @@ def _pin(d: Diagram) -> None:
     """Pin the diagram as it is drawn: every node and fitted box where it ends up, after alignment and recentring,
     and each edge drawn for a placed node with its route and what else routing chose for it, the port it ends at and
     where its label sits. Pinning the boxes too keeps alignment from lining them up a second time, differently."""
-    from .build import prepare
-    from .layout.flow import laid_out
-    from .layout.route import ENTER, EXIT, as_route
 
     def side(node: str, at: tuple[float, float], offset: float) -> str | None:
         """The side of node whose port, at offset, is the point at."""

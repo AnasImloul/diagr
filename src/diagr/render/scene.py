@@ -5,22 +5,23 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from html import escape
 
-from .icons import Icons, SvgIcon, Tile
-from .layout.geometry import (
+from ..icons import Icons, SvgIcon, Tile
+from ..layout.geometry import (
     EdgePath,
     Layout,
     NodeBox,
+    Point,
     Rect,
     behind_title_box,
     group_title_box,
     heading_size,
     title_place,
 )
-from .layout.route import badge_width, rounded
-from .layout.text import text_width
-from .model import Diagram, Group
-from .scenario import Compiled
-from .theme import Theme
+from ..layout.route import badge_width
+from ..layout.text import text_width
+from ..model import Diagram, Group
+from ..scenario import Compiled
+from ..theme import Theme
 
 SPIN_GLYPH = (
     '<path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/>'
@@ -739,6 +740,25 @@ class SceneBuilder:
             )
         )
         return g
+
+
+def rounded(points: list[Point], r: float = 8) -> str:
+    d = [f"M{_path_num(points[0][0])} {_path_num(points[0][1])}"]
+    for i in range(1, len(points) - 1):
+        (x0, y0), (x1, y1), (x2, y2) = points[i - 1], points[i], points[i + 1]
+        la, lb = abs(x1 - x0) + abs(y1 - y0), abs(x2 - x1) + abs(y2 - y1)
+        a = min(r, la / 2) / max(1, la)
+        b = min(r, lb / 2) / max(1, lb)
+        d.append(f"L{_path_num(x1 - (x1 - x0) * a)} {_path_num(y1 - (y1 - y0) * a)}")
+        d.append(f"Q{_path_num(x1)} {_path_num(y1)} {_path_num(x1 + (x2 - x1) * b)} {_path_num(y1 + (y2 - y1) * b)}")
+    d.append(f"L{_path_num(points[-1][0])} {_path_num(points[-1][1])}")
+    return " ".join(d)
+
+
+def _path_num(v: float) -> str:
+    # Path data keeps one decimal, where attributes keep two (num).
+    s = f"{v:.1f}"
+    return s[:-2] if s.endswith(".0") else s
 
 
 def arrow(points: list[tuple[float, float]], length: float = 10.5, width: float = 10.5) -> str:

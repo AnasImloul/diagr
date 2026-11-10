@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 from ..live import SCRIPT as LIVE
 from ..scenario import Compiled
-from ..scene import num, serialise
 from ..theme import Theme, load_theme
 from .debug import TOGGLE as DEBUG_TOGGLE
 from .debug import overlay
+from .scene import num, serialise
 
 if TYPE_CHECKING:
     from ..build import Prepared

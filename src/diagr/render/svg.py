@@ -5,8 +5,8 @@ from html import escape
 
 from ..layout.text import text_width
 from ..scenario import Compiled
-from ..scene import El, SceneBuilder, num, serialise
 from ..theme import Theme
+from .scene import El, SceneBuilder, num, serialise
 
 STEP_TITLE = 14
 STEP_TEXT = 12.5
