@@ -41,6 +41,18 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
     for k in d.groups:
         if k in d.nodes:
             p.append(Problem(d.nodes[k].loc, f"'{k}' is both a group and a node; ids must be unique"))
+    _check_placing(d, p)
+    _check_groups(d, t, icons, p)
+    _check_nodes(d, t, icons, p)
+    _check_edges(d, p)
+    for sc in d.scenarios.values():
+        p += check_scenario(d, sc)
+    _check_hidden(d, p)
+    return p
+
+
+def _check_placing(d: Diagram, p: list[Problem]) -> None:
+    """Cells given where a layout places things, and `align_x` / `align_y` that cannot be followed."""
     flowed, flowed_groups = laid_out(d)
     for k in flowed:
         if d.nodes[k].at is not None:
@@ -65,6 +77,9 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
                 )
             elif _aligns_back(d, target, n.id, key):
                 p.append(Problem(n.loc, f"node '{n.id}': '{key}' goes round in a loop back to it"))
+
+
+def _check_groups(d: Diagram, t: Theme, icons: Icons, p: list[Problem]) -> None:
     stacked: set[str] = set()
     for g in d.groups.values():
         for lid in g.behind:
@@ -84,6 +99,9 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             )
         elif g.parent and _in_loop(d, g.id):
             p.append(Problem(g.loc, f"group '{g.id}' is inside itself through 'in'"))
+
+
+def _check_nodes(d: Diagram, t: Theme, icons: Icons, p: list[Problem]) -> None:
     seen: dict[tuple[float, float], str] = {}
     for n in d.nodes.values():
         if n.group and n.group not in d.groups:
@@ -98,6 +116,9 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             p.append(Problem(n.loc, f"node '{n.id}' sits on the same cell as '{seen[n.at]}'"))
         if n.at is not None:
             seen[n.at] = n.id
+
+
+def _check_edges(d: Diagram, p: list[Problem]) -> None:
     owner = stack_owners(d)
     ends = set(d.nodes) | set(d.groups) | set(owner)
     for e in d.edges.values():
@@ -121,10 +142,6 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
                     _warn(
                         p, e.loc, f"edge '{e.id}' is visible but node '{end}' starts hidden; mark the edge hidden too"
                     )
-    for sc in d.scenarios.values():
-        p += check_scenario(d, sc)
-    _check_hidden(d, p)
-    return p
 
 
 def _aligns_back(d: Diagram, start: str, back_to: str, key: str) -> bool:

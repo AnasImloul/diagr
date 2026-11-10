@@ -119,6 +119,61 @@ def _json(obj: object) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
 
 
+def _player(comps: list[Compiled]) -> tuple[str, str, str]:
+    """The scenario player: its panel, the script with each scenario's frames, and CSS that shows only the badges of
+    the scenario playing."""
+    first = comps[0]
+    lists = "\n".join(_steps(c, hidden=c is not first) for c in comps)
+    picker = ""
+    if len(comps) > 1:
+        picker = (
+            '<div class="scenarios" role="group" aria-label="Scenario">'
+            + "".join(
+                f'<button type="button" data-scenario="{escape(c.id, quote=True)}" '
+                f'aria-pressed="{"true" if c is first else "false"}">{escape(c.title or c.id)}</button>'
+                for c in comps
+            )
+            + "</div>"
+        )
+    controls = (
+        '<div class="controls" role="toolbar" aria-label="Scenario" data-playing="0">'
+        + _button("reset", "Reset (Home)")
+        + _button("back", "Previous step (Left)")
+        + _button("play", "Play (Space)")
+        + _button("pause", "Pause (Space)")
+        + _button("next", "Next step (Right)")
+        + f'<input id="scrub" type="range" min="0" max="{len(first.frames) - 1}" step="1" value="0" '
+        'aria-label="Position">' + '<select id="speed" aria-label="Speed"><option value="0.5">0.5x</option>'
+        '<option value="1" selected>1x</option><option value="2">2x</option></select></div>'
+    )
+    panel = (
+        f'<div class="panel idle" id="panel">{picker}<div class="bar"><i id="fill"></i></div>'
+        f'<div class="row"><div id="status" aria-live="polite">{escape(first.ready)}</div>{controls}</div>'
+        f"{lists}</div>"
+    )
+    payload = {
+        "scenarios": [
+            {
+                "id": c.id,
+                "loop": c.loop,
+                "ready": c.ready,
+                "frames": [f.to_json() for f in c.frames],
+                "steps": [{"first": s.first, "last": s.last} for s in c.steps],
+            }
+            for c in comps
+        ]
+    }
+    script = (
+        f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
+        f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>"
+    )
+    badges = "\n".join(
+        f'svg.diagr[data-scenario="{c.id}"] [data-badges]:not([data-badges="{c.id}"]) {{ display: none; }}'
+        for c in comps
+    )
+    return panel, script, badges
+
+
 def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
     d, t = p.diagram, p.theme
     sb = p.scene()
@@ -153,58 +208,10 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
     contrast = _contrast(t, d.base)
     css = root + contrast + (ASSETS / "page.css").read_text(encoding="utf-8") + "\n" + paint_css
 
-    panel = ""
-    script = ""
+    panel = script = ""
     if comps:
-        first = comps[0]
-        lists = "\n".join(_steps(c, hidden=c is not first) for c in comps)
-        picker = ""
-        if len(comps) > 1:
-            picker = (
-                '<div class="scenarios" role="group" aria-label="Scenario">'
-                + "".join(
-                    f'<button type="button" data-scenario="{escape(c.id, quote=True)}" '
-                    f'aria-pressed="{"true" if c is first else "false"}">{escape(c.title or c.id)}</button>'
-                    for c in comps
-                )
-                + "</div>"
-            )
-        controls = (
-            '<div class="controls" role="toolbar" aria-label="Scenario" data-playing="0">'
-            + _button("reset", "Reset (Home)")
-            + _button("back", "Previous step (Left)")
-            + _button("play", "Play (Space)")
-            + _button("pause", "Pause (Space)")
-            + _button("next", "Next step (Right)")
-            + f'<input id="scrub" type="range" min="0" max="{len(first.frames) - 1}" step="1" value="0" '
-            'aria-label="Position">' + '<select id="speed" aria-label="Speed"><option value="0.5">0.5x</option>'
-            '<option value="1" selected>1x</option><option value="2">2x</option></select></div>'
-        )
-        panel = (
-            f'<div class="panel idle" id="panel">{picker}<div class="bar"><i id="fill"></i></div>'
-            f'<div class="row"><div id="status" aria-live="polite">{escape(first.ready)}</div>{controls}</div>'
-            f"{lists}</div>"
-        )
-        payload = {
-            "scenarios": [
-                {
-                    "id": c.id,
-                    "loop": c.loop,
-                    "ready": c.ready,
-                    "frames": [f.to_json() for f in c.frames],
-                    "steps": [{"first": s.first, "last": s.last} for s in c.steps],
-                }
-                for c in comps
-            ]
-        }
-        script = (
-            f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
-            f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>"
-        )
-        css += "\n" + "\n".join(
-            f'svg.diagr[data-scenario="{c.id}"] [data-badges]:not([data-badges="{c.id}"]) {{ display: none; }}'
-            for c in comps
-        )
+        panel, script, badges = _player(comps)
+        css += "\n" + badges
 
     toolbar = f'<div class="zoom" role="toolbar" aria-label="View">{CONTRAST if contrast else ""}{ZOOM_BUTTONS}</div>'
     title = escape(d.title or d.id)
