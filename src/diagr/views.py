@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 
-from .model import Diagram, Effect
+from .model import Diagram, Effect, stack_owners
 from .scenario import resolve_edge
 from .source import Problem, did_you_mean
 
@@ -98,7 +98,7 @@ def view(d: Diagram, vid: str) -> Diagram:
     out.id, out.title, out.views = f"{d.id}-{vid}", v.title or d.title, {}
     out.nodes = {k: n for k, n in out.nodes.items() if k in keep}
     groups: set[str] = set()
-    owner = {lid: g.id for g in d.groups.values() for lid in g.behind}
+    owner = stack_owners(d)
     for g in [n.group for n in out.nodes.values()] + [owner.get(k, k) for k in keep if owner.get(k, k) in d.groups]:
         while g in d.groups and g not in groups:
             groups.add(g)

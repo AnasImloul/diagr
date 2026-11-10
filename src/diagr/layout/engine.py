@@ -7,8 +7,6 @@ from ..scenario import walk_effects
 from ..theme import Theme
 from .flow import flow
 from .geometry import (
-    BEHIND_X,
-    BEHIND_Y,
     Layout,
     NodeBox,
     Rect,
@@ -17,6 +15,8 @@ from .geometry import (
     group_title_box,
     middle_title_box,
     node_box,
+    stack,
+    stack_reach,
     title_band,
     title_place,
 )
@@ -188,12 +188,6 @@ def align(d: Diagram, keys: list[str], rects: dict[str, Rect], nodes: dict[str, 
             return
 
 
-def stack(d: Diagram, k: str, r: Rect) -> list[tuple[str, Rect]]:
-    return [
-        (lid, Rect(r.x - BEHIND_X * i, r.y - BEHIND_Y * i, r.w, r.h)) for i, lid in enumerate(d.groups[k].behind, 1)
-    ]
-
-
 def follow(d: Diagram, t: Theme, k: str, old: Rect, rects: dict[str, Rect], fixed: set[str]) -> None:
     """After alignment moved a side of box k, its child boxes that sat flush with that side (the usual padding in
     from it) move with it, and so on down."""
@@ -203,7 +197,7 @@ def follow(d: Diagram, t: Theme, k: str, old: Rect, rects: dict[str, Rect], fixe
         if cg.parent != k or c not in rects or c in fixed:
             continue
         r = rects[c]
-        ex, ey = BEHIND_X * len(cg.behind), BEHIND_Y * len(cg.behind)
+        ex, ey = stack_reach(cg)
         x0, y0, x1, y1 = r.x - ex, r.y - ey, r.x1, r.y1
         if new.x < old.x - 0.5 and abs(x0 - (old.x + inset)) < 1.5:
             x0 = new.x + inset
@@ -341,7 +335,7 @@ def layout(d: Diagram, t: Theme) -> Layout:
         if d.align:
             # Line up whole stacks: each box with the boxes stacked behind it, then put the front box back inside.
             keys = [k for k in level if k in fitted and k not in frames]
-            ext = {k: (BEHIND_X * len(d.groups[k].behind), BEHIND_Y * len(d.groups[k].behind)) for k in keys}
+            ext = {k: stack_reach(d.groups[k]) for k in keys}
             hull = {
                 k: Rect(r.x - ext[k][0], r.y - ext[k][1], r.w + ext[k][0], r.h + ext[k][1])
                 for k, r in fitted.items()
@@ -355,11 +349,11 @@ def layout(d: Diagram, t: Theme) -> Layout:
                     follow(d, t, k, old, fitted, set(frames))
         for k in level:
             if k in fitted and d.groups[k].behind:
-                layers[k] = stack(d, k, fitted[k])
+                layers[k] = stack(d.groups[k], fitted[k])
     if d.align:
         recentre(d, t, sized, fitted, nodes, slots, set(frames))
     # A box may have grown with its parent since its level: place the boxes behind it again.
-    layers = {k: stack(d, k, fitted[k]) for k in layers}
+    layers = {k: stack(d.groups[k], fitted[k]) for k in layers}
     # Outer groups first, so inner ones are drawn on top and fill_at() finds the innermost.
     groups = {k: fitted[k] for k in sorted(fitted, key=lambda k: group_depth(d, k))}
     auto, trunks, ports = auto_routes(d, nodes, groups, t)

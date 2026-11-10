@@ -58,9 +58,11 @@ class NodeBox:
     reach: float = 0
     # A group's box as an edge end: its ports are on the box's sides, offsets measured from their middles.
     area: bool = False
+    # A point, not a box (a junction): edges meet at its middle, and it covers nothing.
+    point: bool = False
 
     def port(self, side: str, offset: float = 0.0) -> Point:
-        if self.node.junction:
+        if self.point:
             return (self.x, self.y)
         if self.area:
             b = self.box
@@ -108,7 +110,7 @@ class Layout:
 
 def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
     if n.junction:
-        return NodeBox(n, x, y, y, [], None, None, None, y, Rect(x - 4, y - 4, 8, 8))
+        return NodeBox(n, x, y, y, [], None, None, None, y, Rect(x - 4, y - 4, 8, 8), point=True)
     half = t.size("icon") / 2
     title_y = y + half + 20
     sub_ys = [title_y + t.size("line") * (j + 1) for j in range(slots)]
@@ -159,6 +161,16 @@ def _title_width(g: Group, t: Theme) -> float:
 
 # How far each box stacked behind a group sits up and to the left of the one in front, in px.
 BEHIND_X, BEHIND_Y = 24, 28
+
+
+def stack_reach(g: Group) -> tuple[float, float]:
+    """How far the boxes stacked behind g reach up and to the left of it, in px."""
+    return BEHIND_X * len(g.behind), BEHIND_Y * len(g.behind)
+
+
+def stack(g: Group, r: Rect) -> list[tuple[str, Rect]]:
+    """The boxes stacked behind g, nearest first, when g's box is r."""
+    return [(lid, Rect(r.x - BEHIND_X * i, r.y - BEHIND_Y * i, r.w, r.h)) for i, lid in enumerate(g.behind, 1)]
 
 
 def title_place(g: Group) -> str:

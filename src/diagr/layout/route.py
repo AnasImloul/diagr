@@ -333,7 +333,7 @@ def auto_routes(
     coming: dict[str, list[tuple[float, str]]] = {}
     for k in [*found, *back]:
         e = d.edges[k]
-        if e.dst.side is None and not e.dst.offset and not nodes[e.dst.node].node.junction:
+        if e.dst.side is None and not e.dst.offset and not nodes[e.dst.node].point:
             if k in found:
                 at = found[k][2]
             else:

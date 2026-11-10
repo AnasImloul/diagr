@@ -240,3 +240,8 @@ def held(groups: dict[str, Group], nodes: dict[str, Node], parent: str | None) -
     ns = sorted((n for n in nodes.values() if n.group == parent), key=_file_order)
     parts: list[list[Group] | list[Node]] = [p for p in (gs, ns) if p]
     return sorted(parts, key=lambda p: _file_order(p[0]))
+
+
+def stack_owners(d: Diagram) -> dict[str, str]:
+    """Each box stacked behind a group, and the group it is behind."""
+    return {lid: g.id for g in d.groups.values() for lid in g.behind}

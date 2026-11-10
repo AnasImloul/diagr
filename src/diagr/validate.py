@@ -3,7 +3,7 @@ from __future__ import annotations
 from .icons import Icons, SvgIcon, Tile
 from .layout.flow import laid_out
 from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box
-from .model import Diagram, Effect, Loc, Scenario
+from .model import Diagram, Effect, Loc, Scenario, stack_owners
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem, did_you_mean
 from .theme import Theme
@@ -98,7 +98,7 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             p.append(Problem(n.loc, f"node '{n.id}' sits on the same cell as '{seen[n.at]}'"))
         if n.at is not None:
             seen[n.at] = n.id
-    owner = {lid: g.id for g in d.groups.values() for lid in g.behind}
+    owner = stack_owners(d)
     ends = set(d.nodes) | set(d.groups) | set(owner)
     for e in d.edges.values():
         for end in (e.src, e.dst):
@@ -217,7 +217,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                 Problem(e.loc, f"cannot set '{target}'{hint} (use node.title, node.sub, node.sub.N or a->b.label)")
             )
     elif v == "flow":
-        ends = set(d.nodes) | set(d.groups) | {lid for g in d.groups.values() for lid in g.behind}
+        ends = set(d.nodes) | set(d.groups) | set(stack_owners(d))
         for x in e.targets:
             if x not in ends:
                 p.append(Problem(e.loc, f"'flow': unknown node or group '{x}'{did_you_mean(x, ends)}"))
@@ -252,7 +252,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
     for k, path in lay.edges.items():
         for msg in path.problems:
             p.append(Problem(d.edges[k].loc, f"edge '{k}': {msg}"))
-    boxes = [(k, b.box) for k, b in lay.nodes.items() if not b.node.junction]
+    boxes = [(k, b.box) for k, b in lay.nodes.items() if not b.point]
     for i, (a, ra) in enumerate(boxes):
         for b, rb in boxes[i + 1 :]:
             if ra.overlaps(rb):
@@ -262,7 +262,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         if g in lay.groups and not lay.groups[g].contains((b.x, b.y)):
             p.append(Problem(d.nodes[k].loc, f"node '{k}' is outside its group '{g}'"))
     for k, b in lay.nodes.items():
-        if b.node.junction:
+        if b.point:
             continue
         inside = _ancestors(d, b.node.group)
         for g, r in lay.groups.items():
@@ -280,7 +280,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
                 _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps the label of '{k2}'")
     for k, box in labels:
         for n, b in lay.nodes.items():
-            if n in (d.edges[k].src.node, d.edges[k].dst.node) or b.node.junction:
+            if n in (d.edges[k].src.node, d.edges[k].dst.node) or b.point:
                 continue
             if box.overlaps(b.box):
                 _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps node '{n}'")
@@ -295,7 +295,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
     }
     for g, title in titles.items():
         for n, b in lay.nodes.items():
-            if not b.node.junction and b.box.overlaps(title):
+            if not b.point and b.box.overlaps(title):
                 _warn(p, d.nodes[n].loc, f"node '{n}' covers the title of group '{g}'")
         for c, r in lay.groups.items():
             if c != g and _within(d, c, g) and r.overlaps(title):
@@ -304,7 +304,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         e = d.edges[k]
         segments = list(zip(path.points, path.points[1:], strict=False))
         for n, b in lay.nodes.items():
-            if n not in (e.src.node, e.dst.node) and not b.node.junction and _crosses(segments, b.box):
+            if n not in (e.src.node, e.dst.node) and not b.point and _crosses(segments, b.box):
                 _warn(p, e.loc, f"edge '{k}' passes through node '{n}'")
         for g, box in titles.items():
             if _crosses(segments, box):

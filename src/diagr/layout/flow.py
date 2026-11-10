@@ -12,13 +12,12 @@ from dataclasses import dataclass
 from ..model import Diagram, Flow, Group
 from ..theme import Theme
 from .geometry import (
-    BEHIND_X,
-    BEHIND_Y,
     Rect,
     _title_width,
     group_title_box,
     middle_title_box,
     node_box,
+    stack_reach,
     title_band,
     title_on_top,
     title_place,
@@ -139,7 +138,8 @@ class _Layout:
         if g.box:
             w = max(w, 32 + _title_width(g, self.t))
         # The space a stack takes includes the boxes behind it, up and to the left of the front one.
-        w, h = w + BEHIND_X * len(g.behind), h + BEHIND_Y * len(g.behind)
+        ex, ey = stack_reach(g)
+        w, h = w + ex, h + ey
         self.sizes[k] = (w, h)
         return w, h
 
@@ -157,7 +157,7 @@ class _Layout:
             return
         g = self.d.groups[item.id]
         # A stack's boxes behind sit up and to the left: keep them inside the space given.
-        ex, ey = BEHIND_X * len(g.behind), BEHIND_Y * len(g.behind)
+        ex, ey = stack_reach(g)
         box = Rect(r.x + ex, r.y + ey, r.w - ex, r.h - ey) if g.behind else r
         self.frames[item.id] = box
         left, top, right, bottom = self.pads(g)
