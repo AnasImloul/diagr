@@ -22,8 +22,8 @@ from pathlib import Path
 from typing import Any
 
 from .build import prepare
-from .parse import from_tree
-from .source import DiagramError, load
+from .parse import loads
+from .source import DiagramError
 from .theme import SCHEMES
 
 log = logging.getLogger("mkdocs.plugins.diagr")
@@ -67,9 +67,9 @@ def render(source: str, mode: str = "auto", css_class: str = "diagr") -> str:
     from .render.html import render_html
     from .render.svg import render_static
 
-    d = from_tree(load(source, "<diagr block>"), "<diagr block>", Path.cwd())
+    d = loads(source, "<diagr block>", Path.cwd())
     p = prepare(d)
-    for w in p.warnings:
+    for w in d.upgraded + p.warnings:
         log.warning("diagr block: %s", w)
     title = html.escape(d.title or d.id, quote=True)
     if mode == "player" or (mode == "auto" and d.scenarios):

@@ -30,6 +30,7 @@ To start your own, `uv run diagr init my-flow.yml` writes this starter diagram (
 example above):
 
 ```yaml
+version: 2
 id: order-flow
 title: Order processing
 grid: {col: 200, row: 170}

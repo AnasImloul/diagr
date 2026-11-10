@@ -7,8 +7,7 @@ from pathlib import Path
 
 from diagr import DiagramError, Problem
 from diagr.build import prepare_all
-from diagr.parse import from_tree
-from diagr.source import load
+from diagr.parse import loads
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -17,7 +16,7 @@ def problems(yml: str, base: Path | None = None, theme: str | None = None) -> li
     """Every problem diagr reports for a diagram given as YAML text: errors, or the warnings of a clean build."""
     text = textwrap.dedent(yml)
     try:
-        d = from_tree(load(text, "t.yml"), "t.yml", base or ROOT)
+        d = loads(text, "t.yml", base or ROOT)
         return [w for p in prepare_all(d, theme) for w in p.warnings]
     except DiagramError as e:
         return e.problems

@@ -17,9 +17,8 @@ import diagr as package
 from diagr.build import prepare
 from diagr.cli import main as diagr
 from diagr.icons import Icons, Tile
-from diagr.parse import from_tree
+from diagr.parse import loads
 from diagr.render.svg import render_static
-from diagr.source import load
 from diagr.theme import SCHEMES
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
@@ -158,7 +157,7 @@ def _icon_gallery() -> str:
     icons = Icons([])
     cells = []
     for name, _, _ in icons.available():
-        d = from_tree(load(f"id: icon\nnodes:\n  x: {{icon: {name}}}\n", "<icon>"), "<icon>", Path.cwd())
+        d = loads(f"id: icon\nnodes:\n  x: {{icon: {name}}}\n", "<icon>", Path.cwd())
         p = prepare(d)
         # The node sits at [0, 0]: crop the picture to its tile, leaving out the room kept for a title.
         h = p.theme.size("icon") / 2 + 6

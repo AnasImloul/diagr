@@ -5,10 +5,10 @@ import traceback
 from pathlib import Path
 
 from diagr.build import prepare_all
-from diagr.parse import from_tree
+from diagr.parse import loads
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
-from diagr.source import DiagramError, Problem, load
+from diagr.source import DiagramError, Problem
 
 FILE = "diagram.yml"
 
@@ -27,7 +27,7 @@ def _problem(p: Problem) -> dict:
 def build(text: str, want: str, view: str = "", contrast: bool = False) -> str:
     """`want` is "html", "light" or "dark"; `view` a view's key, or "" for the whole diagram."""
     try:
-        d = from_tree(load(text, FILE), FILE, Path.cwd())
+        d = loads(text, FILE, Path.cwd())
         views = [{"key": "", "title": "Whole diagram"}] + [
             {"key": k, "title": v.title or k} for k, v in d.views.items()
         ]

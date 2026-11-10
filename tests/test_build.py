@@ -9,10 +9,9 @@ import unittest
 
 from diagr import prepare
 from diagr.cli import STARTER, _watched, main
-from diagr.parse import from_tree
+from diagr.parse import loads
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
-from diagr.source import load
 from diagr.theme import BUILTIN, theme_files
 from tests.support import ROOT, Case
 
@@ -27,7 +26,7 @@ edges:
 
 
 def prepared(yml: str, theme: str | None = None, base=ROOT):
-    return prepare(from_tree(load(textwrap.dedent(yml), "t.yml"), "t.yml", base), theme)
+    return prepare(loads(textwrap.dedent(yml), "t.yml", base), theme)
 
 
 def cli(*argv: str) -> tuple[int, str, str]:

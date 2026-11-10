@@ -7,6 +7,7 @@ from pathlib import Path
 from . import fields as f
 from .components import expand, instance_fill
 from .effects import EFFECT_SCHEMA, Actions, Ctx, parse_effects
+from .migrations import VERSION, upgrade
 from .model import (
     Component,
     Diagram,
@@ -387,6 +388,15 @@ VIEW = f.Obj(
 DIAGRAM = f.Obj(
     "diagram",
     {
+        "version": f.F(
+            f.Num(
+                integer=True,
+                minimum=1,
+                maximum=VERSION,
+                description=f"Format version the file is written in; default 1. The current one is {VERSION}; diagr "
+                "upgrades older ones as it reads them, with a warning for each change",
+            )
+        ),
         "id": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),
         "title": f.F(f.Str()),
         "description": f.F(f.Str(description="Accessible description of the whole diagram")),
@@ -749,6 +759,17 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     return d
 
 
+def loads(text: str, file: str, base: Path) -> Diagram:
+    """A diagram from YAML text, upgraded from an older format version first."""
+    tree, upgraded = upgrade(load(text, file))
+    try:
+        d = from_tree(tree, file, base)
+    except DiagramError as e:
+        raise DiagramError(upgraded + e.problems) from None
+    d.upgraded = upgraded
+    return d
+
+
 def load_file(path: str | Path) -> Diagram:
     path = Path(path)
     try:
@@ -757,4 +778,4 @@ def load_file(path: str | Path) -> Diagram:
         raise DiagramError([Problem(None, f"cannot read {path}: {e.strerror or e}")]) from None
     except UnicodeDecodeError:
         raise DiagramError([Problem(None, f"cannot read {path}: not UTF-8 text")]) from None
-    return from_tree(load(text, str(path)), str(path), path.resolve().parent)
+    return loads(text, str(path), path.resolve().parent)

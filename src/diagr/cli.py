@@ -10,8 +10,9 @@ from pathlib import Path
 from . import __version__
 from .build import build_files, prepare_all, write_files
 from .icons import CORE, Icons
+from .migrations import upgrade
 from .parse import ID, json_schema, load_file
-from .source import DiagramError, Problem
+from .source import DiagramError, Problem, data, load
 from .theme import theme_files
 
 
@@ -86,13 +87,11 @@ def cmd_check(args) -> int:
 
 
 def cmd_expand(args) -> int:
-    import yaml
-
     from .unparse import to_yaml
 
     try:
         d = load_file(args.file)
-        source = yaml.safe_load(Path(args.file).read_text(encoding="utf-8"))
+        source = data(upgrade(load(Path(args.file).read_text(encoding="utf-8"), args.file))[0])
         text = to_yaml(d, source)
     except DiagramError as e:
         _report(e.problems)

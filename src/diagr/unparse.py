@@ -12,7 +12,7 @@ from .layout.auto import place
 from .model import Diagram, Edge, Effect, Flow, Group, Move, Node, Port
 from .parse import PAIR_GAP, held
 
-HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
+HEAD = ("version", "id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 

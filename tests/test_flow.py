@@ -4,8 +4,7 @@ import unittest
 
 import yaml
 
-from diagr.parse import from_tree
-from diagr.source import load
+from diagr.parse import loads
 from diagr.unparse import to_yaml
 from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
@@ -233,7 +232,7 @@ class HangingButtons(Case):
 class Expand(Case):
     def test_keeps_layout_and_box_keys(self):
         yml = STACK.replace("    box: false\n", "    box: false\n    title_at: top\n")
-        d = from_tree(load(yml, "t.yml"), "t.yml", ROOT)
+        d = loads(yml, "t.yml", ROOT)
         out = yaml.safe_load(to_yaml(d, yaml.safe_load(yml)))
         self.assertEqual(out["groups"]["top"]["layout"], "row")
         self.assertIs(out["groups"]["hidden"]["box"], False)
@@ -253,7 +252,7 @@ class Expand(Case):
                 "      a: {at: [0, 0], icon: api}",
             ]
         )
-        d = from_tree(load(yml, "t.yml"), "t.yml", ROOT)
+        d = loads(yml, "t.yml", ROOT)
         self.assertEqual(yaml.safe_load(to_yaml(d, yaml.safe_load(yml)))["groups"]["g"]["behind"], {"g-dev": "dev"})
 
 

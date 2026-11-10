@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import difflib
 from dataclasses import dataclass
+from typing import Any
 
 import yaml
 
@@ -54,6 +55,21 @@ class YMap(Y):
 
     def keys(self) -> list[str]:
         return [k.value for k, _ in self.pairs]
+
+
+def data(y: Y) -> Any:
+    """The tree as plain YAML data, as yaml.safe_load gives it."""
+    if isinstance(y, YMap):
+        return {k.value: data(v) for k, v in y.pairs}
+    if isinstance(y, YSeq):
+        return [data(i) for i in y.items]
+    assert isinstance(y, YScalar)
+    tag = (
+        "tag:yaml.org,2002:str"
+        if y.quoted
+        else yaml.resolver.Resolver().resolve(yaml.ScalarNode, y.value, (True, False))
+    )
+    return yaml.constructor.SafeConstructor().construct_object(yaml.ScalarNode(tag, y.value))
 
 
 def _loc(file: str, node: yaml.Node) -> Loc:

@@ -113,9 +113,6 @@ def _text(key: str, text: str, y: Y, ctx: Ctx) -> Effect | None:
         return None
     target, rest = parts[0], parts[1:]
     ms = _ms(rest[0]) if len(rest) == 1 else None
-    if target == "set" and len(rest) == 1:
-        ctx.fail(y, f"write '{rest[0]}: text', without 'set'")
-        return None
     if target in VERBS:
         ctx.fail(
             y,

@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .source import Problem
 
 
 @dataclass(frozen=True)
@@ -215,3 +218,5 @@ class Diagram:
     component_actions: dict[str, dict[str, Effect]] = field(default_factory=dict)
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
+    # What upgrading the file from an older format version rewrote, as warnings.
+    upgraded: list[Problem] = field(default_factory=list)

@@ -3,6 +3,12 @@
   "title": "diagr diagram",
   "type": "object",
   "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2,
+      "description": "Format version the file is written in; default 1. The current one is 2; diagr upgrades older ones as it reads them, with a warning for each change"
+    },
     "id": {
       "type": "string",
       "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$",

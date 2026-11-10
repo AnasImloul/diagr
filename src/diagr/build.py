@@ -51,6 +51,7 @@ def prepare_all(d: Diagram, theme: str | None = None) -> list[Prepared]:
     from .views import view
 
     out = [prepare(d, theme)]
+    out[0].warnings = d.upgraded + out[0].warnings
     for vid in d.views:
         try:
             p = prepare(view(d, vid), theme)

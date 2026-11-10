@@ -4,8 +4,7 @@ import textwrap
 import unittest
 
 from diagr.build import build_files, prepare_all
-from diagr.parse import from_tree
-from diagr.source import load
+from diagr.parse import loads
 from tests.support import ROOT, Case, problems
 
 BASE = """
@@ -42,7 +41,7 @@ views:
 
 
 def views(yml: str):
-    d = from_tree(load(textwrap.dedent(yml), "t.yml"), "t.yml", ROOT)
+    d = loads(textwrap.dedent(yml), "t.yml", ROOT)
     return {p.diagram.id: p for p in prepare_all(d)}
 
 

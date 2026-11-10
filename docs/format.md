@@ -1,10 +1,11 @@
-# Diagram format (v1)
+# Diagram format
 
 A diagram is one YAML file. It says what exists (groups, nodes, edges) and, optionally, what happens (a scenario).
 Colours, fonts and sizes live in the theme, not here. To try any of it without installing diagr, paste it into the
 [playground](playground.md).
 
 ```yaml
+version: 2                   # format version; see Versions
 id: order-flow               # used for output file names
 title: Order processing
 description: One sentence, used as the accessible label.
@@ -530,6 +531,20 @@ views:
 
 The [multi-region example](examples/multi-region.md#views) has a dynamic view of a pinned diagram, and the
 [event-driven example](examples/event-driven.md#views) one that is laid out again.
+
+## Versions
+
+`version` says which version of the format a file is written in; a file without it is version 1. diagr reads older
+versions too: it upgrades the file as it reads it, and warns at each place it rewrote with what the current version
+writes there, so `diagr check` lists what to change. `diagr init` and `diagr expand` write the current version.
+
+Version 2 changed:
+
+- A group or node goes inside the group that holds it; `in:` is only for instances.
+- A trigger button is written on its scenario, `trigger: {at: node, label: ...}`, not as `trigger` and `plays` on the
+  node.
+- `{repeat: 3, do: [...]}` is `repeat 3: [...]`.
+- Text changes are `node.sub 300ms: text` and `status: text`, not `set node.sub text` or `status text`.
 
 ## Validation
 
