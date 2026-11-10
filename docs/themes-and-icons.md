@@ -42,10 +42,10 @@ gradient of generated icon tiles.
 Icons are looked up by name: first in the diagram's `icons:` folders, in order, then in the core set
 (`src/diagr/iconsets/core/icons.yml`).
 
-The core set is neutral on purpose: `api`, `balancer`, `bell`, `branch`, `browser`, `bucket`, `cache`, `chart`,
-`check`, `clock`, `cloud`, `container`, `cpu`, `cube`, `database`, `events`, `file`, `folder`, `function`, `gateway`,
-`globe`, `key`, `lake`, `layers`, `lock`, `mail`, `mobile`, `monitor`, `network`, `notebook`, `pipeline`, `queue`,
-`refresh`, `search`, `server`, `settings`, `shield`, `terminal`, `upload` and `user`.
+The core set is neutral on purpose. These are all of its icons, each with the tone its tile uses unless the node
+sets `tone`; `diagr icons` lists them in the terminal, along with those in a diagram's own folders.
+
+<!-- icon-gallery -->
 
 An icon folder holds either kind of icon:
 

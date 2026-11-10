@@ -300,6 +300,44 @@ iframe.diagr-embed {
   box-shadow: var(--dg-shadow);
 }
 
+/* The core icon gallery on the themes and icons page. */
+.md-typeset .dg-icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.75rem;
+  margin: 1.5em 0 2em;
+}
+
+.md-typeset .dg-icon {
+  display: block;
+  width: auto;
+  margin: 0;
+  padding: 0.9em 0.4em 0.8em;
+  text-align: center;
+  border: 1px solid var(--dg-rule);
+  border-radius: var(--dg-radius);
+  background-color: var(--dg-bg);
+}
+
+.md-typeset .dg-icon img {
+  width: 3.2rem;
+  vertical-align: top;
+}
+
+.md-typeset .dg-icon figcaption {
+  display: grid;
+  justify-items: center;
+  gap: 0.2em;
+  margin: 0.5em 0 0;
+  max-width: none;
+  font-style: normal;
+}
+
+.md-typeset .dg-icon figcaption span {
+  color: var(--dg-muted);
+  font-size: 0.75em;
+}
+
 /* A view is often a small part of the diagram: show it at its own size, never wider than the column. */
 .md-typeset img.dg-view {
   width: auto;

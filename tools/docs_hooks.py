@@ -1,14 +1,23 @@
-"""MkDocs hook: build every example with diagr and publish it as a docs page."""
+"""MkDocs hook: build every example with diagr and publish it as a docs page, and draw the core icon gallery."""
 
+import base64
 import contextlib
+import html
 import io
+import re
 import tempfile
 from pathlib import Path
 
 import yaml
 from mkdocs.structure.files import File
 
+from diagr.build import prepare
 from diagr.cli import main as diagr
+from diagr.icons import Icons, Tile
+from diagr.parse import from_tree
+from diagr.render.svg import render_static
+from diagr.source import load
+from diagr.theme import SCHEMES
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 
@@ -117,3 +126,38 @@ def on_files(files, config):
         items.append(ITEM.format(id=id_, title=title, description=description))
     files.append(File.generated(config, "examples/index.md", content=INDEX.format(items="\n".join(items))))
     return files
+
+
+GALLERY = "<!-- icon-gallery -->"
+
+
+def _icon_gallery() -> str:
+    """Every core icon, drawn by diagr itself as a one-node diagram, in light and dark."""
+    icons = Icons([])
+    cells = []
+    for name, _, _ in icons.available():
+        d = from_tree(load(f"id: icon\nnodes:\n  x: {{icon: {name}}}\n", "<icon>"), "<icon>", Path.cwd())
+        p = prepare(d)
+        # The node sits at [0, 0]: crop the picture to its tile, leaving out the room kept for a title.
+        h = p.theme.size("icon") / 2 + 6
+        box = f'viewBox="{-h} {-h} {2 * h} {2 * h}" width="{2 * h}" height="{2 * h}"'
+        imgs = ""
+        for scheme in SCHEMES:
+            svg = re.sub(
+                r'viewBox="[^"]*" width="[^"]*" height="[^"]*"', box, render_static(p.scene(), p.theme, scheme), count=1
+            )
+            svg = base64.b64encode(svg.encode()).decode()
+            imgs += f'<img alt="" src="data:image/svg+xml;base64,{svg}#only-{scheme}">'
+        ic = icons.get(name)
+        note = f"{ic.tone}, spins" if isinstance(ic, Tile) and ic.spins else ic.tone if isinstance(ic, Tile) else ""
+        cells.append(
+            f'<figure class="dg-icon">{imgs}<figcaption><code>{html.escape(name)}</code>'
+            f"<span>{html.escape(note)}</span></figcaption></figure>"
+        )
+    return '<div class="dg-icons">' + "".join(cells) + "</div>"
+
+
+def on_page_markdown(markdown, page, config, files):
+    if GALLERY in markdown:
+        return markdown.replace(GALLERY, _icon_gallery())
+    return markdown
