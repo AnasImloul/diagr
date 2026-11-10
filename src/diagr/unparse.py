@@ -8,7 +8,7 @@ import yaml
 
 from .model import Diagram, Edge, Group, Move, Node, Port
 
-HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list", "direction")
+HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 

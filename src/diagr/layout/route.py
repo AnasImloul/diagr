@@ -161,6 +161,60 @@ def _gap(
     return lo, hi
 
 
+def _straight(e: Edge, a: NodeBox, b: NodeBox) -> list[Point] | None:
+    """An edge with a box at one end or both goes straight across when the two line up: at a named port, at the
+    node's own x or y, or in the middle of where two boxes overlap. A side named on either end must agree."""
+
+    def span(n: NodeBox, vertical: bool, inset: float) -> tuple[float, float]:
+        if n.area:
+            lo, hi = (n.box.x, n.box.x1) if vertical else (n.box.y, n.box.y1)
+            return lo + inset, hi - inset
+        return (n.x, n.x) if vertical else (n.y, n.y)
+
+    for vertical in (True, False):
+        # A named port lines up anywhere along a box; the middle of an overlap keeps clear of the corners.
+        lo = max(span(a, vertical, 0)[0], span(b, vertical, 0)[0])
+        hi = min(span(a, vertical, 0)[1], span(b, vertical, 0)[1])
+        if lo > hi + 0.5:
+            continue
+        if vertical:
+            ab, ba = b.box.y >= a.box.y1, a.box.y >= b.box.y1
+            sides = ("bottom", "top") if ab else ("top", "bottom") if ba else None
+        else:
+            ab, ba = b.box.x >= a.box.x1, a.box.x >= b.box.x1
+            sides = ("right", "left") if ab else ("left", "right") if ba else None
+        if sides is None or e.src.side not in (None, sides[0]) or e.dst.side not in (None, sides[1]):
+            continue
+        axis = 0 if vertical else 1
+        named = [
+            n.port(side, end.offset)[axis] for n, side, end in ((a, sides[0], e.src), (b, sides[1], e.dst)) if end.side
+        ]
+        if len(named) == 2 and abs(named[0] - named[1]) > 0.5:
+            continue
+        if named:
+            c = named[0]
+        elif not a.area:
+            c = a.x if vertical else a.y
+        elif not b.area:
+            c = b.x if vertical else b.y
+        else:
+            c = (
+                max(span(a, vertical, 12)[0], span(b, vertical, 12)[0])
+                + min(span(a, vertical, 12)[1], span(b, vertical, 12)[1])
+            ) / 2
+        if not lo - 0.5 <= c <= hi + 0.5:
+            continue
+
+        def end(n: NodeBox, side: str) -> float:
+            if n.area:
+                return {"top": n.box.y, "bottom": n.box.y1, "left": n.box.x, "right": n.box.x1}[side]
+            return {"top": n.y - n.reach, "bottom": n.bottom, "left": n.x - n.reach, "right": n.x + n.reach}[side]
+
+        p0, p1 = end(a, sides[0]), end(b, sides[1])
+        return [(c, p0), (c, p1)] if vertical else [(p0, c), (p1, c)]
+    return None
+
+
 def _clear(p: Point, to: float, down: bool, rects: list[Rect]) -> bool:
     """Whether a straight line from p across the flow to `to` misses every rect."""
     if down:
@@ -289,7 +343,47 @@ def as_route(pts: list[Point]) -> list[Move]:
     return moves
 
 
-def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme, auto: list[Point] | None = None) -> EdgePath:
+def _cut(pts: list[Point], rects: list[Rect]) -> list[Point] | None:
+    """pts up to where they first enter one of rects, or None if they never do (or start inside one)."""
+    if any(r.x < pts[0][0] < r.x1 and r.y < pts[0][1] < r.y1 for r in rects):
+        return None
+    for i, (p, q) in enumerate(zip(pts, pts[1:], strict=False)):
+        best: float | None = None
+        for r in rects:
+            for t in _entries(p, q, r):
+                best = t if best is None else min(best, t)
+        if best is not None:
+            hit = (p[0] + (q[0] - p[0]) * best, p[1] + (q[1] - p[1]) * best)
+            return [*pts[: i + 1], hit]
+    return None
+
+
+def _entries(p: Point, q: Point, r: Rect) -> list[float]:
+    """Where along the segment p-q (0 to 1) it crosses into r through one of its sides."""
+    out = []
+    for axis, lo, hi in ((0, r.x, r.x1), (1, r.y, r.y1)):
+        other = 1 - axis
+        olo, ohi = (r.y, r.y1) if axis == 0 else (r.x, r.x1)
+        span = q[axis] - p[axis]
+        if abs(span) < 1e-9:
+            continue
+        for edge in (lo, hi):
+            t = (edge - p[axis]) / span
+            if 0 < t <= 1:
+                o = p[other] + (q[other] - p[other]) * t
+                if olo < o < ohi:
+                    out.append(t)
+    return out
+
+
+def route_edge(
+    e: Edge,
+    nodes: dict[str, NodeBox],
+    d: Diagram,
+    t: Theme,
+    auto: list[Point] | None = None,
+    covers: dict[str, list[Rect]] | None = None,
+) -> EdgePath:
     a, b = nodes[e.src.node], nodes[e.dst.node]
     problems: list[str] = []
     if e.via:
@@ -303,11 +397,23 @@ def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme, auto: l
         pts = _solve(e, a.port(s_side, e.src.offset), b.port(t_side, e.dst.offset), d, problems)
     elif auto is not None:
         pts = auto
+    elif (a.area or b.area) and (straight := _straight(e, a, b)):
+        pts = straight
     else:
         s_side, t_side, bend = _default_sides(a, b)
         s_side, t_side = e.src.side or s_side, e.dst.side or t_side
         p0, p1 = a.port(s_side, e.src.offset), b.port(t_side, e.dst.offset)
-        if bend or (abs(p0[0] - p1[0]) > 0.5 and abs(p0[1] - p1[1]) > 0.5):
+        upright = {"top", "bottom"}
+        if (s_side in upright) == (t_side in upright) and abs(p0[0] - p1[0]) > 0.5 and abs(p0[1] - p1[1]) > 0.5:
+            # Both ends leave the same way (both up or down, or both sideways): a Z with the bend halfway, so the
+            # edge never runs along a side to reach its port.
+            if s_side in upright:
+                mid = (p0[1] + p1[1]) / 2
+                pts = [p0, (p0[0], mid), (p1[0], mid), p1]
+            else:
+                mid = (p0[0] + p1[0]) / 2
+                pts = [p0, (mid, p0[1]), (mid, p1[1]), p1]
+        elif bend or (abs(p0[0] - p1[0]) > 0.5 and abs(p0[1] - p1[1]) > 0.5):
             pts = [p0, (p1[0], p0[1]) if s_side in ("left", "right") else (p0[0], p1[1]), p1]
         else:
             pts = [p0, p1]
@@ -319,12 +425,19 @@ def route_edge(e: Edge, nodes: dict[str, NodeBox], d: Diagram, t: Theme, auto: l
         if abs(p[0] - q[0]) > 0.5 and abs(p[1] - q[1]) > 0.5:
             problems.append("edge has a diagonal segment; add a route or via points")
             break
+    # An edge to a box stacked behind another stops, without a tip, where it meets the one in front; one from such a
+    # box starts where it comes out from behind.
+    tip = True
+    if covers and e.dst.node in covers and (cut := _cut(pts, covers[e.dst.node])):
+        pts, tip = cut, False
+    if covers and e.src.node in covers and (cut := _cut(pts[::-1], covers[e.src.node])):
+        pts = cut[::-1]
     label = box = None
     if e.label:
         w = text_width(e.label, t.size("label")) + 10
         label = label_point(pts, e.label_at, w)
         box = Rect(label[0] - w / 2, label[1] - 9, w, 18)
-    path = EdgePath(e, pts, label, box, problems)
+    path = EdgePath(e, pts, label, box, problems, tip=tip)
     if e.id in d.numbers:
         _place_badge(path, d.numbers[e.id], t)
     return path

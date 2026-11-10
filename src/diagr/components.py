@@ -43,9 +43,9 @@ def _check(c: Component, problems: list[Problem]) -> None:
     for e in c.edges.values():
         scan(e.loc, f"edge '{e.id}'", e.label, e.tooltip)
         for end in (e.src.node, e.dst.node):
-            if end not in c.nodes:
+            if end not in c.nodes and end not in c.groups:
                 problems.append(
-                    Problem(e.loc, f"component '{c.id}': edge '{e.id}' goes to '{end}', not one of its nodes")
+                    Problem(e.loc, f"component '{c.id}': edge '{e.id}' goes to '{end}', not one of its nodes or groups")
                 )
 
 
@@ -74,6 +74,7 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
             sub=fill(g.sub),
             at=shift(g.at) if g.at else None,
             parent=name(g.parent) if g.parent else p.parent,
+            behind={name(k): fill(v) for k, v in g.behind.items()},
         )
     for n in c.nodes.values():
         d.nodes[name(n.id)] = replace(

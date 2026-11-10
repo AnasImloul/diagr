@@ -99,13 +99,14 @@ def view(d: Diagram, vid: str) -> Diagram:
     out.id, out.title, out.views = f"{d.id}-{vid}", v.title or d.title, {}
     out.nodes = {k: n for k, n in out.nodes.items() if k in keep}
     groups: set[str] = set()
-    for n in out.nodes.values():
-        g = n.group
+    owner = {lid: g.id for g in d.groups.values() for lid in g.behind}
+    for g in [n.group for n in out.nodes.values()] + [owner.get(k, k) for k in keep if owner.get(k, k) in d.groups]:
         while g in d.groups and g not in groups:
             groups.add(g)
             g = d.groups[g].parent
     out.groups = {k: g for k, g in out.groups.items() if k in groups}
-    out.edges = {k: e for k, e in out.edges.items() if e.src.node in keep and e.dst.node in keep}
+    ends = set(out.nodes) | groups | {lid for lid, g in owner.items() if g in groups}
+    out.edges = {k: e for k, e in out.edges.items() if e.src.node in ends and e.dst.node in ends}
     out.scenarios = {k: s for k, s in out.scenarios.items() if k in v.scenarios}
     if v.scenario:
         _, edges, steps = story(d, v.scenario)

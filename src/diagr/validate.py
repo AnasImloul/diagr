@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .icons import Icons, SvgIcon, Tile
-from .layout.geometry import Layout, Point, Rect, group_title_box
+from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box
 from .model import Diagram, Effect, Loc, Scenario
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem, did_you_mean
@@ -40,6 +40,12 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
     for k in d.groups:
         if k in d.nodes:
             p.append(Problem(d.nodes[k].loc, f"'{k}' is both a group and a node; ids must be unique"))
+    stacked: set[str] = set()
+    for g in d.groups.values():
+        for lid in g.behind:
+            if lid in d.nodes or lid in d.groups or lid in stacked:
+                p.append(Problem(g.loc, f"group '{g.id}': box behind it '{lid}' reuses an id; ids must be unique"))
+            stacked.add(lid)
     for g in d.groups.values():
         if g.tone not in t.tones:
             p.append(Problem(g.loc, f"group '{g.id}': unknown tone '{g.tone}' (theme has {', '.join(t.tones)})"))
@@ -72,10 +78,17 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             p.append(Problem(n.loc, f"node '{n.id}': 'plays' names unknown scenario '{n.plays}' (scenarios: {names})"))
         elif n.plays and not n.trigger:
             _warn(p, n.loc, f"node '{n.id}' has 'plays' but no 'trigger' button")
+    owner = {lid: g.id for g in d.groups.values() for lid in g.behind}
+    ends = set(d.nodes) | set(d.groups) | set(owner)
     for e in d.edges.values():
         for end in (e.src, e.dst):
-            if end.node not in d.nodes:
-                p.append(Problem(e.loc, f"edge '{e.id}': unknown node '{end.node}'{did_you_mean(end.node, d.nodes)}"))
+            if end.node not in ends:
+                p.append(
+                    Problem(e.loc, f"edge '{e.id}': unknown node or group '{end.node}'{did_you_mean(end.node, ends)}")
+                )
+        for a, b in ((e.src.node, e.dst.node), (e.dst.node, e.src.node)):
+            if a in d.nodes and owner.get(b, b) in d.groups and _within(d, d.nodes[a].group, owner.get(b, b)):
+                p.append(Problem(e.loc, f"edge '{e.id}' joins '{a}' to the group '{b}' it is in"))
         if e.id in d.nodes or e.id in d.groups:
             p.append(Problem(e.loc, f"edge id '{e.id}' is also a node or group id"))
         if e.route is not None and e.via is not None:
@@ -92,6 +105,16 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         p += check_scenario(d, sc)
     _check_hidden(d, p)
     return p
+
+
+def _within(d: Diagram, gid: str | None, outer: str) -> bool:
+    seen: set[str] = set()
+    while gid in d.groups and gid not in seen:
+        if gid == outer:
+            return True
+        seen.add(gid)
+        gid = d.groups[gid].parent
+    return False
 
 
 def _in_loop(d: Diagram, gid: str) -> bool:
@@ -154,11 +177,12 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
                 )
             )
     elif v == "flow":
+        ends = set(d.nodes) | set(d.groups) | {lid for g in d.groups.values() for lid in g.behind}
         for x in e.targets:
-            if x not in d.nodes:
-                p.append(Problem(e.loc, f"'flow': unknown node '{x}'{did_you_mean(x, d.nodes)}"))
+            if x not in ends:
+                p.append(Problem(e.loc, f"'flow': unknown node or group '{x}'{did_you_mean(x, ends)}"))
         for a, b in zip(e.targets, e.targets[1:], strict=False):
-            if a in d.nodes and b in d.nodes and resolve_edge(d, f"{a}->{b}") is None:
+            if a in ends and b in ends and resolve_edge(d, f"{a}->{b}") is None:
                 pairs = [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
                 why = f"several edges go from '{a}' to '{b}'; use 'draw' with one of: {', '.join(pairs)}"
                 p.append(Problem(e.loc, f"'flow': {why if pairs else f'no edge from {a!r} to {b!r}'}"))
@@ -220,7 +244,22 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
                 continue
             if box.overlaps(b.box):
                 _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps node '{n}'")
-    titles = {k: group_title_box(d.groups[k], r, t) for k, r in lay.groups.items()}
+    own: dict[str, list[Rect]] = {}
+    for nb in lay.nodes.values():
+        own.setdefault(nb.node.group or "", []).append(nb.box)
+    titles = {k: group_title_box(d.groups[k], r, t, own.get(k, [])) for k, r in lay.groups.items()}
+    behind = {
+        lid: (k, behind_title_box(d.groups[k], d.groups[k].behind[lid], r, t))
+        for k, ls in lay.layers.items()
+        for lid, r in ls
+    }
+    for g, title in titles.items():
+        for n, b in lay.nodes.items():
+            if not b.node.junction and b.box.overlaps(title):
+                _warn(p, d.nodes[n].loc, f"node '{n}' covers the title of group '{g}'")
+        for c, r in lay.groups.items():
+            if c != g and _within(d, c, g) and r.overlaps(title):
+                _warn(p, d.groups[c].loc, f"group '{c}' covers the title of group '{g}'")
     for k, path in lay.edges.items():
         e = d.edges[k]
         segments = list(zip(path.points, path.points[1:], strict=False))
@@ -230,6 +269,9 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         for g, box in titles.items():
             if _crosses(segments, box):
                 _warn(p, e.loc, f"edge '{k}' crosses the title of group '{g}'")
+        for lid, (g, box) in behind.items():
+            if _crosses(segments, box):
+                _warn(p, e.loc, f"edge '{k}' crosses the title of '{lid}', stacked behind group '{g}'")
     gl = list(lay.groups.items())
     for i, (a, ra) in enumerate(gl):
         for b, rb in gl[i + 1 :]:

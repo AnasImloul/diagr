@@ -6,10 +6,10 @@ from dataclasses import dataclass, field
 from html import escape
 
 from .icons import Icons, SvgIcon, Tile
-from .layout.geometry import Layout, NodeBox, Rect
+from .layout.geometry import Layout, NodeBox, Rect, behind_title_box, group_title_box, heading_size, title_place
 from .layout.route import badge_width, rounded
 from .layout.text import text_width
-from .model import Diagram
+from .model import Diagram, Group
 from .scenario import Compiled
 from .theme import Theme
 
@@ -148,6 +148,38 @@ class SceneBuilder:
             defs.add(El("symbol", {"id": sid, "viewBox": ic.view_box}, [inner]))
         return defs
 
+    def heading(self, g: Group, tb: Rect) -> list[El | Raw | str]:
+        """A `title_at: middle` title: a heading, with the sub text on the line below."""
+        t, hs = self.t, heading_size(self.t)
+        x, out = tb.x, []
+        if g.icon:
+            gs = t.size("group_icon")
+            out += self.icon(g.icon, x + gs / 2, tb.y + hs / 2, gs)
+            x += gs + 8
+        out.append(
+            El(
+                "text",
+                {"class": "gtitle", "x": num(x), "y": num(tb.y + hs), "font-size": num(hs), "font-weight": 700},
+                [escape(g.title)],
+                paint={"fill": "text"},
+            )
+        )
+        if g.sub:
+            out.append(
+                El(
+                    "text",
+                    {
+                        "class": "gsub",
+                        "x": num(x),
+                        "y": num(tb.y + hs + t.size("line") + 2),
+                        "font-size": num(t.size("group_sub")),
+                    },
+                    [escape(g.sub)],
+                    paint={"fill": "muted"},
+                )
+            )
+        return out
+
     def edge_badge(self, text: str, x: float, y: float) -> El:
         """A dynamic view's step numbers on an edge, centred on (x, y) and styled like a node's step badge, for the
         view's scenario (its first)."""
@@ -203,6 +235,38 @@ class SceneBuilder:
         for gid, r in lay.groups.items():
             g = d.groups[gid]
             el = El("g", {"class": "grp", "data-id": gid, "id": f"g-{safe_id(gid)}"})
+            # Boxes stacked behind, deepest first, each with its title in the strip the box in front leaves showing.
+            for lid, lr in reversed(lay.layers.get(gid, [])):
+                el.add(
+                    El(
+                        "rect",
+                        {
+                            "x": num(lr.x),
+                            "y": num(lr.y),
+                            "width": num(lr.w),
+                            "height": num(lr.h),
+                            "rx": num(t.size("group_radius")),
+                            "stroke-width": num(t.size("edge")),
+                            "data-layer": lid,
+                        },
+                        paint={"fill": f"tone-{g.tone}-fill", "stroke": f"tone-{g.tone}-stroke"},
+                    )
+                )
+                tb = behind_title_box(g, g.behind[lid], lr, t)
+                el.add(
+                    El(
+                        "text",
+                        {
+                            "class": "gtitle",
+                            "x": num(tb.x),
+                            "y": num(tb.y1 - 4),
+                            "font-size": num(t.size("group_title")),
+                            "font-weight": 600,
+                        },
+                        [escape(g.behind[lid])],
+                        paint={"fill": "text"},
+                    )
+                )
             el.add(
                 El(
                     "rect",
@@ -217,7 +281,13 @@ class SceneBuilder:
                     paint={"fill": f"tone-{g.tone}-fill", "stroke": f"tone-{g.tone}-stroke"},
                 )
             )
-            hx, hy = r.x + 16, r.y1 - 16
+            own = [nb.box for nb in lay.nodes.values() if nb.node.group == gid]
+            tb = group_title_box(g, r, t, own)
+            if title_place(g) == "middle":
+                el.add(*self.heading(g, tb))
+                body.add(el)
+                continue
+            hx, hy = tb.x, tb.y + max(t.size("group_title"), t.size("group_icon") if g.icon else 0)
             tx = hx
             if g.icon:
                 gs = t.size("group_icon")
@@ -276,8 +346,8 @@ class SceneBuilder:
                     paint={"stroke": stroke},
                 )
             )
-            into_junction = d.nodes[e.dst.node].junction
-            if not into_junction:
+            into_junction = e.dst.node in d.nodes and d.nodes[e.dst.node].junction
+            if not into_junction and p.tip:
                 el.add(El("path", {"class": "head", "d": arrow(p.points)}, paint={"fill": stroke}))
             el.add(
                 El(
@@ -287,7 +357,7 @@ class SceneBuilder:
                     only="html",
                 )
             )
-            if not into_junction:
+            if not into_junction and p.tip:
                 el.add(El("path", {"class": "head-ok", "d": arrow(p.points)}, paint={"fill": "accent"}, only="html"))
             if e.tooltip:
                 el.add(El("title", {}, [escape(e.tooltip)]))

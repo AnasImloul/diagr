@@ -25,7 +25,7 @@ components:
     edges:
       api -> worker: jobs
       api -> prices: {label: prices, route: [up 40px, right, down]}
-      worker -> db@bottom-16: {label: write, route: [down 56px, right, up]}
+      worker -> db@left: {label: write, route: [down 56px, right, up, right 70px]}
 
 # Two instances. Their nodes are a/api, a/worker, ... and b/api, b/worker, ...
 instances:

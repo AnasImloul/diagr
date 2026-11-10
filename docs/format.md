@@ -11,6 +11,7 @@ theme: default               # built-in name or a path to a theme file
 icons: [./icons]             # extra icon folders, searched before the core set
 grid: {col: 200, row: 170}   # cell size in px
 direction: right             # automatic layout flows right (default) or down
+align: true                  # line up the edges of neighbouring boxes that nearly line up (default)
 step_list: true              # numbered badges and the step list in static output
 ```
 
@@ -20,11 +21,30 @@ step_list: true              # numbered badges and the step list in static outpu
 groups:
   back: {title: Backend, sub: one region, icon: cloud, tone: teal}
   bi:   {title: Reporting, tone: neutral, at: [5, 0], span: [1, 3]}
+  lake: {title: Landing zone, title_at: top, tone: violet}
+  etl:  {title: Data processing, sub: "ETL: raw to clean", title_at: middle, tone: blue}
 ```
 
-A group is a tinted box with its title at the bottom left. Without `at` it fits around its member nodes. With `at`
-(top-left cell) and `span` (cells wide and tall) it covers a fixed area, which is how you make several groups the
-same height. Tones come from the theme: `neutral`, `blue`, `teal`, `green`, `violet`, `amber`, `orange`.
+A group is a tinted box with its title at the bottom left; `title_at` moves it: `top` or `bottom` centres it along
+that edge, `top-left` puts it in the top corner, and `middle` makes it a heading, larger and bolder, centred top to
+bottom just right of the box's own nodes, with `sub` on the line below as a description (a card with an icon on the
+left and its name beside it). A box that fits its contents leaves room for the title on the side it is on. Without
+`at` it fits around its member nodes. With `at` (top-left cell) and `span` (cells wide and tall) it covers a fixed
+area, which is how you make several groups the same height. Tones come from the theme: `neutral`, `blue`, `teal`,
+`green`, `violet`, `amber`, `orange`.
+
+**Alignment.** Neighbouring boxes with the same parent that nearly line up are lined up: boxes one above the other
+share their left and right edges when those are within a grid column of each other, boxes side by side share their
+top and bottom edges within a row. Boxes only grow, so what they hold stays inside, and a side moves only when the
+grown box covers no node or box it did not cover already. Child boxes that sat flush with a side that moves move with
+it, so they keep filling their parent. What a grown box holds keeps its place relative to the box: its pinned nodes
+and the child boxes that did not grow with it move by the shift of its middle, so a centred node stays centred. That
+move is skipped on an axis where it would bend an edge running straight along it to a node outside the box, or an
+edge with its own `route` or `via`; nodes placed automatically stay where they were placed. It happens level by
+level, inner boxes first, so a parent fits around children already lined up. A group with [boxes stacked
+behind](#stacked-boxes) it lines up by the outline of the whole stack, so the stack never sticks out past its
+neighbours. A box much narrower than its neighbour is left as it is: give it `at` and `span` to make it as wide.
+`align: false` on the diagram turns it off.
 
 ### Nested groups
 
@@ -39,6 +59,28 @@ groups:
 room for its title below them. A child with `at` keeps its fixed area and must lie inside its parent. Each level adds
 a margin around the one inside it, so deeply nested groups reach a little past their columns: leave a fractional
 column (`at: [2.2, 0]`) between them and their neighbours. `show`, `hide` and `focus` on a group affect only its box.
+
+### Stacked boxes
+
+```yaml
+groups:
+  compute: {title: prod workspace, behind: {compute-dev: dev workspace}, tone: neutral}
+edges:
+  deploy-dev -> compute-dev: dev workspace
+  deploy-prod -> compute: prod workspace
+```
+
+`behind` stacks boxes behind a group, for the same thing in several places (a dev and a prod workspace, say), nearest
+first. Each is a copy of the group's box, 24px further left and 28px further up for each step back, with its own id
+and its title in the strip along its top that the box in front leaves showing. Every title in a stack, the front
+box's included, sits at the top left in the same style (centred along the top with `title_at: top`), and a stack that
+fits its contents leaves room above them for it. The nodes and child groups stay on the front box, and a parent fits
+around the whole stack.
+
+An edge can end at a box behind like at any box. If its path meets a box in front first, it stops there without a
+tip, as if it went on underneath; one that reaches the box on a side that shows (its top or left strip) ends on it
+with a tip. An edge from a box behind starts where it comes out from behind. The boxes behind follow the group's
+`show`, `hide` and `focus`.
 
 ## Nodes
 
@@ -88,6 +130,12 @@ edges:
 - **Ports.** `node@side` forces a side (`left`, `right`, `top`, `bottom`), and `+15` or `-15` shifts the point along
   that side in px. Use it when two edges share a side.
 - **`via`** lists explicit waypoints in grid cells, as an escape hatch.
+- **Boxes as ends.** Either end can be a group id instead of a node, or a [box stacked behind](#stacked-boxes) one:
+  `deploy -> workspace: dev`, `api -> data`. When the two ends line up, the edge goes straight across: at the node's
+  own x or y, at the named port, or in the middle of where two boxes overlap. Otherwise it goes to a side the usual
+  way, and `group@side+40` picks the side and the point (offsets are from the side's middle). A `flow` path can pass
+  through a box, which has no active or done state of its own; `draw` works as for any edge. An edge between a node
+  and a group it is in is an error.
 - **`as name`** gives the edge an id. The default id is `a->b`; a second edge between the same pair needs a name.
 - Other keys: `dashed`, `mark`, `label_at` (0 to 1 along the path; the default is the middle of the longest
   horizontal run), `hidden`, `tooltip`.
@@ -298,13 +346,14 @@ The [multi-region example](examples/multi-region.md#views) has a dynamic view of
 ## Validation
 
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and
-scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges to
-nowhere, edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal
-segments, two nodes on one cell, nodes outside their group, groups outside their parent or inside themselves,
-triggers that play an unknown scenario, effects that reference nothing, unknown components or parameters, and broken
-theme or `icons.yml` files. Overlapping nodes, labels over nodes or over other labels, overlapping groups, nodes over a group they are
-not in, edges through a node they do not connect or across a group's title, hidden nodes or edges that no `show`
-reveals, and visible edges into hidden nodes are warnings; `--strict` makes them fail.
+scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges to nowhere,
+edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal segments, two
+nodes on one cell, nodes outside their group, groups outside their parent or inside themselves, triggers that play an
+unknown scenario, effects that reference nothing, unknown components or parameters, and broken theme or `icons.yml`
+files. Overlapping nodes, labels over nodes or over other labels, overlapping groups, nodes over a group they are not
+in, nodes or child groups over a group's title, edges through a node they do not connect or across a group's title,
+hidden nodes or edges that no `show` reveals, and visible edges into hidden nodes are warnings; `--strict` makes them
+fail.
 
 ## Python
 

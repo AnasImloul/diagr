@@ -157,11 +157,11 @@ class _Compiler:
         if v == "flow":
             out = []
             for a, b in zip(e.targets, e.targets[1:], strict=False):
-                for sub in (
-                    Effect("activate", [a], ms=e.ms, loc=e.loc),
-                    Effect("draw", [f"{a}->{b}"], loc=e.loc),
-                    Effect("done", [a], loc=e.loc),
-                ):
+                # A box on the path is passed through: it has no active or done state of its own.
+                subs = [Effect("draw", [f"{a}->{b}"], loc=e.loc)]
+                if a in self.d.nodes:
+                    subs = [Effect("activate", [a], ms=e.ms, loc=e.loc), *subs, Effect("done", [a], loc=e.loc)]
+                for sub in subs:
                     out += self._run(sub, step, i)
             return out
         if v == "wait":

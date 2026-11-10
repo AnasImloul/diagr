@@ -31,6 +31,10 @@ class Group:
     span: tuple[float, float] | None = None
     loc: Loc | None = None
     parent: str | None = None
+    # Boxes stacked behind this one, nearest first: id -> title. Edges can end at them like at any box.
+    behind: dict[str, str] = field(default_factory=dict)
+    # Where the title goes: bottom-left, top-left, top or bottom; "" is bottom-left, or top-left for a stack.
+    title_at: str = ""
 
 
 @dataclass
@@ -163,6 +167,7 @@ class Diagram:
     scenarios: dict[str, Scenario] = field(default_factory=dict)
     step_list: bool = True
     direction: str = "right"
+    align: bool = True
     views: dict[str, View] = field(default_factory=dict)
     # Edge id -> the step numbers its badge shows, for a dynamic view: "2" or "2,5".
     numbers: dict[str, str] = field(default_factory=dict)

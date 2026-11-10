@@ -75,6 +75,8 @@ class Param(f.T):
         )
 
 
+TITLE_AT = ("bottom-left", "top-left", "top", "bottom", "middle")
+
 GROUP = f.Obj(
     "group",
     {
@@ -85,6 +87,21 @@ GROUP = f.Obj(
         "at": f.F(f.Pair(description="Top-left cell [col, row]; default: fit the member nodes and groups")),
         "span": f.F(f.Pair(minimum=1, description="Size in cells [cols, rows]")),
         "in": f.F(f.Str(description="Parent group id")),
+        "title_at": f.F(
+            f.Str(
+                enum=TITLE_AT,
+                description="Where the title goes: bottom-left (default), top-left (default for a stack), "
+                "top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below",
+            )
+        ),
+        "behind": f.F(
+            f.MapOf(
+                f.Str(),
+                key_pattern=REF,
+                key_description=IDS,
+                description="Boxes stacked behind this one, nearest first, as id: title; edges can end at them",
+            )
+        ),
     },
     description="A titled, tinted container around nodes and other groups",
 )
@@ -241,6 +258,7 @@ DIAGRAM = f.Obj(
         ),
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
         "direction": f.F(f.Str(enum=("right", "down"), description="Which way automatically placed nodes flow")),
+        "align": f.F(f.Bool(description="Line up the edges of sibling boxes that nearly line up (default true)")),
         "views": f.F(
             f.MapOf(
                 VIEW,
@@ -293,6 +311,8 @@ def _group(e: f.Entry) -> Group:
         g.get("span"),
         e.loc,
         parent=g.get("in"),
+        behind={b.key: b.value for b in g.get("behind", [])},
+        title_at=g.get("title_at", ""),
     )
 
 
@@ -379,6 +399,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         grid=Grid(grid.get("col", 215), grid.get("row", 160)) if grid else Grid(),
         step_list=rec.get("step_list", True),
         direction=rec.get("direction", "right"),
+        align=rec.get("align", True),
         base=base,
         file=file,
     )

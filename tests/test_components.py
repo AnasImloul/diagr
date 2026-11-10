@@ -135,7 +135,7 @@ class Errors(Case):
             self.assertReports(found, text)
 
     def test_reference_to_a_missing_copy(self):
-        self.assertReports(problems(BASE.replace("lb -> b/api:", "lb -> c/api:")), "unknown node 'c/api'")
+        self.assertReports(problems(BASE.replace("lb -> b/api:", "lb -> c/api:")), "unknown node or group 'c/api'")
 
 
 if __name__ == "__main__":
