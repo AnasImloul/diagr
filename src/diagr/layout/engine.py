@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..model import Diagram, Group, Node
+from ..model import Diagram, Group, Node, boxes_around
 from ..scenario import walk_effects
 from ..theme import Theme
 from .flow import flow
@@ -43,13 +43,7 @@ def footprint(r: Rect, layers: list[tuple[str, Rect]]) -> Rect:
 
 
 def group_depth(d: Diagram, gid: str) -> int:
-    depth, seen = 0, {gid}
-    parent = d.groups[gid].parent
-    while parent in d.groups and parent not in seen:
-        seen.add(parent)
-        depth += 1
-        parent = d.groups[parent].parent
-    return depth
+    return len(boxes_around(d, gid)) - 1
 
 
 def group_rect(
@@ -112,20 +106,11 @@ def align(d: Diagram, keys: list[str], rects: dict[str, Rect], nodes: dict[str, 
     those are within a grid column of each other, boxes side by side their top and bottom edges within a row. Boxes
     only grow, and a side moves only if the grown box covers no node or box it did not cover already."""
 
-    def inside(n: str, k: str) -> bool:
-        g, seen = d.nodes[n].group, set()
-        while g in d.groups and g not in seen:
-            if g == k:
-                return True
-            seen.add(g)
-            g = d.groups[g].parent
-        return False
-
     def safe(k: str, new: Rect) -> bool:
         old = rects[k]
         pad = Rect(new.x - 8, new.y - 8, new.w + 16, new.h + 16)
-        for n, nb in nodes.items():
-            if not inside(n, k) and nb.box.overlaps(pad) and not nb.box.overlaps(old):
+        for nb in nodes.values():
+            if k not in boxes_around(d, nb.node.group) and nb.box.overlaps(pad) and not nb.box.overlaps(old):
                 return False
         for g, r in rects.items():
             if g != k and g in keys and r.overlaps(pad) and not r.overlaps(old):
@@ -232,7 +217,7 @@ def recentre(
         still = [c for c, cg in d.groups.items() if cg.parent == k and c in rects and rects[c] == sized[c]]
         boxes = set(still)
         for c in list(still):
-            boxes |= {g for g in d.groups if g in rects and _inside(d, g, c)}
+            boxes |= {g for g in d.groups if g in rects and c in boxes_around(d, d.groups[g].parent)}
         moving = {n for n, nb in nodes.items() if nb.node.group == k or nb.node.group in boxes}
         if any(nodes[n].node.auto for n in moving):
             # Placed nodes are where the placer put them; `diagr expand` pins them there.
@@ -261,16 +246,6 @@ def recentre(
         for g in boxes:
             r = rects[g]
             rects[g] = sized[g] = Rect(r.x + dx, r.y + dy, r.w, r.h)
-
-
-def _inside(d: Diagram, gid: str, outer: str) -> bool:
-    g, seen = d.groups[gid].parent, set()
-    while g in d.groups and g not in seen:
-        if g == outer:
-            return True
-        seen.add(g)
-        g = d.groups[g].parent
-    return False
 
 
 def line_up(

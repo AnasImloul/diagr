@@ -242,6 +242,15 @@ def held(groups: dict[str, Group], nodes: dict[str, Node], parent: str | None) -
     return sorted(parts, key=lambda p: _file_order(p[0]))
 
 
+def boxes_around(d: Diagram, gid: str | None) -> list[str]:
+    """The group and each group it sits in, innermost first, stopping at an unknown id or a group already seen."""
+    out: list[str] = []
+    while gid in d.groups and gid not in out:
+        out.append(gid)
+        gid = d.groups[gid].parent
+    return out
+
+
 def stack_owners(d: Diagram) -> dict[str, str]:
     """Each box stacked behind a group, and the group it is behind."""
     return {lid: g.id for g in d.groups.values() for lid in g.behind}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 
-from .model import Diagram, Effect, stack_owners
+from .model import Diagram, Effect, boxes_around, stack_owners
 from .scenario import resolve_edge
 from .source import Problem, did_you_mean
 
@@ -24,18 +24,8 @@ def check_views(d: Diagram) -> list[Problem]:
     return problems
 
 
-def _inside(d: Diagram, node: str, gid: str) -> bool:
-    g, seen = d.nodes[node].group, set()
-    while g in d.groups and g not in seen:
-        if g == gid:
-            return True
-        seen.add(g)
-        g = d.groups[g].parent
-    return False
-
-
 def _select(d: Diagram, ids: list[str]) -> set[str]:
-    return {k for k in d.nodes if k in ids or any(g in d.groups and _inside(d, k, g) for g in ids)}
+    return {k for k in d.nodes if k in ids or any(g in ids for g in boxes_around(d, d.nodes[k].group))}
 
 
 def story(d: Diagram, sid: str) -> tuple[set[str], set[str], dict[str, list[int]]]:
@@ -100,9 +90,7 @@ def view(d: Diagram, vid: str) -> Diagram:
     groups: set[str] = set()
     owner = stack_owners(d)
     for g in [n.group for n in out.nodes.values()] + [owner.get(k, k) for k in keep if owner.get(k, k) in d.groups]:
-        while g in d.groups and g not in groups:
-            groups.add(g)
-            g = d.groups[g].parent
+        groups.update(boxes_around(d, g))
     out.groups = {k: g for k, g in out.groups.items() if k in groups}
     ends = set(out.nodes) | groups | {lid for lid, g in owner.items() if g in groups}
     out.edges = {k: e for k, e in out.edges.items() if e.src.node in ends and e.dst.node in ends}

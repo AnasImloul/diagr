@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from ..model import Diagram, Edge, Move, Port
+from ..model import Diagram, Edge, Move, Port, boxes_around
 from ..theme import Theme
 from .geometry import EdgePath, NodeBox, Point, Rect, group_title_box
 from .text import text_width
@@ -133,14 +133,6 @@ def _lane(e: Edge, a: NodeBox, b: NodeBox, d: Diagram, turn: float, shift: float
     if d.direction == "down":
         return [p0, (p0[0], turn), (p1[0], turn), p1]
     return [p0, (turn, p0[1]), (turn, p1[1]), p1]
-
-
-def _outer(d: Diagram, gid: str | None) -> set[str]:
-    out: set[str] = set()
-    while gid in d.groups and gid not in out:
-        out.add(gid)
-        gid = d.groups[gid].parent
-    return out
 
 
 def _gap(
@@ -289,7 +281,7 @@ def auto_routes(
             continue
         if _forward(a, b, d) and _along(e, d):
             p0, p1 = _ends(e, a, b, d)
-            ga, gb = _outer(d, a.node.group), _outer(d, b.node.group)
+            ga, gb = set(boxes_around(d, a.node.group)), set(boxes_around(d, b.node.group))
             lo, hi = _gap(d, groups, ga, gb, p0[main], p1[main], *sorted((p0[cross], p1[cross])))
             if hi - lo < 8:
                 # No clear gap: any turn between the two ends will do, so it can join the source's other lanes.
@@ -320,7 +312,7 @@ def auto_routes(
     for k in back:
         e = d.edges[k]
         a = nodes[e.src.node]
-        ga = _outer(d, a.node.group)
+        ga = boxes_around(d, a.node.group)
         others = [r for r in rects if r is not a.box and all(r is not groups.get(g) for g in ga)]
         clear = {w: _clear(a.port(sides[w], e.src.offset), edges[w], down, others) for w in edges}
         if e.src.side:
@@ -366,14 +358,14 @@ def auto_routes(
             a, b = nodes[e.src.node], nodes[e.dst.node]
             out[k] = _lane(e, a, b, d, at[e.src.node], shift.get(k, 0.0))
             if down:
-                left = _outer(d, a.node.group) - _outer(d, b.node.group)
+                left = set(boxes_around(d, a.node.group)) - set(boxes_around(d, b.node.group))
                 out[k] = _jog(out[k], [group_title_box(d.groups[g], groups[g], t) for g in left if g in groups])
     if back:
         count = {"before": 0, "after": 0}
         for k in back:
             e = d.edges[k]
             a, b = nodes[e.src.node], nodes[e.dst.node]
-            ga, gb = _outer(d, a.node.group), _outer(d, b.node.group)
+            ga, gb = set(boxes_around(d, a.node.group)), set(boxes_around(d, b.node.group))
             way = ways[k]
             p0 = a.port(sides[way], e.src.offset)
             p1 = b.port("top" if down else "left", e.dst.offset + shift.get(k, 0.0))

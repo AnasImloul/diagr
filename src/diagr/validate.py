@@ -3,7 +3,7 @@ from __future__ import annotations
 from .icons import Icons, SvgIcon, Tile
 from .layout.flow import laid_out
 from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box
-from .model import Diagram, Effect, Loc, Scenario, stack_owners
+from .model import Diagram, Effect, Loc, Scenario, boxes_around, stack_owners
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem, did_you_mean
 from .theme import Theme
@@ -107,7 +107,7 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
                     Problem(e.loc, f"edge '{e.id}': unknown node or group '{end.node}'{did_you_mean(end.node, ends)}")
                 )
         for a, b in ((e.src.node, e.dst.node), (e.dst.node, e.src.node)):
-            if a in d.nodes and owner.get(b, b) in d.groups and _within(d, d.nodes[a].group, owner.get(b, b)):
+            if a in d.nodes and owner.get(b, b) in boxes_around(d, d.nodes[a].group):
                 p.append(Problem(e.loc, f"edge '{e.id}' joins '{a}' to the group '{b}' it is in"))
         if e.id in d.nodes or e.id in d.groups:
             p.append(Problem(e.loc, f"edge id '{e.id}' is also a node or group id"))
@@ -137,24 +137,9 @@ def _aligns_back(d: Diagram, start: str, back_to: str, key: str) -> bool:
     return False
 
 
-def _within(d: Diagram, gid: str | None, outer: str) -> bool:
-    seen: set[str] = set()
-    while gid in d.groups and gid not in seen:
-        if gid == outer:
-            return True
-        seen.add(gid)
-        gid = d.groups[gid].parent
-    return False
-
-
 def _in_loop(d: Diagram, gid: str) -> bool:
-    seen, parent = {gid}, d.groups[gid].parent
-    while parent in d.groups:
-        if parent in seen:
-            return True
-        seen.add(parent)
-        parent = d.groups[parent].parent
-    return False
+    # The walk out stops at the top, or at a group it has passed already, which leaves the last group with a parent.
+    return d.groups[boxes_around(d, gid)[-1]].parent in d.groups
 
 
 def _check_hidden(d: Diagram, p: list[Problem]) -> None:
@@ -264,7 +249,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
     for k, b in lay.nodes.items():
         if b.point:
             continue
-        inside = _ancestors(d, b.node.group)
+        inside = boxes_around(d, b.node.group)
         for g, r in lay.groups.items():
             if g not in inside and d.groups[g].box and r.overlaps(b.box):
                 _warn(p, d.nodes[k].loc, f"node '{k}' overlaps group '{g}', which it is not in")
@@ -298,7 +283,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
             if not b.point and b.box.overlaps(title):
                 _warn(p, d.nodes[n].loc, f"node '{n}' covers the title of group '{g}'")
         for c, r in lay.groups.items():
-            if c != g and _within(d, c, g) and r.overlaps(title):
+            if c != g and g in boxes_around(d, c) and r.overlaps(title):
                 _warn(p, d.groups[c].loc, f"group '{c}' covers the title of group '{g}'")
     for k, path in lay.edges.items():
         e = d.edges[k]
@@ -326,14 +311,6 @@ def _crosses(segments: list[tuple[Point, Point]], r: Rect) -> bool:
         if lo_x < r.x1 and hi_x > r.x and lo_y < r.y1 and hi_y > r.y:
             return True
     return False
-
-
-def _ancestors(d: Diagram, gid: str | None) -> set[str]:
-    out: set[str] = set()
-    while gid in d.groups and gid not in out:
-        out.add(gid)
-        gid = d.groups[gid].parent
-    return out
 
 
 def _inside(inner: Rect, outer: Rect) -> bool:

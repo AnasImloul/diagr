@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ..model import Diagram, Node
+from ..model import Diagram, Node, boxes_around
 from .flow import laid_out
 from .geometry import BUTTON_H, STRIP_H
 
@@ -139,12 +139,7 @@ def place(d: Diagram) -> None:
     # Sibling boxes joined by a solid edge go one after the other, so they sit side by side rather than one below the
     # other: the box an edge goes into starts after the box it comes from. Boxes with a pinned node keep their layers.
     def chain(k: str) -> list[str]:
-        out: list[str] = []
-        g = d.nodes[k].group
-        while g in d.groups and g not in out:
-            out.append(g)
-            g = d.groups[g].parent
-        return out[::-1]
+        return boxes_around(d, d.nodes[k].group)[::-1]
 
     pairs: list[tuple[str, str]] = []
     for a, b in dag:
@@ -275,10 +270,7 @@ def place(d: Diagram) -> None:
     for v in layers:
         present[v] = set()
         for k in at_layer[v]:
-            g = d.nodes[k].group
-            while g in d.groups and g not in present[v]:
-                present[v].add(g)
-                g = d.groups[g].parent
+            present[v].update(boxes_around(d, d.nodes[k].group))
 
     def edge(v: float, gs: set[str], after: int) -> float:
         """How far the boxes of layer v reach past its cells, before it (after=0) or past it (after=1)."""

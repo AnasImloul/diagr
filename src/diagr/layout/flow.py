@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..model import Diagram, Flow, Group
+from ..model import Diagram, Flow, Group, boxes_around
 from ..theme import Theme
 from .geometry import (
     Rect,
@@ -43,19 +43,9 @@ def laid_out(d: Diagram) -> tuple[set[str], set[str]]:
     """The nodes and groups whose places come from a layout rather than from their cells."""
     if d.flow is not None:
         return set(d.nodes), set(d.groups)
-    groups = {k for k in d.groups if _under_flow(d, k)}
+    groups = {k for k in d.groups if any(d.groups[g].flow is not None for g in boxes_around(d, k))}
     nodes = {k for k, n in d.nodes.items() if n.group in groups}
     return nodes, groups
-
-
-def _under_flow(d: Diagram, gid: str) -> bool:
-    g, seen = gid, set()
-    while g in d.groups and g not in seen:
-        if d.groups[g].flow is not None:
-            return True
-        seen.add(g)
-        g = d.groups[g].parent
-    return False
 
 
 def flow(d: Diagram, t: Theme, slots: dict[str, int]) -> tuple[dict[str, tuple[float, float]], dict[str, Rect]]:
