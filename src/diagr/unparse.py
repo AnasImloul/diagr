@@ -76,7 +76,7 @@ def _node(n: Node) -> dict[str, Any]:
         out["cells"] = len(n.cells) if not any(n.cells) else list(n.cells)
     if n.stack != 1:
         out["stack"] = n.stack
-    for key in ("mark", "hidden", "tooltip"):
+    for key in ("mark", "hidden", "tooltip", "align_x", "align_y"):
         if getattr(n, key):
             out[key] = getattr(n, key)
     return out

@@ -236,6 +236,14 @@
             "type": "string",
             "description": "Scenario id the trigger plays; default: the first scenario"
           },
+          "align_x": {
+            "type": "string",
+            "description": "A node to line up with, one above the other: same x"
+          },
+          "align_y": {
+            "type": "string",
+            "description": "A node to line up with, side by side: same y"
+          },
           "cells": {
             "oneOf": [
               {
@@ -574,6 +582,14 @@
                 "plays": {
                   "type": "string",
                   "description": "Scenario id the trigger plays; default: the first scenario"
+                },
+                "align_x": {
+                  "type": "string",
+                  "description": "A node to line up with, one above the other: same x"
+                },
+                "align_y": {
+                  "type": "string",
+                  "description": "A node to line up with, side by side: same y"
                 },
                 "cells": {
                   "oneOf": [

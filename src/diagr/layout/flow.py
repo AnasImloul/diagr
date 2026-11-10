@@ -11,10 +11,22 @@ from dataclasses import dataclass
 
 from ..model import Diagram, Flow, Group
 from ..theme import Theme
-from .geometry import BEHIND_X, BEHIND_Y, Rect, _title_width, middle_title_box, node_box, title_band, title_place
+from .geometry import (
+    BEHIND_X,
+    BEHIND_Y,
+    Rect,
+    _title_width,
+    group_title_box,
+    middle_title_box,
+    node_box,
+    title_band,
+    title_on_top,
+    title_place,
+)
 
 PAD = 20  # Space inside a laid-out box, on the sides without a title.
 HEADING_GAP = 24  # Space between a box's nodes and a `title_at: middle` heading.
+BADGE_ROOM = 14  # Room a node's box keeps above its icon, for a step badge.
 
 
 @dataclass
@@ -90,8 +102,12 @@ class _Layout:
 
     def item(self, kind: str, k: str) -> _Item:
         if kind == "node":
-            nb = node_box(self.d.nodes[k], 0, 0, self.t, self.slots[k])
-            return _Item("node", k, nb.box.w, nb.box.h, nb.box.x, nb.box.y)
+            # Measured from the top of the icon to the bottom of the labels: what shows. The node's box also keeps
+            # room above the icon for a step badge, which would make the node look low when centred.
+            n = self.d.nodes[k]
+            nb = node_box(n, 0, 0, self.t, self.slots[k])
+            top = nb.box.y if n.junction else -self.t.size("icon") / 2
+            return _Item("node", k, nb.box.w, nb.box.y1 - top, nb.box.x, top)
         w, h = self.measure_group(k)
         return _Item("group", k, w, h)
 
@@ -100,6 +116,9 @@ class _Layout:
         if not g.box:
             return 0, 0, 0, 0
         top, bottom = title_band(g, self.t)
+        if title_on_top(g):
+            # Nodes are measured from their icons, but keep room above for a step badge, clear of the title.
+            top += BADGE_ROOM
         return PAD, max(PAD, top), PAD, max(PAD, bottom)
 
     def measure_group(self, k: str) -> tuple[float, float]:
@@ -145,11 +164,15 @@ class _Layout:
         if g.box and title_place(g) == "middle":
             head = middle_title_box(g, Rect(0, 0, 0, 0), self.t, [])
             inner = Rect(inner.x, inner.y, inner.w - head.w - (HEADING_GAP if items else 0), inner.h)
-        self.place_items(items, g.flow or Flow(), inner)
+        fl = g.flow or Flow()
+        # A row clear of a bottom title, side to side, centres on the whole box rather than above the title's band.
+        clear_of = None
+        if g.box and fl.direction == "row" and title_place(g) in ("bottom-left", "bottom") and bottom > top:
+            clear_of = (group_title_box(g, box, self.t), Rect(inner.x, inner.y, inner.w, box.y1 - top - inner.y))
+        self.place_items(items, fl, inner, clear_of)
 
-    def place_items(self, items: list[_Item], fl: Flow, r: Rect) -> None:
+    def place_items(self, items: list[_Item], fl: Flow, r: Rect, clear_of: tuple[Rect, Rect] | None = None) -> None:
         row = fl.direction == "row"
-        span = r.h if row else r.w
         length = r.w if row else r.h
 
         def offset(size: float) -> float:
@@ -174,6 +197,16 @@ class _Layout:
                 pos += free / len(items) / 2
             elif fl.justify == "space-between":
                 pos += free / 2
+
+        if clear_of is not None:
+            title, whole = clear_of
+            x, spans = pos, []
+            for it, main in zip(items, mains, strict=True):
+                spans.append((x + (main - it.w) / 2, x + (main + it.w) / 2))
+                x += main + gap
+            if all(x1 < title.x or x0 > title.x1 for x0, x1 in spans):
+                r = whole
+        span = r.h if row else r.w
 
         # In a row, nodes line up by their icons, like text on a baseline: all their boxes start at the same height,
         # and that band of nodes is aligned as one. (A node's box reaches equally far above its icon, whatever its

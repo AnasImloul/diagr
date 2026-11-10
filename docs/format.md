@@ -106,6 +106,7 @@ nodes:
 | `mark` | `new`, `removed` or `changed`, for as-is versus to-be diagrams. |
 | `hidden` | Start hidden; a scenario can `show` it. Hidden elements are left out of static SVGs. |
 | `tooltip` | Hover text. |
+| `align_x`, `align_y` | Another node's id: line this node up with it, one above the other (`align_x`, same x) or side by side (`align_y`, same y), wherever each sits. See [Row and column layout](#row-and-column-layout). |
 
 ## Edges
 
@@ -205,6 +206,12 @@ nodes:
 - **`box: false`** makes a group that only arranges what it holds and draws nothing, like a plain `div`, for rows
   and columns that need no frame.
 - In a row, nodes line up by their icons, whatever the length of their labels, so edges between them stay straight.
+  Centring places what shows, the icon and its labels, in the middle; a row whose nodes are clear of a bottom title
+  centres on the whole box rather than above the title's band.
+- **`align_x` and `align_y`** on a node line it up with a node in another box, which a row or column alone cannot
+  do: `align_x: deploy-dev` puts a key straight under the step it feeds, so the edge between them is straight. Only
+  that axis moves, the node stays inside its box (its padding included), and `diagr check` reports an unknown node,
+  a node naming itself, or a loop.
 - A box is as big as its contents plus 20px inside, more on the side its title is on; a `title_at: middle` heading
   takes its place after the box's nodes. Edges are routed afterwards as usual: an edge between two boxes that line
   up goes straight across where it misses their titles, or jogs through the gap between them when titles cover the

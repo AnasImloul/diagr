@@ -114,6 +114,59 @@ class GrowAndJustify(Case):
         self.assertAlmostEqual(min(gaps), max(gaps), delta=1)
 
 
+ALIGN = """
+id: a
+layout: {direction: column, align: stretch}
+groups:
+  ci: {title: CI, tone: neutral, layout: {direction: row, justify: space-between}}
+  keys: {title: Keys, tone: neutral, layout: {direction: row, justify: space-around}}
+nodes:
+  repo: {in: ci, icon: branch, title: Repo}
+  dev: {in: ci, icon: upload, title: Deploy to dev, sub: REST API}
+  prod: {in: ci, icon: upload, title: Deploy to prod}
+  k1: {in: keys, align_x: dev, icon: key, title: Dev key}
+  k2: {in: keys, align_x: prod, icon: key, title: Prod key}
+edges:
+  k1 -> dev: {}
+  k2 -> prod: {}
+"""
+
+
+class LineUp(Case):
+    def test_clean_and_straight(self):
+        self.assertClean(problems(ALIGN))
+        lay = prepared(ALIGN).layout
+        for a, b in (("k1", "dev"), ("k2", "prod")):
+            self.assertEqual(lay.nodes[a].x, lay.nodes[b].x)
+            self.assertEqual(len(lay.edges[f"{a}->{b}"].points), 2)
+
+    def test_targets_stay_put(self):
+        n = prepared(ALIGN).layout.nodes
+        self.assertEqual(n["repo"].y, n["dev"].y)
+        self.assertEqual(n["dev"].y, n["prod"].y)
+
+    def test_stays_inside_its_box(self):
+        lay = prepared(ALIGN.replace("title: Prod key}", "title: A prod key with a really long title}")).layout
+        r, k = lay.groups["keys"], lay.nodes["k2"]
+        self.assertLessEqual(k.box.x1, r.x1)
+
+    def test_bad_targets(self):
+        self.assertReports(problems(ALIGN.replace("align_x: dev,", "align_x: dve,")), "did you mean 'dev'")
+        self.assertReports(problems(ALIGN.replace("align_x: dev,", "align_x: k1,")), "names the node itself")
+        loop = ALIGN.replace("align_x: dev,", "align_x: k2,").replace("align_x: prod,", "align_x: k1,")
+        self.assertReports(problems(loop), "loop")
+
+
+class Centring(Case):
+    def test_icon_and_labels_are_centred_in_a_row(self):
+        yml = "id: c\ngroups:\n  card: {title: Card, title_at: middle, tone: blue, layout: row}\n"
+        yml += "nodes:\n  a: {in: card, icon: api, title: A}\n"
+        p = prepared(yml)
+        r, nb = p.layout.groups["card"], p.layout.nodes["a"]
+        above = nb.y - p.theme.size("icon") / 2 - r.y
+        self.assertAlmostEqual(above, r.y1 - nb.box.y1, delta=0.5)
+
+
 class Expand(Case):
     def test_keeps_layout_and_box_keys(self):
         yml = STACK.replace("box: false", "box: false, title_at: top")

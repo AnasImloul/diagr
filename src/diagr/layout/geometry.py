@@ -258,7 +258,8 @@ def group_rect(
         cw, rh = g.span or (1, 1)
         cells = (c0, c0 + cw - 1, r0, r0 + rh - 1)
     else:
-        members = [n.at for n in d.nodes.values() if n.group == g.id and n.at is not None]
+        # Where the nodes are, in cells: their `at`, or where `align_x`/`align_y` moved them.
+        members = [(b.x / col, b.y / row) for b in boxes.values() if b.node.group == g.id]
         if members:
             cells = (
                 min(m[0] for m in members),
@@ -471,6 +472,42 @@ def _inside(d: Diagram, gid: str, outer: str) -> bool:
     return False
 
 
+def line_up(
+    d: Diagram, t: Theme, centres: dict[str, tuple[float, float]], frames: dict[str, Rect], slots: dict[str, int]
+) -> None:
+    """Move nodes with `align_x` or `align_y` onto the x or y of the node they name, targets first. A node in a
+    laid-out box stays inside it, its padding included."""
+    done: set[str] = set()
+
+    def settle(k: str, seen: tuple[str, ...]) -> None:
+        if k in done or k in seen or k not in centres:
+            return
+        n = d.nodes[k]
+        for target in (n.align_x, n.align_y):
+            if target in d.nodes:
+                settle(target, (*seen, k))
+        done.add(k)
+        if not (n.align_x in centres or n.align_y in centres):
+            return
+        x, y = centres[k]
+        frame = frames.get(n.group or "")
+        box = node_box(n, 0, 0, t, slots[k]).box
+        # Only the axis lined up moves, and in a laid-out box, only as far as its padding.
+        if n.align_x in centres:
+            x = centres[n.align_x][0]
+            if frame is not None:
+                x = min(max(x, frame.x + 20 - box.x), frame.x1 - 20 - box.x1)
+        if n.align_y in centres:
+            y = centres[n.align_y][1]
+            if frame is not None:
+                y = min(max(y, frame.y + 20 - box.y), frame.y1 - 20 - box.y1)
+        centres[k] = (x, y)
+
+    for k, n in d.nodes.items():
+        if n.align_x or n.align_y:
+            settle(k, ())
+
+
 def layout(d: Diagram, t: Theme) -> Layout:
     from .flow import flow
     from .route import auto_routes, route_edge
@@ -481,6 +518,7 @@ def layout(d: Diagram, t: Theme) -> Layout:
     for k, n in d.nodes.items():
         if k not in centres and n.at is not None:
             centres[k] = (n.at[0] * d.grid.col, n.at[1] * d.grid.row)
+    line_up(d, t, centres, frames, slots)
     nodes = {k: node_box(d.nodes[k], x, y, t, slots[k]) for k, (x, y) in centres.items()}
     fitted: dict[str, Rect] = {}
     sized: dict[str, Rect] = {}

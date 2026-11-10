@@ -50,6 +50,21 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         root = d.flow is None and (g.parent not in flowed_groups)
         if g.span is not None or (g.at is not None and not root):
             p.append(Problem(g.loc, f"group '{k}' has 'at' or 'span', but a 'layout' places it; remove them"))
+    for n in d.nodes.values():
+        for key in ("align_x", "align_y"):
+            target = getattr(n, key)
+            if target is None:
+                continue
+            if target == n.id:
+                p.append(Problem(n.loc, f"node '{n.id}': '{key}' names the node itself"))
+            elif target not in d.nodes:
+                p.append(
+                    Problem(
+                        n.loc, f"node '{n.id}': '{key}' names unknown node '{target}'{did_you_mean(target, d.nodes)}"
+                    )
+                )
+            elif _aligns_back(d, target, n.id, key):
+                p.append(Problem(n.loc, f"node '{n.id}': '{key}' goes round in a loop back to it"))
     stacked: set[str] = set()
     for g in d.groups.values():
         for lid in g.behind:
@@ -115,6 +130,16 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
         p += check_scenario(d, sc)
     _check_hidden(d, p)
     return p
+
+
+def _aligns_back(d: Diagram, start: str, back_to: str, key: str) -> bool:
+    k, seen = start, set()
+    while k in d.nodes and k not in seen:
+        if k == back_to:
+            return True
+        seen.add(k)
+        k = getattr(d.nodes[k], key)
+    return False
 
 
 def _within(d: Diagram, gid: str | None, outer: str) -> bool:

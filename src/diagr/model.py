@@ -72,6 +72,9 @@ class Node:
     loc: Loc | None = None
     plays: str | None = None
     auto: bool = False
+    # Line the node up with another node, wherever each is: same x (one above the other) or same y (side by side).
+    align_x: str | None = None
+    align_y: str | None = None
 
 
 @dataclass

@@ -85,6 +85,8 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
             sub=[fill(s) for s in n.sub],
             tooltip=fill(n.tooltip) if n.tooltip else None,
             trigger=fill(n.trigger) if n.trigger else None,
+            align_x=name(n.align_x) if n.align_x else None,
+            align_y=name(n.align_y) if n.align_y else None,
             group=name(n.group) if n.group else p.parent,
         )
     for e in c.edges.values():

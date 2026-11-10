@@ -149,6 +149,8 @@ NODE = f.Obj(
         "junction": f.F(f.Bool(description="A dot where edges meet (a bus); has no icon or text")),
         "trigger": f.F(f.Str(description="Label of a button under the node that plays a scenario")),
         "plays": f.F(f.Str(description="Scenario id the trigger plays; default: the first scenario")),
+        "align_x": f.F(f.Str(description="A node to line up with, one above the other: same x")),
+        "align_y": f.F(f.Str(description="A node to line up with, side by side: same y")),
         "cells": f.F(Cells()),
         "stack": f.F(f.Num(integer=True, minimum=1, description="Draw the icon as a stack of N")),
         "mark": f.F(f.Str(enum=MARKS)),
@@ -378,6 +380,8 @@ def _node(e: f.Entry) -> Node:
         tooltip=n.get("tooltip"),
         loc=e.loc,
         plays=n.get("plays"),
+        align_x=n.get("align_x"),
+        align_y=n.get("align_y"),
     )
 
 
