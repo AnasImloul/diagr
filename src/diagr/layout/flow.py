@@ -37,6 +37,7 @@ class _Item:
     h: float = 0
     ox: float = 0  # For a node: its box's top-left relative to its centre.
     oy: float = 0
+    core: float = 0  # For a node: the height of its icon and labels, without the trigger button hanging below.
 
 
 def laid_out(d: Diagram) -> tuple[set[str], set[str]]:
@@ -107,7 +108,8 @@ class _Layout:
             n = self.d.nodes[k]
             nb = node_box(n, 0, 0, self.t, self.slots[k])
             top = nb.box.y if n.junction else -self.t.size("icon") / 2
-            return _Item("node", k, nb.box.w, nb.box.y1 - top, nb.box.x, top)
+            core = (nb.button.y - 17 if nb.button else nb.box.y1) - top
+            return _Item("node", k, nb.box.w, nb.box.y1 - top, nb.box.x, top, core)
         w, h = self.measure_group(k)
         return _Item("group", k, w, h)
 
@@ -198,26 +200,34 @@ class _Layout:
             elif fl.justify == "space-between":
                 pos += free / 2
 
-        if clear_of is not None:
-            title, whole = clear_of
-            x, spans = pos, []
-            for it, main in zip(items, mains, strict=True):
-                spans.append((x + (main - it.w) / 2, x + (main + it.w) / 2))
-                x += main + gap
-            if all(x1 < title.x or x0 > title.x1 for x0, x1 in spans):
-                r = whole
         span = r.h if row else r.w
 
-        # In a row, nodes line up by their icons, like text on a baseline: all their boxes start at the same height,
-        # and that band of nodes is aligned as one. (A node's box reaches equally far above its icon, whatever its
-        # labels below.)
+        # In a row, nodes line up by their icons, like text on a baseline. Centred, the icons and labels (a trigger
+        # button hangs below, left out) sit in the middle of the box, of the whole box when its title is at the
+        # bottom; then the line moves up as far as needed for every node to fit, a node over the title above it.
         band = max((it.h for it in items if it.kind == "node"), default=0.0)
+        line = None
+        nodes = [(it, main) for it, main in zip(items, mains, strict=True) if it.kind == "node"]
+        if row and nodes and fl.align in ("center", "stretch"):
+            title, whole = clear_of if clear_of else (None, r)
+            core = max(it.core for it, _ in nodes)
+            line = whole.y + (whole.h - core) / 2
+            x = pos
+            for it, main in zip(items, mains, strict=True):
+                if it.kind == "node":
+                    x0, x1 = x + (main - it.w) / 2, x + (main + it.w) / 2
+                    over = title is not None and x0 < title.x1 and title.x < x1
+                    line = min(line, (r.y1 if over else whole.y1) - it.h)
+                x += main + gap
+            line = max(line, r.y)
+
         for it, main in zip(items, mains, strict=True):
             size = it.h if row else it.w
             if it.kind == "group" and fl.align == "stretch":
                 size, off = span, 0.0
             elif it.kind == "node" and row:
-                off = offset(band) if fl.align != "stretch" else (span - band) / 2
+                off = line - r.y if line is not None else offset(band)
+                size = it.h
             else:
                 off = offset(size) if fl.align != "stretch" else (span - size) / 2
             if row:

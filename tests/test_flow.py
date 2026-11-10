@@ -167,6 +167,30 @@ class Centring(Case):
         self.assertAlmostEqual(above, r.y1 - nb.box.y1, delta=0.5)
 
 
+class HangingButtons(Case):
+    def test_a_trigger_button_hangs_below_and_stays_clear_of_the_title(self):
+        from diagr.layout.geometry import group_title_box
+
+        yml = """
+        id: h
+        groups:
+          ci: {title: Development, tone: neutral, layout: {direction: row, gap: 60}}
+        nodes:
+          repo: {in: ci, icon: branch, title: Repos, trigger: Go}
+          build: {in: ci, icon: refresh, title: Build}
+        scenarios:
+          s:
+            steps:
+              - title: Go
+                do: [activate build]
+        """
+        self.assertClean(problems(yml))
+        p = prepared(yml)
+        r, repo = p.layout.groups["ci"], p.layout.nodes["repo"]
+        title = group_title_box(p.diagram.groups["ci"], r, p.theme)
+        self.assertLessEqual(repo.box.y1, title.y)
+
+
 class Expand(Case):
     def test_keeps_layout_and_box_keys(self):
         yml = STACK.replace("box: false", "box: false, title_at: top")
