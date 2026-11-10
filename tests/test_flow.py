@@ -13,25 +13,39 @@ from tests.test_build import prepared
 ROW = """
 id: f
 groups:
-  box: {title: Box, tone: blue, layout: {direction: row, gap: 30}}
-nodes:
-  a: {in: box, icon: api, title: A}
-  b: {in: box, icon: queue, title: B, sub: [two lines, of text]}
-  c: {in: box, icon: database, title: C}
+  box:
+    title: Box
+    tone: blue
+    layout: {direction: row, gap: 30}
+    nodes:
+      a: {icon: api, title: A}
+      b: {icon: queue, title: B, sub: [two lines, of text]}
+      c: {icon: database, title: C}
 """
 
 STACK = """
 id: s
 layout: {direction: column, gap: 20, align: stretch}
 groups:
-  top: {title: Top, tone: blue, layout: row}
-  bottom: {title: Bottom, tone: teal, layout: row}
-  hidden: {title: Hidden, box: false, layout: row}
-nodes:
-  a: {in: top, icon: api, title: A}
-  b: {in: bottom, icon: queue, title: B}
-  c: {in: bottom, icon: database, title: C}
-  d: {in: hidden, icon: user, title: D}
+  top:
+    title: Top
+    tone: blue
+    layout: row
+    nodes:
+      a: {icon: api, title: A}
+  bottom:
+    title: Bottom
+    tone: teal
+    layout: row
+    nodes:
+      b: {icon: queue, title: B}
+      c: {icon: database, title: C}
+  hidden:
+    title: Hidden
+    box: false
+    layout: row
+    nodes:
+      d: {icon: user, title: D}
 """
 
 
@@ -75,24 +89,38 @@ class Columns(Case):
         self.assertIn(">Top<", svg)
 
     def test_at_inside_a_layout_is_an_error(self):
-        self.assertReports(problems(ROW.replace("a: {in: box,", "a: {in: box, at: [0, 0],")), "remove 'at'")
+        self.assertReports(problems(ROW.replace("a: {icon: api,", "a: {at: [0, 0], icon: api,")), "remove 'at'")
 
 
 GROW = """
 id: g
 layout: {direction: column, align: stretch}
 groups:
-  wide: {title: Wide, tone: neutral, layout: {direction: row, gap: 0, justify: space-between}}
-  row: {title: Row, box: false, layout: {direction: row, gap: 10}}
-  fixed: {title: Fixed, in: row, tone: blue}
-  grows: {title: Grows, in: row, grow: 1, tone: teal}
-nodes:
-  a: {in: wide, icon: api, title: A}
-  b: {in: wide, icon: queue, title: B}
-  c: {in: wide, icon: queue, title: C}
-  e: {in: fixed, icon: database, title: E}
-  f: {in: grows, icon: user, title: F}
-  g: {in: wide, icon: user, title: A much longer title}
+  wide:
+    title: Wide
+    tone: neutral
+    layout: {direction: row, gap: 0, justify: space-between}
+    nodes:
+      a: {icon: api, title: A}
+      b: {icon: queue, title: B}
+      c: {icon: queue, title: C}
+      g: {icon: user, title: A much longer title}
+  row:
+    title: Row
+    box: false
+    layout: {direction: row, gap: 10}
+    groups:
+      fixed:
+        title: Fixed
+        tone: blue
+        nodes:
+          e: {icon: database, title: E}
+      grows:
+        title: Grows
+        grow: 1
+        tone: teal
+        nodes:
+          f: {icon: user, title: F}
 """
 
 
@@ -118,14 +146,21 @@ ALIGN = """
 id: a
 layout: {direction: column, align: stretch}
 groups:
-  ci: {title: CI, tone: neutral, layout: {direction: row, justify: space-between}}
-  keys: {title: Keys, tone: neutral, layout: {direction: row, justify: space-around}}
-nodes:
-  repo: {in: ci, icon: branch, title: Repo}
-  dev: {in: ci, icon: upload, title: Deploy to dev, sub: REST API}
-  prod: {in: ci, icon: upload, title: Deploy to prod}
-  k1: {in: keys, align_x: dev, icon: key, title: Dev key}
-  k2: {in: keys, align_x: prod, icon: key, title: Prod key}
+  ci:
+    title: CI
+    tone: neutral
+    layout: {direction: row, justify: space-between}
+    nodes:
+      repo: {icon: branch, title: Repo}
+      dev: {icon: upload, title: Deploy to dev, sub: REST API}
+      prod: {icon: upload, title: Deploy to prod}
+  keys:
+    title: Keys
+    tone: neutral
+    layout: {direction: row, justify: space-around}
+    nodes:
+      k1: {align_x: dev, icon: key, title: Dev key}
+      k2: {align_x: prod, icon: key, title: Prod key}
 edges:
   k1 -> dev: {}
   k2 -> prod: {}
@@ -159,8 +194,8 @@ class LineUp(Case):
 
 class Centring(Case):
     def test_icon_and_labels_are_centred_in_a_row(self):
-        yml = "id: c\ngroups:\n  card: {title: Card, title_at: middle, tone: blue, layout: row}\n"
-        yml += "nodes:\n  a: {in: card, icon: api, title: A}\n"
+        yml = "id: c\ngroups:\n  card:\n    title: Card\n    title_at: middle\n    tone: blue\n    layout: row\n"
+        yml += "    nodes:\n      a: {icon: api, title: A}\n"
         p = prepared(yml)
         r, nb = p.layout.groups["card"], p.layout.nodes["a"]
         above = nb.y - p.theme.size("icon") / 2 - r.y
@@ -174,12 +209,16 @@ class HangingButtons(Case):
         yml = """
         id: h
         groups:
-          ci: {title: Development, tone: neutral, layout: {direction: row, gap: 60}}
-        nodes:
-          repo: {in: ci, icon: branch, title: Repos, trigger: Go}
-          build: {in: ci, icon: refresh, title: Build}
+          ci:
+            title: Development
+            tone: neutral
+            layout: {direction: row, gap: 60}
+            nodes:
+              repo: {icon: branch, title: Repos}
+              build: {icon: refresh, title: Build}
         scenarios:
           s:
+            trigger: {at: repo, label: Go}
             steps:
               - title: Go
                 do: [activate build]
@@ -193,7 +232,7 @@ class HangingButtons(Case):
 
 class Expand(Case):
     def test_keeps_layout_and_box_keys(self):
-        yml = STACK.replace("box: false", "box: false, title_at: top")
+        yml = STACK.replace("    box: false\n", "    box: false\n    title_at: top\n")
         d = from_tree(load(yml, "t.yml"), "t.yml", ROOT)
         out = yaml.safe_load(to_yaml(d, yaml.safe_load(yml)))
         self.assertEqual(out["groups"]["top"]["layout"], "row")
@@ -206,9 +245,12 @@ class Expand(Case):
             [
                 "id: e",
                 "groups:",
-                "  g: {title: prod, behind: {g-dev: dev}, tone: blue}",
-                "nodes:",
-                "  a: {in: g, at: [0, 0], icon: api}",
+                "  g:",
+                "    title: prod",
+                "    behind: {g-dev: dev}",
+                "    tone: blue",
+                "    nodes:",
+                "      a: {at: [0, 0], icon: api}",
             ]
         )
         d = from_tree(load(yml, "t.yml"), "t.yml", ROOT)

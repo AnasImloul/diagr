@@ -24,14 +24,24 @@ edges:
 GROUPS = """
 id: t
 groups:
-  front: {title: Front, tone: blue}
-  back: {title: Back, tone: teal}
-  data: {title: Data, in: back, tone: amber}
+  front:
+    title: Front
+    tone: blue
+    nodes:
+      web: {icon: browser, title: Web}
+  back:
+    title: Back
+    tone: teal
+    groups:
+      data:
+        title: Data
+        tone: amber
+        nodes:
+          db: {icon: database, title: DB}
+          cache: {icon: database, title: Cache}
+    nodes:
+      api: {icon: api, title: API}
 nodes:
-  web: {in: front, icon: browser, title: Web}
-  api: {in: back, icon: api, title: API}
-  db: {in: data, icon: database, title: DB}
-  cache: {in: data, icon: database, title: Cache}
   ops: {icon: user, title: Ops}
 edges:
   web -> api: {}

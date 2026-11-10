@@ -91,32 +91,90 @@ def place(d: Diagram) -> None:
     order = list(d.nodes)
     # An edge pinned to sides across the flow (bottom to top when it runs right) links nodes in one layer.
     across = ("left", "right") if down else ("top", "bottom")
-    edges = [
-        (e.src.node, e.dst.node)
+    links = [
+        e
         for e in d.edges.values()
         if e.src.node in d.nodes
         and e.dst.node in d.nodes
         and e.src.node != e.dst.node
         and not (e.src.side in across and e.dst.side in across)
     ]
-    dag = _acyclic(order, edges)
+    # A dashed edge is a side link (replication, a wake-up call): it places a node only when nothing solid does, so
+    # it counts into a node with no solid edge coming in, or out of a node with no solid edge at all.
+    solid = [e for e in links if not e.dashed]
+    fed = {e.dst.node for e in solid}
+    linked = fed | {e.src.node for e in solid}
+    placing = [e for e in links if not e.dashed or e.dst.node not in fed or e.src.node not in linked]
+    dag = _acyclic(order, [(e.src.node, e.dst.node) for e in placing])
     preds, succs = defaultdict(list), defaultdict(list)
     for a, b in dag:
         preds[b].append(a)
         succs[a].append(b)
 
-    # Layers: pinned nodes keep their main coordinate; a free node goes one after its latest predecessor.
+    dashed = {(e.src.node, e.dst.node) for e in placing if e.dashed}
+
+    def source(k: str) -> bool:
+        return d.nodes[k].at is None and not preds[k]
+
+    # Layers: pinned nodes keep their main coordinate; a free node goes one after its latest predecessor. A free node
+    # with no predecessor sits just before its earliest successor rather than at the very start, and its dashed edges
+    # do not push their targets along.
     layer: dict[str, float] = {}
-    for k in _topological(order, dag):
+    topo = _topological(order, dag)
+
+    def after(k: str) -> float:
+        counted = [p for p in preds[k] if p in layer and not ((p, k) in dashed and source(p))]
+        return max((layer[p] + 1 for p in counted), default=0)
+
+    for k in topo:
         at = d.nodes[k].at
-        if at is not None:
-            layer[k] = at[1] if down else at[0]
-        else:
-            layer[k] = max((layer[p] + 1 for p in preds[k] if p in layer), default=0)
-    # A free node with no predecessor sits just before its earliest successor rather than at the very start.
-    for k in reversed(_topological(order, dag)):
-        if d.nodes[k].at is None and not preds[k] and succs[k]:
-            layer[k] = min(layer[s] for s in succs[k]) - 1
+        layer[k] = (at[1] if down else at[0]) if at is not None else after(k)
+    # Then, from the end back, a free node with room before its successors moves up to them; a node with nothing
+    # before it goes just before its solid successors.
+    for k in reversed(topo):
+        ahead = [s for s in succs[k] if (k, s) not in dashed] or succs[k]
+        if d.nodes[k].at is None and ahead:
+            target = min(layer[s] for s in ahead) - 1
+            layer[k] = target if source(k) else max(layer[k], target)
+
+    # Sibling boxes joined by a solid edge go one after the other, so they sit side by side rather than one below the
+    # other: the box an edge goes into starts after the box it comes from. Boxes with a pinned node keep their layers.
+    def chain(k: str) -> list[str]:
+        out: list[str] = []
+        g = d.nodes[k].group
+        while g in d.groups and g not in out:
+            out.append(g)
+            g = d.groups[g].parent
+        return out[::-1]
+
+    pairs: list[tuple[str, str]] = []
+    for a, b in dag:
+        ca, cb = chain(a), chain(b)
+        i = next((i for i, (x, y) in enumerate(zip(ca, cb, strict=False)) if x != y), min(len(ca), len(cb)))
+        if (a, b) not in dashed and i < len(ca) and i < len(cb):
+            pairs.append((ca[i], cb[i]))
+    within: dict[str, list[str]] = defaultdict(list)
+    for k in order:
+        for g in chain(k):
+            within[g].append(k)
+    boxes = [
+        (x, y)
+        for x, y in _acyclic(list(d.groups), list(dict.fromkeys(pairs)))
+        if all(d.nodes[k].at is None for k in within[x] + within[y])
+    ]
+    for _ in boxes:
+        moved = False
+        for x, y in boxes:
+            need = max(layer[k] for k in within[x]) + 1 - min(layer[k] for k in within[y])
+            if need > 0:
+                for k in within[y]:
+                    layer[k] += need
+                moved = True
+        if not moved:
+            break
+        for k in topo:
+            if d.nodes[k].at is None and preds[k]:
+                layer[k] = max(layer[k], after(k))
 
     # Bands on the cross axis: one per group, children stacked after the group's own nodes.
     children: dict[str | None, list[str]] = defaultdict(list)
@@ -173,6 +231,10 @@ def place(d: Diagram) -> None:
         counts: dict[float, float] = defaultdict(float)
         for k in own[g] if g is not None else []:
             counts[layer[k]] += slot(k)
+        # A layer's nodes keep off the rows of edges passing through it from the group's own nodes: room for those.
+        mine = set(own[g]) if g is not None else set()
+        for v in list(counts):
+            counts[v] += sum(1 for u, w in dag if u in mine and layer[u] < v < layer[w])
         placed: list[tuple[float, float, float, float, str | None]] = []
         end = max(counts.values(), default=0.0)
         if counts:
@@ -284,7 +346,28 @@ def place(d: Diagram) -> None:
         for c in children[None]:
             if c in size:
                 options |= {start[c] - gap(None, c) - h, start[c] + size[c] + gap(c, None)}
+        # Its edges forward run along its row: keep it off rows where they would pass through a node on the way.
+        ends = [main[layer[s]] for s in succs[k] if layer[s] > v]
+        # A node's slot starts 40px above its centre (its icon and badge) and ends below its labels and button.
+        top = (40 + 8) / cell
+        between = [(c - top, c + s - top) for m, c, s in taken if ends and main[v] < m < max(ends)]
+        aims = {g for s in succs[k] for g in chain(s)}
+        for c in children[None]:
+            if ends and c in size and c not in aims and main[v] < main[span(c)[0]] < max(ends):
+                # Where its nodes landed, which can be further down than its band when they kept off a lane.
+                ins = [n for n in inside(c) if n in cross]
+                lo, hi = reach(c)
+                between.append(
+                    (
+                        min(cross[n] for n in ins) - top - (lo + 8) / cell,
+                        max(cross[n] + slot(n) for n in ins) - top + (hi + 8) / cell,
+                    )
+                )
+        options |= {lo - 0.01 for lo, _ in between} | {hi + 0.01 for _, hi in between}
+        options |= {lo - h - 0.5 for lo, _ in between} | {hi + 0.5 for _, hi in between}
         fits = [y for y in options if clear(v, y, h, True)]
+        open_ = [y for y in fits if not any(lo < y < hi for lo, hi in between)]
+        fits = open_ or fits
         y = min(fits, key=lambda y: (abs(y - want), -y)) if fits else max(c + s for _, c, s in taken)
         cross[k] = y
         taken.append((main[v], y, h))

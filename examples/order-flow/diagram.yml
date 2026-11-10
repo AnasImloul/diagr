@@ -5,58 +5,50 @@ description: A web app posts an order to the API, which queues it for workers th
 grid: {col: 200, row: 170}
 
 groups:
-  front: {title: Frontend, tone: blue}
-  back: {title: Backend, sub: one region, tone: teal}
-
-nodes:
-  web: {in: front, at: [0, 0], icon: browser, title: Web app, sub: checkout page, trigger: Place order}
-  api: {in: back, at: [1, 0], icon: function, title: API, sub: validates}
-  queue: {in: back, at: [2, 0], icon: queue, title: Order queue}
-  worker: {in: back, at: [3, 0], icon: server, title: Workers, sub: three replicas, stack: 3}
-  db: {in: back, at: [3, 1], icon: database, title: Orders}
-  dlq: {in: back, at: [2, 1], icon: queue, title: Dead letters, sub: kept for 14 days, mark: new}
-  mail: {in: back, at: [4, 0], icon: mail, title: Email, sub: confirmation, hidden: true}
+  front:
+    title: Frontend
+    tone: blue
+    nodes:
+      web: {at: [0, 0], icon: browser, title: Web app, sub: checkout page}
+  back:
+    title: Backend
+    sub: one region
+    tone: teal
+    nodes:
+      api: {at: [1, 0], icon: function, title: API, sub: validates}
+      queue: {at: [2, 0], icon: queue, title: Order queue}
+      worker: {at: [3, 0], icon: server, title: Workers, sub: three replicas, stack: 3}
+      db: {at: [3, 1], icon: database, title: Orders}
+      dlq: {at: [2, 1], icon: queue, title: Dead letters, sub: kept for 14 days, mark: new}
+      mail: {at: [4, 0], icon: mail, title: Email, sub: confirmation, hidden: true}
 
 edges:
-  web -> api: POST /orders
-  api -> queue: enqueue
-  queue -> worker: deliver
-  worker -> db: write
-  queue -> dlq: {label: after 3 tries, dashed: true}
+  web -> api -> queue -> worker -> db: [POST /orders, enqueue, deliver, write]
+  queue --> dlq: after 3 tries
   worker -> mail: {label: notify, hidden: true}
 
 scenarios:
   order:
     loop: true
+    trigger: {at: web, label: Place order}
     ready: One order, from checkout to confirmation.
     end: Order stored and confirmed.
     steps:
       - title: Submit
         at: web
         text: The customer places the order from the checkout page.
-        do: [flow web -> api 600ms]
+        do: [flow web 600ms -> api]
       - title: Validate and queue
         at: api
         text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.
-        do: [activate api 800ms, "set api.sub: order is valid", draw api->queue, done api]
+        do: [activate api 800ms, api.sub: order is valid, flow api -> queue]
       - title: Process
         at: worker
         text: A worker takes the order off the queue and writes it to the database.
-        do:
-          - activate queue
-          - draw queue->worker
-          - done queue
-          - activate worker 1200ms
-          - draw worker->db
-          - activate db 600ms
-          - done worker db
+        do: [flow queue -> worker 1200ms -> db 600ms done]
       - title: Confirm
         at: mail
         text: Once the order is stored, the worker sends the confirmation email.
-        do:
-          - show mail worker->mail
-          - focus worker mail worker->mail
-          - draw worker->mail
-          - activate mail 1000ms
-          - done mail
-          - focus none
+        # Drawing the hidden edge brings it and the email node out.
+        focus: [worker, mail]
+        do: [draw worker->mail, run mail 1000ms]

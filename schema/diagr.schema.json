@@ -5,7 +5,7 @@
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$",
+      "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$",
       "description": "Diagram id, used for output file names"
     },
     "title": {
@@ -44,144 +44,16 @@
     "groups": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "description": "Shown at the bottom left of the group"
-          },
-          "sub": {
-            "type": "string",
-            "description": "Muted text after the title"
-          },
-          "icon": {
-            "type": "string",
-            "description": "Icon name, shown before the title"
-          },
-          "tone": {
-            "type": "string",
-            "description": "Theme tone: blue, teal, green, violet, amber, orange, neutral"
-          },
-          "at": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "minItems": 2,
-            "maxItems": 2,
-            "description": "Top-left cell [col, row]; default: fit the member nodes and groups"
-          },
-          "span": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "minimum": 1
-            },
-            "minItems": 2,
-            "maxItems": 2,
-            "description": "Size in cells [cols, rows]"
-          },
-          "in": {
-            "type": "string",
-            "description": "Parent group id"
-          },
-          "title_at": {
-            "type": "string",
-            "enum": [
-              "bottom-left",
-              "top-left",
-              "top",
-              "bottom",
-              "middle"
-            ],
-            "description": "Where the title goes: bottom-left (default), top-left (default for a stack), top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below"
-          },
-          "layout": {
-            "oneOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "row",
-                  "column"
-                ]
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "direction": {
-                    "type": "string",
-                    "enum": [
-                      "row",
-                      "column"
-                    ],
-                    "description": "row or column (default column)"
-                  },
-                  "gap": {
-                    "type": "number",
-                    "minimum": 0,
-                    "description": "Space between items, in px (default 24)"
-                  },
-                  "align": {
-                    "type": "string",
-                    "enum": [
-                      "start",
-                      "center",
-                      "end",
-                      "stretch"
-                    ],
-                    "description": "Across the direction: start, center (default), end, or stretch to fill"
-                  },
-                  "justify": {
-                    "type": "string",
-                    "enum": [
-                      "start",
-                      "center",
-                      "end",
-                      "space-between",
-                      "space-around"
-                    ],
-                    "description": "Along the direction, for space left over: start (default), center, end, space-between or space-around"
-                  }
-                },
-                "additionalProperties": false
-              }
-            ],
-            "description": "Arrange what the box holds in a row or column, in file order, instead of by cells: row, column, or a mapping with direction, gap and align"
-          },
-          "box": {
-            "type": "boolean",
-            "description": "false: draw no box or title; the group only arranges what it holds"
-          },
-          "grow": {
-            "type": "number",
-            "minimum": 0,
-            "description": "In a box with layout: this group's share of the space left over (default 0)"
-          },
-          "behind": {
-            "type": "object",
-            "propertyNames": {
-              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)$"
-            },
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "Boxes stacked behind this one, nearest first, as id: title; edges can end at them"
-          }
-        },
-        "additionalProperties": false,
-        "required": [
-          "title"
-        ],
-        "description": "A titled, tinted container around nodes and other groups"
+        "$ref": "#/$defs/group"
       }
     },
     "nodes": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
       },
       "additionalProperties": {
         "type": "object",
@@ -220,21 +92,9 @@
             "type": "string",
             "description": "Tile colour for generated icons"
           },
-          "in": {
-            "type": "string",
-            "description": "Group id"
-          },
           "junction": {
             "type": "boolean",
             "description": "A dot where edges meet (a bus); has no icon or text"
-          },
-          "trigger": {
-            "type": "string",
-            "description": "Label of a button under the node that plays a scenario"
-          },
-          "plays": {
-            "type": "string",
-            "description": "Scenario id the trigger plays; default: the first scenario"
           },
           "align_x": {
             "type": "string",
@@ -288,70 +148,152 @@
     "edges": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?))?)$"
+        "pattern": "^(?:(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?|\\(\\s*[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?)*\\s*\\))(?:\\s*(?:<->|-->|->)\\s*(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?|\\(\\s*[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?)*\\s*\\)))+(?:\\s+as\\s+[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)?)$"
       },
       "additionalProperties": {
         "oneOf": [
           {
-            "type": "string",
-            "description": "The label"
+            "type": "null"
           },
           {
-            "type": "object",
-            "properties": {
-              "label": {
-                "type": "string"
-              },
-              "route": {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
-                  "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
-                },
-                "description": "Moves from the start node. Moves without a length on the same axis share what is left"
-              },
-              "via": {
-                "type": "array",
-                "items": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  },
-                  "minItems": 2,
-                  "maxItems": 2
-                },
-                "description": "Explicit waypoints in grid cells (escape hatch)"
-              },
-              "dashed": {
-                "type": "boolean"
-              },
-              "mark": {
+            "oneOf": [
+              {
                 "type": "string",
-                "enum": [
-                  "new",
-                  "removed",
-                  "changed"
-                ]
+                "description": "The label"
               },
-              "label_at": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 1,
-                "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
-              },
-              "hidden": {
-                "type": "boolean"
-              },
-              "tooltip": {
-                "type": "string"
+              {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "route": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
+                      "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
+                    },
+                    "description": "Moves from the start node. Moves without a length on the same axis share what is left"
+                  },
+                  "via": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    },
+                    "description": "Explicit waypoints in grid cells (escape hatch)"
+                  },
+                  "dashed": {
+                    "type": "boolean"
+                  },
+                  "mark": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "removed",
+                      "changed"
+                    ]
+                  },
+                  "label_at": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
+                  },
+                  "hidden": {
+                    "type": "boolean"
+                  },
+                  "tooltip": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
               }
+            ],
+            "description": "An edge: its label, or a mapping"
+          },
+          {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "description": "The label"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "route": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
+                            "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
+                          },
+                          "description": "Moves from the start node. Moves without a length on the same axis share what is left"
+                        },
+                        "via": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "description": "Explicit waypoints in grid cells (escape hatch)"
+                        },
+                        "dashed": {
+                          "type": "boolean"
+                        },
+                        "mark": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "removed",
+                            "changed"
+                          ]
+                        },
+                        "label_at": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
+                        },
+                        "hidden": {
+                          "type": "boolean"
+                        },
+                        "tooltip": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "An edge: its label, or a mapping"
+                }
+              ]
             },
-            "additionalProperties": false
+            "description": "One label or mapping per edge"
           }
         ],
-        "description": "An edge; the key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'"
-      }
+        "description": "Nothing, the label, a mapping for every edge the key makes, or a list with one each"
+      },
+      "description": "Edges. The key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'. A chain 'a -> b -> c' makes an edge per arrow, '(a b) -> c' one from each, '-->' a dashed edge and '<->' a pair, one each way, side by side"
     },
     "components": {
       "type": "object",
@@ -394,135 +336,7 @@
               "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
             },
             "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string",
-                  "description": "Shown at the bottom left of the group"
-                },
-                "sub": {
-                  "type": "string",
-                  "description": "Muted text after the title"
-                },
-                "icon": {
-                  "type": "string",
-                  "description": "Icon name, shown before the title"
-                },
-                "tone": {
-                  "type": "string",
-                  "description": "Theme tone: blue, teal, green, violet, amber, orange, neutral"
-                },
-                "at": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  },
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "description": "Top-left cell [col, row]; default: fit the member nodes and groups"
-                },
-                "span": {
-                  "type": "array",
-                  "items": {
-                    "type": "number",
-                    "minimum": 1
-                  },
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "description": "Size in cells [cols, rows]"
-                },
-                "in": {
-                  "type": "string",
-                  "description": "Parent group id"
-                },
-                "title_at": {
-                  "type": "string",
-                  "enum": [
-                    "bottom-left",
-                    "top-left",
-                    "top",
-                    "bottom",
-                    "middle"
-                  ],
-                  "description": "Where the title goes: bottom-left (default), top-left (default for a stack), top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below"
-                },
-                "layout": {
-                  "oneOf": [
-                    {
-                      "type": "string",
-                      "enum": [
-                        "row",
-                        "column"
-                      ]
-                    },
-                    {
-                      "type": "object",
-                      "properties": {
-                        "direction": {
-                          "type": "string",
-                          "enum": [
-                            "row",
-                            "column"
-                          ],
-                          "description": "row or column (default column)"
-                        },
-                        "gap": {
-                          "type": "number",
-                          "minimum": 0,
-                          "description": "Space between items, in px (default 24)"
-                        },
-                        "align": {
-                          "type": "string",
-                          "enum": [
-                            "start",
-                            "center",
-                            "end",
-                            "stretch"
-                          ],
-                          "description": "Across the direction: start, center (default), end, or stretch to fill"
-                        },
-                        "justify": {
-                          "type": "string",
-                          "enum": [
-                            "start",
-                            "center",
-                            "end",
-                            "space-between",
-                            "space-around"
-                          ],
-                          "description": "Along the direction, for space left over: start (default), center, end, space-between or space-around"
-                        }
-                      },
-                      "additionalProperties": false
-                    }
-                  ],
-                  "description": "Arrange what the box holds in a row or column, in file order, instead of by cells: row, column, or a mapping with direction, gap and align"
-                },
-                "box": {
-                  "type": "boolean",
-                  "description": "false: draw no box or title; the group only arranges what it holds"
-                },
-                "grow": {
-                  "type": "number",
-                  "minimum": 0,
-                  "description": "In a box with layout: this group's share of the space left over (default 0)"
-                },
-                "behind": {
-                  "type": "object",
-                  "propertyNames": {
-                    "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)$"
-                  },
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "description": "Boxes stacked behind this one, nearest first, as id: title; edges can end at them"
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "title"
-              ],
-              "description": "A titled, tinted container around nodes and other groups"
+              "$ref": "#/$defs/group"
             }
           },
           "nodes": {
@@ -567,21 +381,9 @@
                   "type": "string",
                   "description": "Tile colour for generated icons"
                 },
-                "in": {
-                  "type": "string",
-                  "description": "Group id"
-                },
                 "junction": {
                   "type": "boolean",
                   "description": "A dot where edges meet (a bus); has no icon or text"
-                },
-                "trigger": {
-                  "type": "string",
-                  "description": "Label of a button under the node that plays a scenario"
-                },
-                "plays": {
-                  "type": "string",
-                  "description": "Scenario id the trigger plays; default: the first scenario"
                 },
                 "align_x": {
                   "type": "string",
@@ -635,76 +437,165 @@
           "edges": {
             "type": "object",
             "propertyNames": {
-              "pattern": "^(?:([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?\\s*->\\s*([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?)(?:@(left|right|top|bottom)([+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_-]*(?:/[A-Za-z_][A-Za-z0-9_-]*)?))?)$"
+              "pattern": "^(?:(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?|\\(\\s*[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?)*\\s*\\))(?:\\s*(?:<->|-->|->)\\s*(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?|\\(\\s*[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?(?:\\s+[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?(?:@(?:left|right|top|bottom)(?:[+-]\\d+(?:\\.\\d+)?)?)?)*\\s*\\)))+(?:\\s+as\\s+[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)?)$"
             },
             "additionalProperties": {
               "oneOf": [
                 {
-                  "type": "string",
-                  "description": "The label"
+                  "type": "null"
                 },
                 {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string"
-                    },
-                    "route": {
-                      "type": "array",
-                      "items": {
-                        "type": "string",
-                        "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
-                        "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
-                      },
-                      "description": "Moves from the start node. Moves without a length on the same axis share what is left"
-                    },
-                    "via": {
-                      "type": "array",
-                      "items": {
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        },
-                        "minItems": 2,
-                        "maxItems": 2
-                      },
-                      "description": "Explicit waypoints in grid cells (escape hatch)"
-                    },
-                    "dashed": {
-                      "type": "boolean"
-                    },
-                    "mark": {
+                  "oneOf": [
+                    {
                       "type": "string",
-                      "enum": [
-                        "new",
-                        "removed",
-                        "changed"
-                      ]
+                      "description": "The label"
                     },
-                    "label_at": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
-                    },
-                    "hidden": {
-                      "type": "boolean"
-                    },
-                    "tooltip": {
-                      "type": "string"
+                    {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "route": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
+                            "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
+                          },
+                          "description": "Moves from the start node. Moves without a length on the same axis share what is left"
+                        },
+                        "via": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "description": "Explicit waypoints in grid cells (escape hatch)"
+                        },
+                        "dashed": {
+                          "type": "boolean"
+                        },
+                        "mark": {
+                          "type": "string",
+                          "enum": [
+                            "new",
+                            "removed",
+                            "changed"
+                          ]
+                        },
+                        "label_at": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
+                        },
+                        "hidden": {
+                          "type": "boolean"
+                        },
+                        "tooltip": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
                     }
+                  ],
+                  "description": "An edge: its label, or a mapping"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "description": "The label"
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "label": {
+                                "type": "string"
+                              },
+                              "route": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "pattern": "^(?:(up|down|left|right)(?:\\s+(\\d+(?:\\.\\d+)?)(px)?)?)$",
+                                  "description": "a move: up, down, left or right, with an optional length in cells or px, e.g. 'right 0.5' or 'up 40px'"
+                                },
+                                "description": "Moves from the start node. Moves without a length on the same axis share what is left"
+                              },
+                              "via": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "description": "Explicit waypoints in grid cells (escape hatch)"
+                              },
+                              "dashed": {
+                                "type": "boolean"
+                              },
+                              "mark": {
+                                "type": "string",
+                                "enum": [
+                                  "new",
+                                  "removed",
+                                  "changed"
+                                ]
+                              },
+                              "label_at": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1,
+                                "description": "Label position along the path, 0 to 1; default: middle of the longest segment"
+                              },
+                              "hidden": {
+                                "type": "boolean"
+                              },
+                              "tooltip": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        ],
+                        "description": "An edge: its label, or a mapping"
+                      }
+                    ]
                   },
-                  "additionalProperties": false
+                  "description": "One label or mapping per edge"
                 }
               ],
-              "description": "An edge; the key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'"
-            }
+              "description": "Nothing, the label, a mapping for every edge the key makes, or a list with one each"
+            },
+            "description": "Edges. The key is 'a -> b', with optional ports 'a@bottom+10' and id 'a -> b as name'. A chain 'a -> b -> c' makes an edge per arrow, '(a b) -> c' one from each, '-->' a dashed edge and '<->' a pair, one each way, side by side"
+          },
+          "actions": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/effects"
+            },
+            "description": "Named lists of effects in the component's own ids, called with the instances they run on: 'pull a b' runs pull on instances a and b side by side"
           }
         },
         "additionalProperties": false,
-        "required": [
-          "nodes"
-        ],
         "description": "A reusable block of groups, nodes and edges in its own grid cells; 'instances' uses it"
       }
     },
@@ -718,7 +609,7 @@
         "properties": {
           "component": {
             "type": "string",
-            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$",
+            "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$",
             "description": "Component id"
           },
           "at": {
@@ -752,6 +643,16 @@
         "description": "An instance of a component; its groups, nodes and edges are named '<instance>/<id>'"
       }
     },
+    "actions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/effects"
+      },
+      "description": "Named lists of effects, called in a step's 'do' by their name"
+    },
     "scenarios": {
       "type": "object",
       "propertyNames": {
@@ -763,6 +664,25 @@
           "title": {
             "type": "string",
             "description": "Name in the player's scenario picker"
+          },
+          "trigger": {
+            "type": "object",
+            "properties": {
+              "at": {
+                "type": "string",
+                "description": "The node the button hangs under"
+              },
+              "label": {
+                "type": "string",
+                "description": "The button's label"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "at",
+              "label"
+            ],
+            "description": "A button under a node that plays this scenario"
           },
           "loop": {
             "type": "boolean",
@@ -779,83 +699,52 @@
           "steps": {
             "type": "array",
             "items": {
-              "type": "object",
-              "properties": {
-                "title": {
-                  "type": "string"
-                },
-                "text": {
-                  "type": "string",
-                  "description": "Longer explanation for the step list"
-                },
-                "at": {
-                  "type": "string",
-                  "description": "Node that carries the step's number badge"
-                },
-                "status": {
-                  "type": "string",
-                  "description": "Status line while the step plays; default: the title"
-                },
-                "do": {
-                  "type": "array",
-                  "items": {
-                    "oneOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
-                        "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Longer explanation for the step list"
+                    },
+                    "at": {
+                      "type": "string",
+                      "description": "Node that carries the step's number badge"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Status line while the step plays; default: the title"
+                    },
+                    "focus": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
                       },
-                      {
-                        "type": "object",
-                        "minProperties": 1,
-                        "maxProperties": 1,
-                        "propertyNames": {
-                          "pattern": "^(set|status)\\b"
-                        },
-                        "additionalProperties": {
-                          "type": "string"
-                        },
-                        "description": "'verb target [duration]': text, for effects that carry free text"
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "parallel"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "parallel": {
-                            "$ref": "#/$defs/effects"
-                          }
-                        },
-                        "description": "Effects that play together"
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "repeat",
-                          "do"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "repeat": {
-                            "type": "integer",
-                            "minimum": 1
-                          },
-                          "do": {
-                            "$ref": "#/$defs/effects"
-                          }
-                        },
-                        "description": "Repeat effects; '{i}' in text is replaced by the round number"
-                      }
-                    ]
+                      "minItems": 1,
+                      "description": "Dim everything but these, and the edges between them, for the step"
+                    },
+                    "do": {
+                      "$ref": "#/$defs/effects",
+                      "description": "Effects, in order"
+                    }
                   },
-                  "description": "Effects, in order"
+                  "additionalProperties": false,
+                  "required": [
+                    "title"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "minProperties": 1,
+                  "maxProperties": 1,
+                  "additionalProperties": {
+                    "$ref": "#/$defs/effects"
+                  },
+                  "description": "'Title: [effects]', for a step with no text"
                 }
-              },
-              "additionalProperties": false,
-              "required": [
-                "title"
               ]
             },
             "minItems": 1
@@ -940,7 +829,7 @@
     "views": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
       },
       "additionalProperties": {
         "type": "object",
@@ -982,8 +871,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "id",
-    "nodes"
+    "id"
   ],
   "$defs": {
     "effects": {
@@ -992,20 +880,18 @@
         "oneOf": [
           {
             "type": "string",
-            "pattern": "^(activate|done|fail|draw|flow|set|cells|spin|show|hide|focus|wait|status)\\b",
-            "description": "verb targets [duration], e.g. 'draw a->b 700ms'. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; draw: Edge is used: the accent line draws along the path; flow: Follow a path: 'flow a -> b -> c' is activate a, draw a->b, done a, then the same from b; the last node is left as it is. A duration applies to each activate; set: Replace text: 'set node.title', 'set node.sub', 'set node.sub.1', 'set a->b.label'; cells: Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets; 'focus none' clears; wait: Pause; status: Replace the status line"
+            "description": "'verb targets [duration]', e.g. 'draw a->b 700ms', or an action's name and its instances. Verbs: activate: Node starts working: pulsing ring, spinner badge; done: Node finished: check badge; fail: Node failed: red ring and cross; an active cell fails too; run: Node works for a while, then finishes: 'run api 800ms' is activate api 800ms, then done api; draw: Edge is used: the accent line draws along the path, showing the edge if it is hidden; flow: Follow a path: 'flow a -> b' is activate a, draw a->b, done a. A duration after a stop is how long it stays active ('flow a 600ms -> b'), '(b c)' is several stops side by side, and 'done' at the end finishes the last stop, which is otherwise left as it is; cells: Fill a node's cells one by one, or only some: 'cells n 2..4', 'cells n 3', 'cells n build..test'; spin: Rotate the node's glyph; 'spin n off' stops it; show: Reveal a hidden node, edge or group; hide: Hide a node, edge or group; focus: Dim everything except the targets and the edges between them; 'focus none' clears; wait: Pause"
           },
           {
             "type": "object",
             "minProperties": 1,
-            "maxProperties": 1,
             "propertyNames": {
-              "pattern": "^(set|status)\\b"
+              "pattern": "^(?!(?:activate|done|fail|run|draw|flow|cells|spin|show|hide|focus|wait|parallel|repeat)\\b)\\S+(?:\\s+\\d+(?:\\.\\d+)?(?:ms|s))?$"
             },
             "additionalProperties": {
               "type": "string"
             },
-            "description": "'verb target [duration]': text, for effects that carry free text"
+            "description": "Text that changes: 'node.sub: text', 'node.title', 'node.sub.N', 'a->b.label' or 'status', each with an optional duration ('api.sub 400ms: text'). Several in one mapping change together"
           },
           {
             "type": "object",
@@ -1018,28 +904,260 @@
                 "$ref": "#/$defs/effects"
               }
             },
-            "description": "Effects that play together"
+            "description": "Effects that play together, in lockstep"
           },
           {
             "type": "object",
-            "required": [
-              "repeat",
-              "do"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "repeat": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "do": {
-                "$ref": "#/$defs/effects"
-              }
+            "minProperties": 1,
+            "maxProperties": 1,
+            "propertyNames": {
+              "pattern": "^repeat\\s+\\d+$"
             },
-            "description": "Repeat effects; '{i}' in text is replaced by the round number"
+            "additionalProperties": {
+              "$ref": "#/$defs/effects"
+            },
+            "description": "'repeat 3: [...]' plays the effects 3 times; '{i}' in text is the round number"
+          },
+          {
+            "$ref": "#/$defs/effects",
+            "description": "Effects that play one after another, as one lane"
           }
         ]
       }
+    },
+    "group": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Shown at the bottom left of the group"
+        },
+        "sub": {
+          "type": "string",
+          "description": "Muted text after the title"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon name, shown before the title"
+        },
+        "tone": {
+          "type": "string",
+          "description": "Theme tone: blue, teal, green, violet, amber, orange, neutral"
+        },
+        "at": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Top-left cell [col, row]; default: fit the member nodes and groups"
+        },
+        "span": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 1
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Size in cells [cols, rows]"
+        },
+        "title_at": {
+          "type": "string",
+          "enum": [
+            "bottom-left",
+            "top-left",
+            "top",
+            "bottom",
+            "middle"
+          ],
+          "description": "Where the title goes: bottom-left (default), top-left (default for a stack), top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below"
+        },
+        "layout": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "row",
+                "column"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "row",
+                    "column"
+                  ],
+                  "description": "row or column (default column)"
+                },
+                "gap": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Space between items, in px (default 24)"
+                },
+                "align": {
+                  "type": "string",
+                  "enum": [
+                    "start",
+                    "center",
+                    "end",
+                    "stretch"
+                  ],
+                  "description": "Across the direction: start, center (default), end, or stretch to fill"
+                },
+                "justify": {
+                  "type": "string",
+                  "enum": [
+                    "start",
+                    "center",
+                    "end",
+                    "space-between",
+                    "space-around"
+                  ],
+                  "description": "Along the direction, for space left over: start (default), center, end, space-between or space-around"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "description": "Arrange what the box holds in a row or column, in file order, instead of by cells: row, column, or a mapping with direction, gap and align"
+        },
+        "box": {
+          "type": "boolean",
+          "description": "false: draw no box or title; the group only arranges what it holds"
+        },
+        "grow": {
+          "type": "number",
+          "minimum": 0,
+          "description": "In a box with layout: this group's share of the space left over (default 0)"
+        },
+        "behind": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
+          },
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Boxes stacked behind this one, nearest first, as id: title; edges can end at them"
+        },
+        "nodes": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "at": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
+              },
+              "title": {
+                "type": "string"
+              },
+              "sub": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "Muted text under the title"
+              },
+              "icon": {
+                "type": "string",
+                "description": "Icon name from the diagram's icon folders or the core set"
+              },
+              "tone": {
+                "type": "string",
+                "description": "Tile colour for generated icons"
+              },
+              "junction": {
+                "type": "boolean",
+                "description": "A dot where edges meet (a bus); has no icon or text"
+              },
+              "align_x": {
+                "type": "string",
+                "description": "A node to line up with, one above the other: same x"
+              },
+              "align_y": {
+                "type": "string",
+                "description": "A node to line up with, side by side: same y"
+              },
+              "cells": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                ],
+                "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+              },
+              "stack": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Draw the icon as a stack of N"
+              },
+              "mark": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "removed",
+                  "changed"
+                ]
+              },
+              "hidden": {
+                "type": "boolean",
+                "description": "Start hidden; a scenario can show it"
+              },
+              "tooltip": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "description": "A node: icon, title and sub text, centred on a grid cell"
+          },
+          "minProperties": 1,
+          "description": "Nodes inside this group"
+        },
+        "groups": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/group"
+          },
+          "minProperties": 1,
+          "description": "Groups inside this group"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title"
+      ],
+      "description": "A titled, tinted container around nodes and other groups"
     }
   }
 }

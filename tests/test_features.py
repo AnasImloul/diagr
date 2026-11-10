@@ -10,11 +10,17 @@ from tests.test_build import prepared
 NESTED = """
 id: t
 groups:
-  outer: {title: Outer, tone: neutral}
-  inner: {title: Inner, in: outer, tone: blue}
-nodes:
-  a: {in: inner, at: [0, 0], icon: server, title: A}
-  b: {in: outer, at: [2, 0], icon: database, title: B}
+  outer:
+    title: Outer
+    tone: neutral
+    groups:
+      inner:
+        title: Inner
+        tone: blue
+        nodes:
+          a: {at: [0, 0], icon: server, title: A}
+    nodes:
+      b: {at: [2, 0], icon: database, title: B}
 edges:
   a -> b: writes
 """
@@ -22,7 +28,7 @@ edges:
 TWO = """
 id: t
 nodes:
-  a: {at: [0, 0], icon: server, title: A, trigger: Go, plays: second}
+  a: {at: [0, 0], icon: server, title: A}
   b: {at: [1, 0], icon: database, title: B}
 edges:
   a -> b: writes
@@ -33,6 +39,7 @@ scenarios:
       - {title: one, at: a, do: [done a]}
   second:
     title: Second
+    trigger: {at: a, label: Go}
     ready: second ready
     steps:
       - {title: two, at: b, do: [draw a->b, done b]}
@@ -46,13 +53,6 @@ class NestedGroups(Case):
         self.assertTrue(outer.x < inner.x and outer.y < inner.y and outer.x1 > inner.x1 and outer.y1 > inner.y1)
         self.assertTrue(outer.contains((lay.nodes["b"].x, lay.nodes["b"].y)))
 
-    def test_outer_groups_are_drawn_first(self):
-        yml = NESTED.replace(
-            "  outer: {title: Outer, tone: neutral}\n  inner: {title: Inner, in: outer, tone: blue}\n",
-            "  inner: {title: Inner, in: outer, tone: blue}\n  outer: {title: Outer, tone: neutral}\n",
-        )
-        self.assertEqual(list(prepared(yml).layout.groups), ["outer", "inner"])
-
     def test_label_takes_the_innermost_tint(self):
         p = prepared(NESTED)
         a = p.layout.nodes["a"]
@@ -60,8 +60,9 @@ class NestedGroups(Case):
 
     def test_three_levels(self):
         yml = NESTED.replace(
-            "  inner: {title: Inner, in: outer, tone: blue}\n",
-            "  mid: {title: Mid, in: outer, tone: teal}\n  inner: {title: Inner, in: mid, tone: blue}\n",
+            "      inner:\n        title: Inner\n        tone: blue\n        nodes:\n          a:",
+            "      mid:\n        title: Mid\n        tone: teal\n        groups:\n"
+            "          inner:\n            title: Inner\n            tone: blue\n            nodes:\n              a:",
         )
         self.assertClean(problems(yml))
         g = prepared(yml).layout.groups
@@ -71,21 +72,11 @@ class NestedGroups(Case):
     def test_nesting_is_not_an_overlap(self):
         self.assertClean(problems(NESTED))
 
-    def test_unknown_parent(self):
-        self.assertReports(problems(NESTED.replace("in: outer, tone: blue", "in: nope, tone: blue")), "unknown parent")
-
-    def test_loop(self):
-        yml = NESTED.replace(
-            "  outer: {title: Outer, tone: neutral}", "  outer: {title: Outer, in: inner, tone: neutral}"
-        )
-        self.assertReports(problems(yml), "is inside itself", "error")
-
     def test_fixed_child_outside_its_parent(self):
-        yml = NESTED.replace(
-            "  inner: {title: Inner, in: outer, tone: blue}",
-            "  inner: {title: Inner, in: outer, at: [5, 3], tone: blue}",
-        ).replace("  a: {in: inner, at: [0, 0]", "  a: {in: inner, at: [5, 3]")
-        yml = yml.replace("  outer: {title: Outer, tone: neutral}", "  outer: {title: Outer, at: [0, 0], span: [3, 1]}")
+        yml = NESTED.replace("        title: Inner\n", "        title: Inner\n        at: [5, 3]\n").replace(
+            "a: {at: [0, 0]", "a: {at: [5, 3]"
+        )
+        yml = yml.replace("    tone: neutral\n", "    at: [0, 0]\n    span: [3, 1]\n")
         self.assertReports(problems(yml), "group 'inner' is outside its parent group 'outer'", "error")
 
 
@@ -96,14 +87,15 @@ class Scenarios(Case):
         self.assertEqual(p.scenarios["second"].ready, "second ready")
 
     def test_empty_scenarios(self):
-        yml = TWO.split("scenarios:")[0].replace(", plays: second", "") + "scenarios: {}\n"
+        yml = TWO.split("scenarios:")[0] + "scenarios: {}\n"
         self.assertReports(problems(yml), "must not be empty")
 
-    def test_unknown_plays(self):
-        self.assertReports(problems(TWO.replace("plays: second", "plays: third")), "unknown scenario 'third'", "error")
+    def test_trigger_at_an_unknown_node(self):
+        self.assertReports(problems(TWO.replace("at: a, label: Go", "at: c, label: Go")), "unknown node 'c'", "error")
 
-    def test_plays_without_trigger(self):
-        self.assertReports(problems(TWO.replace("trigger: Go, ", "")), "has 'plays' but no 'trigger'", "warning")
+    def test_one_trigger_per_node(self):
+        yml = TWO.replace("    title: First\n", "    title: First\n    trigger: {at: a, label: Run}\n")
+        self.assertReports(problems(yml), "node 'a' already has the trigger of 'first'", "error")
 
     def test_effects_are_checked_in_every_scenario(self):
         self.assertReports(problems(TWO.replace("draw a->b, done b", "done nope")), "unknown node 'nope'")
@@ -145,28 +137,27 @@ class Scenarios(Case):
         )
 
     def test_one_scenario_has_no_picker(self):
-        html = render_html(prepared(TWO.split("  second:")[0].replace(", plays: second", "")))
+        html = render_html(prepared(TWO.split("  second:")[0]))
         self.assertNotIn('class="scenarios"', html)
 
 
 class LayoutWarnings(Case):
     def test_edge_through_a_node(self):
-        yml = NESTED.replace("  b: {in: outer, at: [2, 0]", "  b: {in: outer, at: [3, 0]")
-        yml = yml.replace("nodes:\n", "nodes:\n  c: {in: outer, at: [2, 0], icon: cube, title: C}\n")
+        yml = NESTED.replace("      b: {at: [2, 0]", "      b: {at: [3, 0]")
+        yml = yml.replace("    nodes:\n      b:", "    nodes:\n      c: {at: [2, 0], icon: cube, title: C}\n      b:")
         self.assertReports(problems(yml), "edge 'a->b' passes through node 'c'", "warning")
 
     def test_node_overlapping_a_group_it_is_not_in(self):
-        yml = NESTED.replace("  b: {in: outer, at: [2, 0]", "  b: {at: [0.3, 0.2]")
+        yml = NESTED.replace("    nodes:\n      b: {at: [2, 0]", "nodes:\n  b: {at: [0.3, 0.2]")
         self.assertReports(problems(yml), "node 'b' overlaps group 'inner', which it is not in", "warning")
 
     def test_edge_across_a_group_title(self):
         yml = """
 id: t
 groups:
-  g: {title: A long group title, tone: blue}
+  g: {title: A long group title, tone: blue, nodes: {in: {at: [0, 0], icon: cube, title: In}}}
 nodes:
   a: {at: [-0.28, -1], icon: server, title: A}
-  in: {in: g, at: [0, 0], icon: cube, title: In}
   b: {at: [-0.28, 1.3], icon: database, title: B}
 edges:
   a -> b: {}

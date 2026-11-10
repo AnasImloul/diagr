@@ -7,6 +7,7 @@ Expansion runs before validation and turns every instance into ordinary groups, 
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import replace
 
 from .model import Component, Diagram, Instance, Loc
@@ -30,16 +31,8 @@ def _check(c: Component, problems: list[Problem]) -> None:
 
     for g in c.groups.values():
         scan(g.loc, f"group '{g.id}'", g.title, g.sub)
-        if g.parent and g.parent not in c.groups:
-            problems.append(
-                Problem(g.loc, f"component '{c.id}': group '{g.id}' is in '{g.parent}', not one of its groups")
-            )
     for n in c.nodes.values():
-        scan(n.loc, f"node '{n.id}'", n.title, n.tooltip, n.trigger, *n.sub)
-        if n.group and n.group not in c.groups:
-            problems.append(
-                Problem(n.loc, f"component '{c.id}': node '{n.id}' is in '{n.group}', not one of its groups")
-            )
+        scan(n.loc, f"node '{n.id}'", n.title, n.tooltip, *n.sub)
     for e in c.edges.values():
         scan(e.loc, f"edge '{e.id}'", e.label, e.tooltip)
         for end in (e.src.node, e.dst.node):
@@ -49,12 +42,19 @@ def _check(c: Component, problems: list[Problem]) -> None:
                 )
 
 
-def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem]) -> None:
+def instance_fill(c: Component, p: Instance) -> Callable[[str], str]:
+    """Fills {param} in text with the instance's value, or the component's default."""
     values = {k: v for k, v in c.params.items() if v is not None} | p.values
-    ox, oy = p.at
 
     def fill(text: str) -> str:
         return PARAM.sub(lambda m: m.group(0)[0] if not m.group(1) else values.get(m.group(1), m.group(0)), text)
+
+    return fill
+
+
+def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem]) -> None:
+    fill = instance_fill(c, p)
+    ox, oy = p.at
 
     def name(local: str) -> str:
         return f"{p.id}/{local}"
@@ -84,7 +84,6 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
             title=fill(n.title),
             sub=[fill(s) for s in n.sub],
             tooltip=fill(n.tooltip) if n.tooltip else None,
-            trigger=fill(n.trigger) if n.trigger else None,
             align_x=name(n.align_x) if n.align_x else None,
             align_y=name(n.align_y) if n.align_y else None,
             group=name(n.group) if n.group else p.parent,
@@ -101,6 +100,7 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
             label=fill(e.label),
             tooltip=fill(e.tooltip) if e.tooltip else None,
             via=[shift(v) for v in e.via] if e.via else e.via,
+            twin=f"{dst.node}->{src.node}" if e.twin else None,
         )
 
 

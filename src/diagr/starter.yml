@@ -3,23 +3,27 @@ title: Order processing
 grid: {col: 200, row: 170}
 
 groups:
-  front: {title: Frontend, tone: blue}
-  back: {title: Backend, sub: one region, tone: teal}
-
-nodes:
-  web: {in: front, at: [0, 0], icon: browser, title: Web app, trigger: Place order}
-  api: {in: back, at: [1, 0], icon: function, title: API, sub: validates}
-  queue: {in: back, at: [2, 0], icon: queue, title: Order queue}
-  db: {in: back, at: [3, 0], icon: database, title: Orders}
+  front:
+    title: Frontend
+    tone: blue
+    nodes:
+      web: {at: [0, 0], icon: browser, title: Web app}
+  back:
+    title: Backend
+    sub: one region
+    tone: teal
+    nodes:
+      api: {at: [1, 0], icon: function, title: API, sub: validates}
+      queue: {at: [2, 0], icon: queue, title: Order queue}
+      db: {at: [3, 0], icon: database, title: Orders}
 
 edges:
-  web -> api: POST /orders
-  api -> queue: enqueue
-  queue -> db: write
+  web -> api -> queue -> db: [POST /orders, enqueue, write]
 
 scenarios:
   order:
+    trigger: {at: web, label: Place order}
     steps:
-      - {title: Submit, at: web, do: [activate web, draw web->api, done web]}
-      - {title: Queue, at: api, do: [activate api 400ms, draw api->queue, done api]}
-      - {title: Store, at: db, do: [draw queue->db, activate db 300ms, done db]}
+      - {title: Submit, at: web, do: [flow web -> api]}
+      - {title: Queue, at: api, do: [flow api 400ms -> queue]}
+      - {title: Store, at: db, do: [flow queue -> db 300ms done]}

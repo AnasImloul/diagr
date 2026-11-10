@@ -58,7 +58,7 @@ def story(d: Diagram, sid: str) -> tuple[set[str], set[str], dict[str, list[int]
         for e in effects:
             if e.verb == "flow":
                 nodes.update(e.targets)
-                for a, b in zip(e.targets, e.targets[1:], strict=False):
+                for a, b in e.links():
                     edge(f"{a}->{b}", step)
             else:
                 for t in e.targets:

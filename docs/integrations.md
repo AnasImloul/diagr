@@ -61,28 +61,26 @@ And with a scenario and a group:
 id: signup
 title: Sign-up
 groups:
-  back: {title: Backend, tone: teal}
+  back:
+    title: Backend
+    tone: teal
+    nodes:
+      api:   {icon: api, title: API}
+      users: {icon: database, title: Users}
 nodes:
-  web:   {icon: browser, title: Web app, trigger: Sign up}
-  api:   {in: back, icon: api, title: API}
-  users: {in: back, icon: database, title: Users}
+  web:   {icon: browser, title: Web app}
   mail:  {icon: mail, title: Welcome email}
 edges:
   web -> api: sign up
-  api -> users: insert
-  api -> mail: send
+  api -> (users mail): [insert, send]
 scenarios:
   signup:
+    trigger: {at: web, label: Sign up}
     ready: Press Sign up.
     end: The account exists and the email is on its way.
     steps:
-      - title: Submit
-        do: [activate web, flow web -> api, done web]
-      - title: Store and send
-        do:
-          - activate api
-          - parallel: [flow api -> users, flow api -> mail]
-          - done api users mail
+      - Submit: [flow web -> api]
+      - Store and send: [flow api -> (users mail) done]
 ```
 
 ## Rebuilding SVGs in CI

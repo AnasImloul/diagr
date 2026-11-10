@@ -7,58 +7,60 @@ description: >-
   consumers react to it on their own: stock, search and notifications.
 
 groups:
-  clients: {title: Clients, tone: neutral}
-  core: {title: Core services, tone: teal}
-  consumers: {title: Consumers, sub: subscribed to order events, tone: violet}
+  clients:
+    title: Clients
+    tone: neutral
+    nodes:
+      mobile: {icon: mobile, title: Phone app}
+      web: {icon: browser, title: Web shop}
+  core:
+    title: Core services
+    tone: teal
+    nodes:
+      orders: {icon: api, title: Orders service}
+      cache: {icon: cache, title: Session cache}
+      db: {icon: database, title: Orders}
+  consumers:
+    title: Consumers
+    sub: subscribed to order events
+    tone: violet
+    nodes:
+      stock: {icon: cube, title: Stock}
+      search: {icon: search, title: Search index}
+      notify: {icon: bell, title: Notifications}
 
 nodes:
-  mobile: {in: clients, icon: mobile, title: Phone app, trigger: Place order}
-  web: {in: clients, icon: browser, title: Web shop}
   gateway: {icon: gateway, title: API gateway, sub: "auth, rate limits"}
-  orders: {in: core, icon: api, title: Orders service}
-  cache: {in: core, icon: cache, title: Session cache}
-  db: {in: core, icon: database, title: Orders}
   bus: {icon: events, title: Event bus, sub: order.placed}
-  stock: {in: consumers, icon: cube, title: Stock}
-  search: {in: consumers, icon: search, title: Search index}
-  notify: {in: consumers, icon: bell, title: Notifications}
   monitor: {icon: monitor, title: Monitoring, sub: traces and alerts}
 
 edges:
-  mobile -> gateway: HTTPS
-  web -> gateway: HTTPS
+  (mobile web) -> gateway: HTTPS
   gateway -> orders: POST /orders
   orders -> cache: session
   orders -> db: insert
   orders -> bus: publish
-  bus -> stock: {}
-  bus -> search: {}
-  bus -> notify: {}
-  bus -> monitor: {label: lag, dashed: true}
+  bus -> (stock search notify):
+  bus --> monitor: lag
 
 scenarios:
   order:
+    trigger: {at: mobile, label: Place order}
     ready: Press Place order to follow one order.
     end: Stock, search and the customer all heard about the order.
     steps:
       - title: Call the gateway
         text: The phone app sends the order to the API gateway, which checks the token.
-        do: [activate mobile, flow mobile -> gateway, done mobile, activate gateway 600ms, done gateway]
+        do: [flow mobile -> gateway 600ms done]
       - title: Store the order
         text: The orders service reads the session from the cache and writes the order.
-        do:
-          - flow gateway -> orders
-          - activate orders
-          - parallel: [flow orders -> cache, flow orders -> db]
-          - done cache db
+        do: [flow gateway -> orders -> (cache db) done]
       - title: Publish
         text: One event goes on the bus. The orders service is done; it does not wait for anyone.
-        do: [flow orders -> bus, done orders, activate bus 600ms]
+        do: [flow orders -> bus 600ms]
       - title: React
         text: Each consumer picks the event up on its own.
-        do:
-          - parallel: [flow bus -> stock, flow bus -> search, flow bus -> notify]
-          - done bus stock search notify
+        do: [flow bus -> (stock search notify) done]
 
 # A view built as its own images and page, event-driven-consumers. Its nodes were placed automatically, so they are
 # placed again for the view, which closes up around them.

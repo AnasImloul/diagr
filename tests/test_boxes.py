@@ -8,13 +8,19 @@ from tests.test_build import prepared
 BOXES = """
 id: b
 groups:
-  top: {title: Top, tone: blue}
-  bottom: {title: Bottom, tone: teal}
+  top:
+    title: Top
+    tone: blue
+    nodes:
+      a: {at: [0, 0], icon: api, title: A}
+      b: {at: [2, 0], icon: api, title: B}
+  bottom:
+    title: Bottom
+    tone: teal
+    nodes:
+      c: {at: [0, 2], icon: queue, title: C}
+      d: {at: [2, 2], icon: queue, title: D}
 nodes:
-  a: {in: top, at: [0, 0], icon: api, title: A}
-  b: {in: top, at: [2, 0], icon: api, title: B}
-  c: {in: bottom, at: [0, 2], icon: queue, title: C}
-  d: {in: bottom, at: [2, 2], icon: queue, title: D}
   e: {at: [1, 3.5], icon: user, title: E}
 edges:
   e -> bottom: deploy
@@ -65,13 +71,30 @@ class EdgesToBoxes(Case):
         id: z
         layout: {direction: column, gap: 24, align: start}
         groups:
-          ws: {title: dev, tone: neutral, layout: {direction: column, align: stretch}}
-          zone: {title: Zone, title_at: top, in: ws, tone: violet}
-          stack: {title: prod workspace, behind: {stack-dev: dev workspace}, tone: neutral, layout: row}
-          card: {title: Data processing, in: stack, title_at: middle, tone: blue, layout: row}
-        nodes:
-          z: {in: zone, icon: lake, title: Lake}
-          c: {in: card, icon: notebook, title: Notebook}
+          ws:
+            title: dev
+            tone: neutral
+            layout: {direction: column, align: stretch}
+            groups:
+              zone:
+                title: Zone
+                title_at: top
+                tone: violet
+                nodes:
+                  z: {icon: lake, title: Lake}
+          stack:
+            title: prod workspace
+            behind: {stack-dev: dev workspace}
+            tone: neutral
+            layout: row
+            groups:
+              card:
+                title: Data processing
+                title_at: middle
+                tone: blue
+                layout: row
+                nodes:
+                  c: {icon: notebook, title: Notebook}
         edges:
           zone -> card: {}
         """
@@ -90,13 +113,18 @@ class EdgesToBoxes(Case):
 ALIGN = """
 id: a
 groups:
-  one: {title: One, tone: blue}
-  two: {title: Two, tone: teal}
-nodes:
-  a: {in: one, at: [0.4, 0], icon: api, title: A}
-  b: {in: one, at: [2, 0], icon: api, title: B}
-  c: {in: two, at: [0, 2], icon: queue, title: C}
-  d: {in: two, at: [2.3, 2], icon: queue, title: D}
+  one:
+    title: One
+    tone: blue
+    nodes:
+      a: {at: [0.4, 0], icon: api, title: A}
+      b: {at: [2, 0], icon: api, title: B}
+  two:
+    title: Two
+    tone: teal
+    nodes:
+      c: {at: [0, 2], icon: queue, title: C}
+      d: {at: [2.3, 2], icon: queue, title: D}
 """
 
 
@@ -111,13 +139,23 @@ class Alignment(Case):
         yml = """
         id: f
         groups:
-          ws: {title: Workspace, tone: neutral}
-          inner: {title: Inner, in: ws, tone: blue, at: [0, 0], span: [2, 1]}
-          below: {title: Below, tone: teal}
-        nodes:
-          a: {in: inner, at: [0.5, 0], icon: api, title: A}
-          c: {in: below, at: [0, 2], icon: queue, title: C}
-          d: {in: below, at: [1.4, 2], icon: queue, title: D}
+          ws:
+            title: Workspace
+            tone: neutral
+            groups:
+              inner:
+                title: Inner
+                tone: blue
+                at: [0, 0]
+                span: [2, 1]
+                nodes:
+                  a: {at: [0.5, 0], icon: api, title: A}
+          below:
+            title: Below
+            tone: teal
+            nodes:
+              c: {at: [0, 2], icon: queue, title: C}
+              d: {at: [1.4, 2], icon: queue, title: D}
         """
         g = prepared(yml).layout.groups
         self.assertAlmostEqual(g["ws"].x1, g["below"].x1)
@@ -127,15 +165,28 @@ class Alignment(Case):
         yml = """
         id: c
         groups:
-          left: {title: Left, tone: neutral}
-          zone: {title: Zone, in: left, tone: violet, at: [0, 0], span: [2, 1]}
-          right: {title: Right, tone: neutral}
-          below: {title: Below, tone: teal}
-        nodes:
-          lake: {in: zone, at: [0.5, 0], icon: lake, title: Lake}
-          r: {in: right, at: [3, 0], icon: api, title: R}
-          c: {in: below, at: [-0.5, 2], icon: queue, title: C}
-          d: {in: below, at: [3, 2], icon: queue, title: D}
+          left:
+            title: Left
+            tone: neutral
+            groups:
+              zone:
+                title: Zone
+                tone: violet
+                at: [0, 0]
+                span: [2, 1]
+                nodes:
+                  lake: {at: [0.5, 0], icon: lake, title: Lake}
+          right:
+            title: Right
+            tone: neutral
+            nodes:
+              r: {at: [3, 0], icon: api, title: R}
+          below:
+            title: Below
+            tone: teal
+            nodes:
+              c: {at: [-0.5, 2], icon: queue, title: C}
+              d: {at: [3, 2], icon: queue, title: D}
         """
         lay = prepared(yml).layout
         zone, lake = lay.groups["zone"], lay.nodes["lake"]
@@ -151,7 +202,7 @@ class Alignment(Case):
         self.assertNotAlmostEqual(g["one"].x, g["two"].x)
 
     def test_never_grows_over_a_node(self):
-        yml = ALIGN + "  e: {at: [-0.5, 0], icon: user, title: E}\n"
+        yml = ALIGN + "nodes:\n  e: {at: [-0.5, 0], icon: user, title: E}\n"
         g = prepared(yml).layout.groups
         self.assertNotAlmostEqual(g["one"].x, g["two"].x)
 
@@ -163,9 +214,7 @@ class Titles(Case):
         base = """
         id: t
         groups:
-          g: {title: Zone, tone: blue%s}
-        nodes:
-          a: {in: g, at: [0, 0], icon: api, title: A}
+          g: {title: Zone, tone: blue%s, nodes: {a: {at: [0, 0], icon: api, title: A}}}
         """
         for at, top, centred in (
             ("", False, False),
@@ -186,9 +235,13 @@ class Titles(Case):
         yml = """
         id: t
         groups:
-          card: {title: Orchestration of all the jobs, sub: run_every_job, title_at: middle, tone: blue}
-        nodes:
-          a: {in: card, at: [0, 0], icon: pipeline, title: Pipeline}
+          card:
+            title: Orchestration of all the jobs
+            sub: run_every_job
+            title_at: middle
+            tone: blue
+            nodes:
+              a: {at: [0, 0], icon: pipeline, title: Pipeline}
         """
         self.assertClean(problems(yml))
         p = prepared(yml)
@@ -202,10 +255,16 @@ class Titles(Case):
         yml = """
         id: t
         groups:
-          o: {title: Outer, tone: neutral, title_at: top}
-          i: {title: Inner, in: o, tone: blue}
-        nodes:
-          a: {in: i, at: [0, 0], icon: api, title: A}
+          o:
+            title: Outer
+            tone: neutral
+            title_at: top
+            groups:
+              i:
+                title: Inner
+                tone: blue
+                nodes:
+                  a: {at: [0, 0], icon: api, title: A}
         """
         self.assertClean(problems(yml))
         g = prepared(yml).layout.groups
@@ -216,11 +275,16 @@ class Titles(Case):
         yml = """
         id: t
         groups:
-          g: {title: A long group title here, tone: blue, at: [0, 0], span: [2, 1]}
-        nodes:
-          a: {in: g, at: [0.2, 0.45], icon: api, title: A, trigger: Run}
+          g:
+            title: A long group title here
+            tone: blue
+            at: [0, 0]
+            span: [2, 1]
+            nodes:
+              a: {at: [0.2, 0.45], icon: api, title: A}
         scenarios:
           s:
+            trigger: {at: a, label: Run}
             steps:
               - title: Go
                 do: [activate a]
@@ -231,10 +295,14 @@ class Titles(Case):
 STACKED = """
 id: s
 groups:
-  ws: {title: prod workspace, behind: {ws-dev: dev workspace}, tone: neutral}
+  ws:
+    title: prod workspace
+    behind: {ws-dev: dev workspace}
+    tone: neutral
+    nodes:
+      a: {at: [0, 0], icon: api, title: A}
+      b: {at: [2, 0], icon: api, title: B}
 nodes:
-  a: {in: ws, at: [0, 0], icon: api, title: A}
-  b: {in: ws, at: [2, 0], icon: api, title: B}
   dev: {at: [0.5, 2], icon: upload, title: Deploy to dev}
   prod: {at: [1.5, 2], icon: upload, title: Deploy to prod}
   up: {at: [-1.5, -1.2], icon: user, title: Above}
@@ -276,13 +344,19 @@ class Stacked(Case):
         yml = """
         id: h
         groups:
-          ws: {title: prod, behind: {ws-dev: dev}, tone: neutral}
-          ci: {title: CI, tone: blue}
-        nodes:
-          a: {in: ws, at: [0.3, 0], icon: api, title: A}
-          b: {in: ws, at: [2, 0], icon: api, title: B}
-          c: {in: ci, at: [0, 2], icon: queue, title: C}
-          d: {in: ci, at: [2, 2], icon: queue, title: D}
+          ws:
+            title: prod
+            behind: {ws-dev: dev}
+            tone: neutral
+            nodes:
+              a: {at: [0.3, 0], icon: api, title: A}
+              b: {at: [2, 0], icon: api, title: B}
+          ci:
+            title: CI
+            tone: blue
+            nodes:
+              c: {at: [0, 2], icon: queue, title: C}
+              d: {at: [2, 2], icon: queue, title: D}
         """
         lay = prepared(yml).layout
         back = lay.layers["ws"][0][1]
@@ -291,7 +365,32 @@ class Stacked(Case):
         self.assertAlmostEqual(lay.groups["ws"].x - back.x, 24)
 
     def test_parent_fits_the_whole_stack(self):
-        yml = STACKED.replace("  ws: {title", "  outer: {title: Outer, tone: blue}\n  ws: {in: outer, title")
+        yml = STACKED.replace(
+            """
+groups:
+  ws:
+    title: prod workspace
+    behind: {ws-dev: dev workspace}
+    tone: neutral
+    nodes:
+      a: {at: [0, 0], icon: api, title: A}
+      b: {at: [2, 0], icon: api, title: B}
+""",
+            """
+groups:
+  outer:
+    title: Outer
+    tone: blue
+    groups:
+      ws:
+        title: prod workspace
+        behind: {ws-dev: dev workspace}
+        tone: neutral
+        nodes:
+          a: {at: [0, 0], icon: api, title: A}
+          b: {at: [2, 0], icon: api, title: B}
+""",
+        )
         lay = prepared(yml).layout
         back = lay.layers["ws"][0][1]
         self.assertLess(lay.groups["outer"].x, back.x)

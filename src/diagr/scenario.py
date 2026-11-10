@@ -104,6 +104,17 @@ class _Compiler:
         self.d, self.slots = d, slots
         self.state: dict[str, Any] = {}
 
+    def _reveal(self, f: Frame, ids: list[str]) -> None:
+        """Show the nodes and edges among ids that are hidden, and the ends of those edges: what a scenario draws or
+        activates is meant to be seen."""
+        d = self.d
+        ends = [end for x in ids if x in d.edges for end in (d.edges[x].src.node, d.edges[x].dst.node)]
+        for k in dict.fromkeys([*ids, *ends]):
+            item = d.nodes.get(k) or d.edges.get(k)
+            v = self.state.get(f"v:{k}")
+            if v == "hidden" or (v is None and getattr(item, "hidden", False)):
+                f.set[f"v:{k}"] = "shown"
+
     def frames(self, e: Effect, step: int, i: int = 0) -> list[Frame]:
         d, v = self.d, e.verb
         if v in ("activate", "done", "fail"):
@@ -114,11 +125,19 @@ class _Compiler:
                     for k in range(len(d.nodes[t].cells) if t in d.nodes else 0):
                         if self.state.get(f"c:{t}:{k}") == "act":
                             f.set[f"c:{t}:{k}"] = "fail"
+            self._reveal(f, e.targets)
             return [f]
+        if v == "run":
+            return [
+                *self.frames(Effect("activate", e.targets, ms=e.ms), step),
+                Frame({f"n:{t}": "done" for t in e.targets}, 0, step),
+            ]
         if v == "draw":
             ms = e.ms or DRAW_MS
             ids = [resolve_edge(d, t) or t for t in e.targets]
-            return [Frame({f"e:{k}": "drawn" for k in ids}, ms, step, {k: ms for k in ids})]
+            f = Frame({f"e:{k}": "drawn" for k in ids}, ms, step, {k: ms for k in ids})
+            self._reveal(f, ids)
+            return [f]
         if v == "set":
             keys = text_key(d, e.targets[0], self.slots) or []
             text = _sub(e.text, i) or ""
@@ -152,17 +171,34 @@ class _Compiler:
             ids = [t if t in d.nodes or t in d.groups else resolve_edge(d, t) or t for t in e.targets]
             return [Frame({f"v:{t}": "shown" if v == "show" else "hidden" for t in ids}, e.ms or 0, step)]
         if v == "focus":
+            if e.targets == ["none"]:
+                return [Frame({"focus": None}, e.ms or 0, step)]
             ids = [t if t in d.nodes or t in d.groups else resolve_edge(d, t) or t for t in e.targets]
-            return [Frame({"focus": None if e.targets == ["none"] else ids}, e.ms or 0, step)]
+            ids += [k for k, ed in d.edges.items() if k not in ids and {ed.src.node, ed.dst.node} <= set(ids)]
+            return [Frame({"focus": ids}, e.ms or 0, step)]
         if v == "flow":
             out = []
-            for a, b in zip(e.targets, e.targets[1:], strict=False):
+            for h, after in zip(e.hops, e.hops[1:], strict=False):
                 # A box on the path is passed through: it has no active or done state of its own.
-                subs = [Effect("draw", [f"{a}->{b}"], loc=e.loc)]
-                if a in self.d.nodes:
-                    subs = [Effect("activate", [a], ms=e.ms, loc=e.loc), *subs, Effect("done", [a], loc=e.loc)]
+                nodes = [k for k in h.ids if k in d.nodes]
+                subs = [Effect("draw", [f"{a}->{b}" for a in h.ids for b in after.ids], loc=e.loc)]
+                if nodes:
+                    subs = [*subs, Effect("done", nodes, loc=e.loc)]
+                    # A stop that is already active, with no time to hold, just carries on.
+                    if h.ms is not None or any(self.state.get(f"n:{k}") != "active" for k in nodes):
+                        subs = [Effect("activate", nodes, ms=h.ms, loc=e.loc), *subs]
                 for sub in subs:
                     out += self._run(sub, step, i)
+            last = [k for k in e.hops[-1].ids if k in d.nodes]
+            if last and e.hops[-1].ms is not None:
+                out += self._run(Effect("activate", last, ms=e.hops[-1].ms, loc=e.loc), step, i)
+            if last and e.finish:
+                out += self._run(Effect("done", last, loc=e.loc), step, i)
+            return out
+        if v == "seq":
+            out = []
+            for c in e.children:
+                out += self._run(c, step, i)
             return out
         if v == "wait":
             return [Frame({}, e.ms or 0, step)]

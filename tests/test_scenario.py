@@ -23,7 +23,7 @@ class Compile(unittest.TestCase):
         self.assertEqual([(s.first, s.last) for s in c.steps], [(1, 1), (2, 3)])
 
     def test_repeat_unrolls_and_numbers_rounds(self):
-        c = self.compiled("    - title: one\n      do:\n        - repeat: 3\n          do: ['status: round {i}']\n")
+        c = self.compiled("    - title: one\n      do:\n        - repeat 3: ['status: round {i}']\n")
         self.assertEqual([f.set.get("status") for f in c.frames[2:4]], ["round 2", "round 3"])
 
     def test_cell_ranges_continue(self):
@@ -44,7 +44,7 @@ class Compile(unittest.TestCase):
     def test_flow_is_the_long_form(self):
         three = BASE + "  b -> c: x\nnodes2:\n"
         yml = three.replace("nodes2:\n", "").replace("nodes:\n", "nodes:\n  c: {at: [2, 0], icon: cube, title: C}\n")
-        short = prepared(yml + "scenarios:\n  s:\n    steps:\n    - {title: one, do: [flow a -> b -> c 300ms]}\n")
+        short = prepared(yml + "scenarios:\n  s:\n    steps:\n    - {title: one, do: [flow a 300ms -> b 300ms -> c]}\n")
         long = prepared(
             yml + "scenarios:\n  s:\n    steps:\n    - title: one\n      do: [activate a 300ms, draw a->b, done a, "
             "activate b 300ms, draw b->c, done b]\n"
@@ -60,7 +60,7 @@ class Compile(unittest.TestCase):
             + "  c -> d: y\n"
         )
         short = prepared(
-            yml + "scenarios:\n  s:\n    steps:\n    - {title: one, do: [parallel: [flow a -> b 200ms, flow c -> d]]}\n"
+            yml + "scenarios:\n  s:\n    steps:\n    - {title: one, do: [parallel: [flow a 200ms -> b, flow c -> d]]}\n"
         )
         long = prepared(
             yml + "scenarios:\n  s:\n    steps:\n    - title: one\n      do:\n"
@@ -74,7 +74,7 @@ class Compile(unittest.TestCase):
     def test_cells_and_repeat_inside_parallel(self):
         yml = BASE.replace("title: A}", "title: A, cells: [x, y]}") + (
             "scenarios:\n  s:\n    steps:\n    - title: one\n      do:\n"
-            "        - parallel: [cells a, flow a -> b, {repeat: 2, do: ['status: round {i}']}]\n"
+            "        - parallel: [cells a, flow a -> b, {repeat 2: ['status: round {i}']}]\n"
         )
         frames = prepared(yml).scenarios["s"].frames
         self.assertEqual(frames[1].set["c:a:0"], "act")

@@ -5,6 +5,7 @@ from __future__ import annotations
 import difflib
 import math
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -222,6 +223,23 @@ class Raw(T):
 
     def schema(self):
         return _describe(dict(self.json), self.description)
+
+
+@dataclass
+class Ref(T):
+    """A type defined once in the schema's $defs, so it can hold itself (a group inside a group)."""
+
+    name: str
+    target: Callable[[], T]
+
+    def kind(self) -> str:
+        return self.target().kind()
+
+    def check(self, y, problems):
+        return self.target().check(y, problems)
+
+    def schema(self):
+        return {"$ref": f"#/$defs/{self.name}"}
 
 
 @dataclass

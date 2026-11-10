@@ -558,7 +558,7 @@ def layout(d: Diagram, t: Theme) -> Layout:
     layers = {k: stack(d, k, fitted[k]) for k in layers}
     # Outer groups first, so inner ones are drawn on top and fill_at() finds the innermost.
     groups = {k: fitted[k] for k in sorted(fitted, key=lambda k: group_depth(d, k))}
-    auto = auto_routes(d, nodes, groups, t)
+    auto, trunks = auto_routes(d, nodes, groups, t)
     ends = dict(nodes)
     covers: dict[str, list[Rect]] = {}
     boxes = [(k, k, r) for k, r in groups.items()] + [(k, lid, r) for k, ls in layers.items() for lid, r in ls]
@@ -575,7 +575,7 @@ def layout(d: Diagram, t: Theme) -> Layout:
         if d.groups[k].box
     ] + [behind_title_box(d.groups[k], d.groups[k].behind[lid], r, t) for k, ls in layers.items() for lid, r in ls]
     edges = {
-        k: route_edge(e, ends, d, t, auto.get(k), covers, titles)
+        k: route_edge(e, ends, d, t, auto.get(k), covers, titles, k in trunks)
         for k, e in d.edges.items()
         if e.src.node in ends and e.dst.node in ends
     }

@@ -47,19 +47,33 @@ behind](#stacked-boxes) it lines up by the outline of the whole stack, so the st
 neighbours. A box much narrower than its neighbour is left as it is: give it `at` and `span` to make it as wide.
 `align: false` on the diagram turns it off.
 
-### Nested groups
+### What a group holds
 
 ```yaml
 groups:
-  region:  {title: Region A, tone: neutral}
-  cluster: {title: Cluster, in: region, tone: blue}
-  web:     {title: Checkout, in: cluster, tone: teal}
+  back:
+    title: Backend
+    tone: teal
+    nodes:
+      api:   {at: [1, 0], icon: function, title: API}
+      queue: {at: [2, 0], icon: queue, title: Order queue}
+    groups:
+      data:
+        title: Data
+        tone: amber
+        nodes:
+          db: {at: [3, 0], icon: database, title: Orders}
 ```
 
-`in` puts a group inside another, to any depth. A fitted parent surrounds its own nodes and its child groups, with
-room for its title below them. A child with `at` keeps its fixed area and must lie inside its parent. Each level adds
-a margin around the one inside it, so deeply nested groups reach a little past their columns: leave a fractional
-column (`at: [2.2, 0]`) between them and their neighbours. `show`, `hide` and `focus` on a group affect only its box.
+A group holds its own `nodes` and `groups`, to any depth, so the file has the shape of the picture. Writing a node or
+group inside a box is the only way to put it there. Ids stay global: edges and scenarios name `db`, not `back/data/db`.
+
+### Nested groups
+
+A fitted parent surrounds its own nodes and its child groups, with room for its title below them. A child with `at` keeps its fixed area and must lie inside its
+parent. Each level adds a margin around the one inside it, so deeply nested groups reach a little past their columns:
+leave a fractional column (`at: [2.2, 0]`) between them and their neighbours. `show`, `hide` and `focus` on a group
+affect only its box.
 
 ### Stacked boxes
 
@@ -87,41 +101,60 @@ with a tip. An edge from a box behind starts where it comes out from behind. The
 
 ```yaml
 nodes:
-  api:    {in: back, at: [1, 0], icon: function, title: API, sub: validates}
-  worker: {in: back, at: [3, 0], icon: server, title: Workers, sub: [three replicas, autoscaled], stack: 3}
+  api:    {at: [1, 0], icon: function, title: API, sub: validates}
+  worker: {at: [3, 0], icon: server, title: Workers, sub: [three replicas, autoscaled], stack: 3}
   nb:     {at: [2, 0], icon: notebook, title: Notebook, cells: [ingest, clean, join]}
   bus:    {at: [2.5, 1], junction: true}
 ```
+
+Nodes go under `nodes` at the top level, or in the `nodes` of the group they are in.
 
 | Key | Meaning |
 |---|---|
 | `at` | Grid cell `[col, row]`. Fractions are allowed (`[2.5, 1]`). Leave it out to have the node placed for you, see [Automatic layout](#automatic-layout). |
 | `title`, `sub` | Text under the icon. `sub` is a string or a list of lines. |
 | `icon`, `tone` | Icon name; `tone` recolours a generated tile (`blue`, `teal`, `green`, `violet`, `amber`, `orange`, `slate`, `red`). |
-| `in` | Group id. |
 | `junction` | A dot where edges meet, for a bus or fan-out. No icon or text. |
-| `trigger` | A button under the node that plays a scenario, e.g. `trigger: Run`. |
-| `plays` | The scenario id the trigger plays, when there are several; default: the first. |
 | `cells` | A strip of progress squares. A list of names (each shows as the caption while active) or a count. |
 | `stack` | Draw the icon as a stack of N, for "N workers". |
 | `mark` | `new`, `removed` or `changed`, for as-is versus to-be diagrams. |
-| `hidden` | Start hidden; a scenario can `show` it. Hidden elements are left out of static SVGs. |
+| `hidden` | Start hidden; a scenario brings it out by showing, drawing or activating it. Hidden elements are left out of static SVGs. |
 | `tooltip` | Hover text. |
 | `align_x`, `align_y` | Another node's id: line this node up with it, one above the other (`align_x`, same x) or side by side (`align_y`, same y), wherever each sits. See [Row and column layout](#row-and-column-layout). |
 
 ## Edges
 
-The key is the edge. The value is the label, or a mapping.
+The key is the edge. The value is the label, a mapping, or nothing.
 
 ```yaml
 edges:
   web -> api: POST /orders
-  queue -> dlq: {label: after 3 tries, dashed: true}
+  queue --> dlq: after 3 tries
+  bus -> monitor:
   pipe -> refresh: {label: last step, route: [down, right]}
   dispatcher -> jobs: {label: send, route: [right 70px, up, right]}
   jobs@bottom+15 -> dlq: {label: three failures, route: [down, right]}
-  dlq -> jobs@bottom-15 as redrive: {route: [right 0.45, down 0.45, left, up], dashed: true}
+  dlq --> jobs@bottom-15 as redrive: {route: [right 0.45, down 0.45, left, up]}
 ```
+
+One key can make several edges:
+
+```yaml
+edges:
+  web -> api -> queue -> db: [POST /orders, enqueue, write]   # a chain: one edge per arrow
+  (mobile web) -> gateway: HTTPS                              # one from each
+  bus -> (stock search notify):                               # one to each
+  warehouse <-> dashboards: [data, {label: query, dashed: true}]
+```
+
+- **Chains and fans.** `a -> b -> c` is `a -> b` and `b -> c`. Ids in parentheses, separated by spaces, are side by
+  side: `(a b) -> c` is an edge from each, `a -> (b c)` one to each, and ports work inside (`(a@top b) -> c`). A
+  label or mapping applies to every edge the key makes; a list gives one each, in order (arrow by arrow, and within
+  an arrow from each source in turn), and must have as many items as there are edges. `null` in the list is an edge
+  with nothing on it.
+- **`-->`** is a dashed edge, the same as `dashed: true`.
+- **`<->`** is a pair: `a -> b` and `b -> a`, running side by side 10px either side of the middle of the sides they
+  use, so they do not draw over each other. A list gives the first value to `a -> b` and the second to `b -> a`.
 
 - **Default path.** Nodes on the same row or column get a straight edge. Otherwise the edge goes sideways, then up or
   down.
@@ -138,7 +171,8 @@ edges:
   way, and `group@side+40` picks the side and the point (offsets are from the side's middle). A `flow` path can pass
   through a box, which has no active or done state of its own; `draw` works as for any edge. An edge between a node
   and a group it is in is an error.
-- **`as name`** gives the edge an id. The default id is `a->b`; a second edge between the same pair needs a name.
+- **`as name`** gives the edge an id, for a key that makes one edge. The default id is `a->b`; a second edge between
+  the same pair needs a name.
 - Other keys: `dashed`, `mark`, `label_at` (0 to 1 along the path; the default is the middle of the longest
   horizontal run), `hidden`, `tooltip`.
 
@@ -149,11 +183,14 @@ Nodes without `at` are placed for you, so a first draft needs no coordinates at 
 ```yaml
 id: signup
 groups:
-  back: {title: Backend, tone: teal}
+  back:
+    title: Backend
+    tone: teal
+    nodes:
+      api:   {icon: api, title: API}
+      users: {icon: database, title: Users}
 nodes:
   web:   {icon: browser, title: Web app}
-  api:   {in: back, icon: api, title: API}
-  users: {in: back, icon: database, title: Users}
   mail:  {icon: mail, title: Welcome email}
 edges:
   web -> api: sign up
@@ -162,12 +199,18 @@ edges:
 ```
 
 - **Layers.** Edges point along the flow: a node goes one column after the nodes that lead to it (one row, with
-  `direction: down`). An edge that would close a loop is drawn back round the outside instead.
+  `direction: down`). An edge that would close a loop is drawn back round the outside instead. A node with nothing
+  leading to it goes just before what it leads to, and one with room to spare moves up next to its successors.
+- **Dashed edges** are side links (replication, a dead-letter queue, a wake-up call) and place a node only when no
+  solid edge does: `queue --> dlq` puts the dead letters after the queue, but `a/db --> b/db` leaves the replica where
+  its own writes put it.
 - **Groups.** Each group gets its own band across the flow, nested inside its parent's band and spaced so the boxes do
-  not overlap. Groups that sit in different columns share rows. Nodes outside any group go as close as they can to the
-  nodes they are connected to.
+  not overlap. Groups that sit in different columns share rows, and a group that a solid edge leads into from a
+  sibling starts after it, so the two sit side by side. Nodes outside any group go as close as they can to the nodes
+  they are connected to, on a row where their edges forward pass no node or group on the way.
 - **Edges** between placed nodes that have no `route` or `via` get a path of their own: along the source's row, then
-  across in the gap before the target, with lanes from different sources spread apart.
+  across in the gap before the target, with lanes from different sources spread apart. Edges into one side of a node
+  meet it side by side, in the order they come from, and a label skips the run a source's edges share.
 - **Mixing.** Nodes with `at` keep it, and placed nodes move aside rather than land on them, so you can pin the few
   nodes whose place matters and leave the rest. A group with a fixed area (`at` and `span`) needs its nodes pinned.
 - **Pinning everything.** `diagr expand FILE` writes every computed position as `at` and every computed path as a
@@ -186,12 +229,22 @@ appear in the file, each as big as its contents.
 ```yaml
 layout: {direction: row, gap: 24, align: stretch}    # the diagram itself: main column, then dashboarding
 groups:
-  main:     {title: main, box: false, layout: {direction: column, align: stretch}}
-  compute:  {title: Compute, in: main, layout: {direction: column, gap: 24, align: stretch}}
-  pipeline: {title: Orchestration, in: compute, title_at: middle, layout: row}
-  ci:       {title: Development & CI/CD, in: main, layout: {direction: row, justify: space-between}}
-nodes:
-  orchestrator: {in: pipeline, icon: pipeline, title: Data Pipeline}    # no at
+  main:
+    title: main
+    box: false
+    layout: {direction: column, align: stretch}
+    groups:
+      compute:
+        title: Compute
+        layout: {direction: column, gap: 24, align: stretch}
+        groups:
+          pipeline:
+            title: Orchestration
+            title_at: middle
+            layout: row
+            nodes:
+              orchestrator: {icon: pipeline, title: Data Pipeline}    # no at
+      ci: {title: Development & CI/CD, layout: {direction: row, justify: space-between}}
 ```
 
 - **`layout`** is `row` or `column`, or a mapping: `direction`, `gap` (px between items, default 24), `align`
@@ -227,11 +280,18 @@ components:
   region:
     params: {name: {required: true}, role: primary}      # a value is the default
     groups:
-      region:  {title: "{name}", sub: "{role}", tone: neutral}
-      cluster: {title: Cluster, in: region, tone: blue}
-    nodes:
-      api: {in: cluster, at: [0, 0], icon: api, title: Checkout API}
-      db:  {in: region, at: [1, 0], icon: database, title: Orders, sub: "{role}"}
+      region:
+        title: "{name}"
+        sub: "{role}"
+        tone: neutral
+        nodes:
+          db: {at: [1, 0], icon: database, title: Orders, sub: "{role}"}
+        groups:
+          cluster:
+            title: Cluster
+            tone: blue
+            nodes:
+              api: {at: [0, 0], icon: api, title: Checkout API}
     edges:
       api -> db: write
 
@@ -245,20 +305,24 @@ edges:
 
 - **Names.** Inside a component, ids are local (`api`, `db`). Each instance prefixes them with its own name, so the rest
   of the file refers to `a/api` and `b/db`: in edges (`lb -> a/api@left`), effects (`fail a/api`,
-  `set b/db.sub: primary`, `draw a/api->a/db`), `step.at` and `plays`. Edge ids follow: `a/api->a/db`, or
+  `b/db.sub: primary`, `draw a/api->a/db`), `step.at` and `trigger.at`. Edge ids follow: `a/api->a/db`, or
   `a/<name>` for an edge declared with `as <name>`.
 - **Positions.** A component's cells are relative; the instance's `at` moves all of them, fixed group areas and `via`
   points included. A component whose nodes have no `at` is placed automatically, like any other node.
-- **Parameters.** `{param}` in titles, sub text, labels, tooltips and trigger labels is replaced by the instance's `with`
-  value or the default from `params`; `{required: true}` instead of a default makes every instance set it. Write `{{` and
-  `}}` for literal braces. Parameters are text only: ids, positions and numbers cannot be parameters.
-- **`in`** on an instance puts its outermost groups and nodes inside an existing group.
+- **Parameters.** `{param}` in titles, sub text, labels, tooltips and the text of its [actions](#actions) is replaced by
+  the instance's `with` value or the default from `params`; `{required: true}` instead of a default makes every instance
+  set it. Write `{{` and `}}` for literal braces. Parameters are text only: ids, positions and numbers cannot be
+  parameters.
+- **`in`** on an instance puts its outermost groups and nodes inside an existing group. It is the one place `in` is
+  written: an instance has nowhere to be nested.
 - A component's nodes and edges can only use its own groups and nodes. A problem in a component's definition (an
   unknown `{param}`, an edge to a node it does not have) is reported once; a problem that depends on the instance, like
   an overlap, names the instance's ids (`a/api`).
-- Components cannot contain other components, and scenarios stay at the top level.
+- Components cannot contain other components, and scenarios stay at the top level; a component's
+  [actions](#actions) say what it does in them.
 - `diagr expand FILE` prints the file with every instance written out as plain groups, nodes and edges, to check what
-  a component turned into. Its ids keep the `instance/id` form, which the format accepts.
+  a component turned into, and every call of a component's action written out as the effects it plays. Its ids keep
+  the `instance/id` form, which the format accepts.
 
 ## Scenarios
 
@@ -266,6 +330,7 @@ edges:
 scenarios:
   order:                             # scenario id
     title: Place an order            # name in the player's scenario picker, when there are several
+    trigger: {at: web, label: Place order}   # a button under a node that plays the scenario
     ready: Press Place order to follow one order.
     end: Order stored.
     steps:
@@ -275,10 +340,20 @@ scenarios:
         text: The API checks the order and puts it on the queue.
         do:
           - activate api 400ms
-          - "set api.sub: order is valid"
-          - draw api->queue
-          - done api
+          - api.sub: order is valid
+          - flow api -> queue
+      - title: Store
+        at: db
+        focus: [queue, worker, db]   # dim the rest while the step plays
+        do: [flow queue -> worker 1200ms -> db 600ms done]
+      - Confirm: [run mail 800ms]    # a step with nothing to say but its title
 ```
+
+- **`trigger`** puts a button under the node `at`, with `label` on it, that plays the scenario. A node carries one
+  trigger at most.
+- **`focus`** on a step dims everything but the nodes, edges and groups it lists, and the edges between the nodes it
+  lists, while the step plays, and clears when the step ends.
+- **`Title: [effects]`** is a step with only a title and effects.
 
 A scenario compiles to a list of frames. Each frame only assigns values (node `api` is active, edge `api->queue` is
 drawn, a text is replaced), and the state at frame k is all assignments up to k. That is what makes step back,
@@ -286,12 +361,12 @@ scrub and replay exact: the player jumps to any frame and the page shows the sam
 it.
 
 `scenarios` maps ids to scenarios, and a diagram can have any number. With more than one, the HTML page gets a picker;
-switching resets the diagram and shows that scenario's steps and badges. A trigger plays the scenario named by its
-node's `plays`, or the first one:
+switching resets the diagram and shows that scenario's steps and badges. Each scenario's `trigger` plays it:
 
 ```yaml
-nodes:
-  health: {at: [0, 0], icon: clock, title: Health checks, trigger: Fail region A, plays: failover}
+scenarios:
+  checkout: {trigger: {at: user, label: Place order}, steps: [...]}
+  failover: {trigger: {at: health, label: Fail region A}, steps: [...]}
 ```
 
 A static SVG can only show one scenario, so it shows the first one's badges and step list. From a script,
@@ -311,24 +386,95 @@ An effect is `verb targets [duration]`. The duration is how long the frame holds
 |---|---|---|
 | `activate a [b ...]` | Node starts working: pulsing ring, spinner badge | 0 ms |
 | `done a [b ...]` | Node finished: check badge | 0 ms |
-| `fail a` | Node failed: red ring and cross. An active cell fails too | 0 ms |
-| `draw a->b` | The accent line draws along the edge, then its arrow turns accent | 1400 ms |
-| `flow a -> b -> c [ms]` | Follow a path: `activate a`, `draw a->b`, `done a`, then the same from `b`. The last node is left as it is, so the next step can pick it up. A duration applies to each `activate` | |
-| `set n.title: text`, `set n.sub: text`, `set n.sub.1: text`, `set a->b.label: text` | Replace text. `n.sub` replaces every line | 0 ms |
+| `fail a [b ...]` | Node failed: red ring and cross. An active cell fails too | 0 ms |
+| `run a [b ...] [ms]` | Node works for a while, then finishes: `activate a ms`, then `done a` | 0 ms |
+| `draw a->b [c->d ...]` | The accent line draws along the edge, then its arrow turns accent | 1400 ms |
+| `flow a -> b -> c` | Follow a path, see [below](#flow) | |
 | `cells n [2..4] [ms]` | Fill the cells one by one. A range by position (`2..4`, or `3` for one cell) or by name (`build..test`, `canary`) fills only those; a range that stops early leaves its last cell active, and the next range completes it | 1040 ms per cell |
 | `spin n`, `spin n off` | Rotate the node's glyph | 0 ms |
 | `show x`, `hide x` | Reveal or hide a node, edge or group | 0 ms |
-| `focus x y`, `focus none` | Dim everything except the targets | 0 ms |
+| `focus x y`, `focus none` | Dim everything except the targets and the edges between them; a step's own `focus` does this for the step | 0 ms |
 | `wait 400ms` | Pause | |
+| `n.sub: text` | Replace text: `n.title`, `n.sub` (every line), `n.sub.1` (one line), `a->b.label` | 0 ms |
 | `status: text` | Replace the status line | 0 ms |
 | `parallel: [...]` | Effects that play together, in lockstep: each frame plays the next frame of every effect and lasts as long as the slowest, so flows advance one hop at a time, cells fill side by side, a `repeat` runs its rounds alongside and a nested `parallel` plays its own lockstep as one lane | longest |
-| `repeat: 3` with `do: [...]` | Unrolled at build time; `{i}` in text becomes the round number | |
+| `repeat 3: [...]` | Unrolled at build time; `{i}` in text becomes the round number | |
+| `[...]` | A list inside a list plays one effect after another, as one lane of a `parallel` | |
 
-Effects that take free text use a colon: `set api.sub 400ms: order is valid`. In YAML, quote the whole item when the
-text itself contains `: ` (`"set nb.sub: stages 1 to 9: passed"`).
+Drawing or activating something hidden brings it out, along with the ends of an edge it draws, so a node or edge that
+starts `hidden` needs no `show` before the effect that uses it. `show` is for bringing one out without animating it.
+
+**Text.** A text change is a mapping from what changes to the new text, with an optional duration before the colon:
+`api.sub 400ms: order is valid`. Several in one mapping change together, in one frame:
+
+```yaml
+do:
+  - a/worker.sub: v2
+    b/worker.sub: v2
+  - status: Both regions run v2.
+```
+
+YAML needs quotes around text that contains `: ` or, inside `[...]`, a comma or braces: `b/db.sub: "replica, in
+sync"`. Quoting the whole item works too (`"nb.sub: stages 1 to 9: passed"`).
 
 Durations are `ms` or `s`. Generated tiles marked `spins` (the core `refresh` icon) rotate while their node is
 active.
+
+### Flow
+
+`flow` follows a path the way a request travels it:
+
+```yaml
+- flow web -> api                          # activate web, draw web->api, done web
+- flow queue -> worker 1200ms -> db 600ms done
+- flow bus -> (stock search notify) done
+```
+
+- Each stop is activated, the edge to the next stop is drawn, and the stop is done. A stop that is already active,
+  with no duration, is not activated again.
+- **A duration after a stop** is how long it stays active: `worker 1200ms` works for 1.2 s before the edge on to
+  `db` draws.
+- **The last stop** is left as it is, so the next step can pick it up. With a duration it is activated for that long
+  and left active; `done` at the end finishes it.
+- **Stops side by side**, in parentheses, play together: `a -> (b c)` draws both edges at once, and `(b c) -> d`
+  activates `b` and `c` together before drawing both edges into `d`.
+- A box on the path is passed through: it has no active or done state of its own; `draw` works as for any edge.
+
+### Actions
+
+An action is a list of effects with a name, called in `do` by that name:
+
+```yaml
+actions:
+  refresh: [draw warehouse->dashboards, dashboards.sub: refreshed, done dashboards]
+
+scenarios:
+  nightly:
+    steps:
+      - Publish: [flow marts -> warehouse, refresh]
+```
+
+A component's actions use its own ids and are called with the instances they run on. Several instances play side
+by side, in lockstep, as in a `parallel`:
+
+```yaml
+components:
+  feed:
+    # groups, nodes and edges with src, ingest and check
+    actions:
+      pull: [flow src -> ingest]
+      validate: [flow ingest -> check 800ms done]
+
+scenarios:
+  nightly:
+    steps:
+      - Pull the feeds: [pull orders clicks stock]
+      - Validate: [validate orders clicks stock]
+```
+
+Inside a component's action, another action of the same component is called by its name alone and runs on the same
+instance, and `{param}` in text is the instance's value. An action cannot call itself, and it cannot have the name of
+an effect.
 
 ## Views
 
@@ -390,12 +536,12 @@ The [multi-region example](examples/multi-region.md#views) has a dynamic view of
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and
 scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges to nowhere,
 edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal segments, two
-nodes on one cell, nodes outside their group, groups outside their parent or inside themselves, triggers that play an
-unknown scenario, effects that reference nothing, unknown components or parameters, and broken theme or `icons.yml`
-files. Overlapping nodes, labels over nodes or over other labels, overlapping groups, nodes over a group they are not
-in, nodes or child groups over a group's title, edges through a node they do not connect or across a group's title,
-hidden nodes or edges that no `show` reveals, and visible edges into hidden nodes are warnings; `--strict` makes them
-fail.
+nodes on one cell, nodes outside their group, groups outside their parent or inside themselves, triggers at an unknown
+node or on a node that already has one, effects that reference nothing, actions that call themselves, unknown components
+or parameters, and broken theme or `icons.yml` files. Overlapping nodes, labels over nodes or over other labels,
+overlapping groups, nodes over a group they are not in, nodes or child groups over a group's title, edges through a node
+they do not connect or across a group's title, hidden nodes or edges that nothing shows, draws or activates, and visible
+edges into hidden nodes are warnings; `--strict` makes them fail.
 
 ## Python
 

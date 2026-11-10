@@ -20,18 +20,16 @@ nodes:
   llm: { at: [5, 2], icon: globe, title: Model API, sub: classification }
 
 edges:
-  api -> backlog: admit
-  backlog -> dispatcher: release fairly
-  tick -> dispatcher: { dashed: true }
-  api -> dispatcher as wake: { label: wake, route: [up 0.4, right, down], dashed: true }
+  api -> backlog -> dispatcher: [admit, release fairly]
+  tick --> dispatcher:
+  api --> dispatcher as wake: { label: wake, route: [up 0.4, right, down] }
   dispatcher -> jobs: { label: send, route: [right 70px, up, right] }
-  jobs -> transcode: {}
+  jobs -> transcode:
   transcode -> dlq: bad source, deadline
   jobs@bottom+15 -> dlq: { label: three failures, route: [down, right] }
-  dlq -> jobs@bottom-15 as redrive:
-    { label: make redrive, route: [right 0.45, down 0.45, left, up], dashed: true }
+  dlq --> jobs@bottom-15 as redrive: { label: make redrive, route: [right 0.45, down 0.45, left, up] }
   api -> cq: { label: captions job, route: [down, right] }
-  cq -> captions: {}
+  cq -> captions:
   captions -> llm: transcript
 
 scenarios:
@@ -42,29 +40,18 @@ scenarios:
       - title: Admit
         text: The API admits the job to the backlog and, at the same time, sends its captions job down the captions pipeline.
         do:
-          - parallel: [flow api -> backlog 600ms, flow api -> cq -> captions -> llm]
-          - done llm
+          - parallel: [flow api 600ms -> backlog, flow api -> cq -> captions -> llm done]
           - activate backlog 600ms
-      - title: Dispatch
-        do:
-          - draw backlog->dispatcher
-          - done backlog
-          - activate dispatcher 600ms
-          - draw dispatcher->jobs
-          - done dispatcher
+      - Dispatch: [flow backlog -> dispatcher 600ms -> jobs]
       - title: Fail three times
         do:
           - activate jobs
           - draw jobs->transcode 800ms
-          - repeat: 3
-            do:
-              [
-                activate transcode 1000ms,
-                fail transcode,
-                "set transcode.sub 800ms: attempt {i} of 3 failed",
-              ]
+          - repeat 3:
+              - activate transcode 1000ms
+              - fail transcode
+              - transcode.sub 800ms: attempt {i} of 3 failed
           - draw jobs->dlq
           - activate dlq 800ms
           - done jobs
-      - title: Redrive
-        do: [draw redrive 1800ms, done dlq, "status: An operator redrove the job.", wait 1200ms]
+      - Redrive: [draw redrive 1800ms, done dlq, status: An operator redrove the job., wait 1200ms]

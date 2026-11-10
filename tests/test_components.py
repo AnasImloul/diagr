@@ -12,10 +12,13 @@ components:
   pair:
     params: {name: {required: true}, note: default note}
     groups:
-      box: {title: "{name}", sub: "{note}", tone: blue}
-    nodes:
-      api: {in: box, at: [0, 0], icon: api, title: "{name} API"}
-      db: {in: box, at: [1, 0], icon: database, title: Store, tooltip: "{note}"}
+      box:
+        title: "{name}"
+        sub: "{note}"
+        tone: blue
+        nodes:
+          api: {at: [0, 0], icon: api, title: "{name} API"}
+          db: {at: [1, 0], icon: database, title: Store, tooltip: "{note}"}
     edges:
       api -> db: "writes for {name}"
       api -> db as backup: {label: backup, route: [up 40px, right, down]}
@@ -67,7 +70,7 @@ class Expansion(Case):
         self.assertIsNone(d.groups["a/box"].parent)
 
     def test_fixed_group_and_via_are_offset(self):
-        yml = BASE.replace("box: {title:", "box: {at: [0, 0], span: [2, 1], title:").replace(
+        yml = BASE.replace("      box:\n", "      box:\n        at: [0, 0]\n        span: [2, 1]\n").replace(
             "route: [up 40px, right, down]", "via: [[0, -0.3], [1, -0.3]]"
         )
         d = prepared(yml).diagram
@@ -77,7 +80,7 @@ class Expansion(Case):
     def test_scenarios_reach_into_copies(self):
         yml = BASE + (
             "scenarios:\n  s:\n    steps:\n    - title: go\n      do:\n"
-            "        - draw lb->b/api\n        - 'set b/db.sub: busy'\n        - 'set lb->a/api.label: idle'\n"
+            "        - draw lb->b/api\n        - 'b/db.sub: busy'\n        - 'lb->a/api.label: idle'\n"
             "        - done b/api\n"
         )
         s = fold(prepared(yml).scenarios["s"].frames)
@@ -107,9 +110,6 @@ class Errors(Case):
         hits = [p for p in found if "unknown parameter {nmae}" in p.message]
         self.assertEqual(len(hits), 1)
 
-    def test_node_in_a_group_outside_the_component(self):
-        self.assertReports(problems(BASE.replace("api: {in: box,", "api: {in: outer,")), "not one of its groups")
-
     def test_edge_to_a_node_outside_the_component(self):
         self.assertReports(problems(BASE.replace("api -> db: ", "api -> lb: ")), "not one of its nodes")
 
@@ -123,7 +123,7 @@ class Errors(Case):
     def test_typos_get_suggestions(self):
         yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (
             "scenarios:\n  s:\n    steps:\n"
-            "    - {title: s, at: a/dbb, do: [activate b/apl, draw lb->a/apii, 'set a/bd.sub: x']}\n"
+            "    - {title: s, at: a/dbb, do: [activate b/apl, draw lb->a/apii, a/bd.sub: x]}\n"
         )
         found = problems(yml.replace("icon: database", "icon: databse"))
         for text in (

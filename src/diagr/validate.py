@@ -98,11 +98,6 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
             p.append(Problem(n.loc, f"node '{n.id}' sits on the same cell as '{seen[n.at]}'"))
         if n.at is not None:
             seen[n.at] = n.id
-        if n.plays and n.plays not in d.scenarios:
-            names = ", ".join(d.scenarios) or "none"
-            p.append(Problem(n.loc, f"node '{n.id}': 'plays' names unknown scenario '{n.plays}' (scenarios: {names})"))
-        elif n.plays and not n.trigger:
-            _warn(p, n.loc, f"node '{n.id}' has 'plays' but no 'trigger' button")
     owner = {lid: g.id for g in d.groups.values() for lid in g.behind}
     ends = set(d.nodes) | set(d.groups) | set(owner)
     for e in d.edges.values():
@@ -163,8 +158,21 @@ def _in_loop(d: Diagram, gid: str) -> bool:
 
 
 def _check_hidden(d: Diagram, p: list[Problem]) -> None:
-    effects = [e for sc in d.scenarios.values() for e in walk_effects(sc)]
-    shown = {resolve_edge(d, x) or x for e in effects if e.verb == "show" for x in e.targets}
+    """Hidden nodes and edges nothing brings out: showing, drawing or activating an element reveals it."""
+    shown: set[str] = set()
+    for e in (e for sc in d.scenarios.values() for e in walk_effects(sc)):
+        if e.verb == "flow":
+            shown.update(e.targets)
+            refs = [f"{a}->{b}" for a, b in e.links()]
+        elif e.verb in ("show", "draw", "activate", "done", "fail", "run"):
+            refs = e.targets
+        else:
+            continue
+        for x in refs:
+            k = resolve_edge(d, x) or x
+            shown.add(k)
+            if k in d.edges and e.verb != "show":
+                shown.update((d.edges[k].src.node, d.edges[k].dst.node))
     for n in d.nodes.values():
         if n.hidden and n.id not in shown:
             _warn(p, n.loc, f"node '{n.id}' is hidden and nothing shows it")
@@ -175,7 +183,7 @@ def _check_hidden(d: Diagram, p: list[Problem]) -> None:
 
 def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
     v = e.verb
-    if v in ("activate", "done", "fail", "spin", "cells"):
+    if v in ("activate", "done", "fail", "run", "spin", "cells"):
         for x in e.targets:
             if v == "spin" and x == "off":
                 continue
@@ -206,17 +214,14 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
             known = head in d.nodes or resolve_edge(d, head) is not None
             hint = "" if known else did_you_mean(head, [*d.nodes, *d.edges])
             p.append(
-                Problem(
-                    e.loc,
-                    f"'set': cannot set '{target}'{hint} (use node.title, node.sub, node.sub.N or a->b.label)",
-                )
+                Problem(e.loc, f"cannot set '{target}'{hint} (use node.title, node.sub, node.sub.N or a->b.label)")
             )
     elif v == "flow":
         ends = set(d.nodes) | set(d.groups) | {lid for g in d.groups.values() for lid in g.behind}
         for x in e.targets:
             if x not in ends:
                 p.append(Problem(e.loc, f"'flow': unknown node or group '{x}'{did_you_mean(x, ends)}"))
-        for a, b in zip(e.targets, e.targets[1:], strict=False):
+        for a, b in e.links():
             if a in ends and b in ends and resolve_edge(d, f"{a}->{b}") is None:
                 pairs = [k for k, ed in d.edges.items() if ed.src.node == a and ed.dst.node == b]
                 why = f"several edges go from '{a}' to '{b}'; use 'draw' with one of: {', '.join(pairs)}"

@@ -50,12 +50,17 @@ class Layout(Case):
         self.assertEqual(a.port("top"), (a.x, a.y - 44))
 
 
+def triggered(label: str) -> str:
+    return (
+        BASE
+        + f"scenarios:\n  s:\n    trigger: {{at: a, label: {label}}}\n    steps:\n    - {{title: go, do: [done a]}}\n"
+    )
+
+
 class Buttons(Case):
     def test_long_trigger_label_widens_the_button(self):
-        short = prepared(BASE.replace("title: A}", "title: A, trigger: Run}")).layout.nodes["a"].button
-        long = (
-            prepared(BASE.replace("title: A}", "title: A, trigger: Send a very long request}")).layout.nodes["a"].button
-        )
+        short = prepared(triggered("Run")).layout.nodes["a"].button
+        long = prepared(triggered("Send a very long request")).layout.nodes["a"].button
         assert short and long
         self.assertEqual(short.w, 132)
         self.assertGreater(long.w, 132)
@@ -149,12 +154,7 @@ class Authoring(Case):
 
 class Accessibility(Case):
     def test_svg_with_triggers_is_a_group(self):
-        html = render_html(
-            prepared(
-                BASE.replace("title: A}", "title: A, trigger: Run}")
-                + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"
-            )
-        )
+        html = render_html(prepared(triggered("Run")))
         self.assertIn('role="group"', html)
         self.assertIn('role="button"', html)
 

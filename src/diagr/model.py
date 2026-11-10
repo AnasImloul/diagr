@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -105,6 +106,16 @@ class Edge:
     hidden: bool = False
     tooltip: str | None = None
     loc: Loc | None = None
+    # The edge going back the other way, for a pair written 'a <-> b'.
+    twin: str | None = None
+
+
+@dataclass
+class Hop:
+    """One stop on a flow path: a node or box, or several side by side, and how long its nodes stay active."""
+
+    ids: list[str]
+    ms: float | None = None
 
 
 @dataclass
@@ -118,6 +129,13 @@ class Effect:
     children: list[Effect] = field(default_factory=list)
     count: int = 1
     loc: Loc | None = None
+    hops: list[Hop] = field(default_factory=list)
+    # A flow written '... -> c done' finishes its last stop.
+    finish: bool = False
+
+    def links(self) -> list[tuple[str, str]]:
+        """For a flow, the (from, to) of each edge it follows: every stop to every stop after it."""
+        return [(a, b) for h, after in zip(self.hops, self.hops[1:], strict=False) for a in h.ids for b in after.ids]
 
 
 @dataclass
@@ -149,6 +167,8 @@ class Component:
     nodes: dict[str, Node] = field(default_factory=dict)
     edges: dict[str, Edge] = field(default_factory=dict)
     loc: Loc | None = None
+    # Action name -> its effects as written, in the component's own ids; parsed for each instance.
+    actions: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -191,6 +211,8 @@ class Diagram:
     views: dict[str, View] = field(default_factory=dict)
     # Edge id -> the step numbers its badge shows, for a dynamic view: "2" or "2,5".
     numbers: dict[str, str] = field(default_factory=dict)
+    # Instance id -> action name -> what the action does on that instance, for `diagr expand`.
+    component_actions: dict[str, dict[str, Effect]] = field(default_factory=dict)
     base: Path = field(default_factory=Path.cwd)
     file: str = "<memory>"
 

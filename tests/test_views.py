@@ -11,12 +11,19 @@ from tests.support import ROOT, Case, problems
 BASE = """
 id: t
 groups:
-  back: {title: Backend, tone: teal}
-  data: {title: Data, in: back, tone: amber}
+  back:
+    title: Backend
+    tone: teal
+    groups:
+      data:
+        title: Data
+        tone: amber
+        nodes:
+          db: {icon: database, title: DB}
+    nodes:
+      api: {icon: api, title: API}
 nodes:
-  web: {icon: browser, title: Web, trigger: Go}
-  api: {in: back, icon: api, title: API}
-  db: {in: data, icon: database, title: DB}
+  web: {icon: browser, title: Web}
   ops: {icon: user, title: Ops}
 edges:
   web -> api: {}
@@ -24,6 +31,7 @@ edges:
   ops -> db: {}
 scenarios:
   go:
+    trigger: {at: web, label: Go}
     steps:
       - title: Go
         do: [flow web -> api -> db]

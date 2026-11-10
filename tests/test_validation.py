@@ -41,10 +41,7 @@ class Format(Case):
         self.assertReports(problems(yml), "must be at least 1")
 
     def test_quoted_repeat_count(self):
-        yml = (
-            BASE
-            + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat: '2'\n          do: [done a]\n"
-        )
+        yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"
         self.assertReports(problems(yml), "'repeat' needs a whole number")
 
 
@@ -102,7 +99,7 @@ class Hidden(Case):
 
     def test_mentioning_a_hidden_node_is_not_showing_it(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}").replace("a -> b: writes", "a -> b: {hidden: true}")
-        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [activate b, show a->b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [focus b, b.sub: x, show a->b]}\n"
         self.assertReports(problems(yml), "node 'b' is hidden and nothing shows it", "warning")
 
     def test_shown_node_is_fine(self):
