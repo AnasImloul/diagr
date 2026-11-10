@@ -68,6 +68,7 @@ extra_javascript:
   - javascripts/embeds.js
   - javascripts/anchors.js
   - javascripts/scheme-tabs.js
+  - javascripts/playground.js
 
 extra_css:
   - stylesheets/diagr.css
@@ -77,6 +78,7 @@ extra:
 
 nav:
   - Home: index.md
+  - Playground: playground.md
   - Reference:
       - Diagram format and effects: format.md
       - Themes and icons: themes-and-icons.md

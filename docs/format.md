@@ -1,7 +1,8 @@
 # Diagram format (v1)
 
 A diagram is one YAML file. It says what exists (groups, nodes, edges) and, optionally, what happens (a scenario).
-Colours, fonts and sizes live in the theme, not here.
+Colours, fonts and sizes live in the theme, not here. To try any of it without installing diagr, paste it into the
+[playground](playground.md).
 
 ```yaml
 id: order-flow               # used for output file names

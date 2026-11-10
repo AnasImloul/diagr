@@ -1,0 +1,39 @@
+---
+title: Playground
+description: Write a diagr diagram in the browser and see it render as you type.
+hide: [navigation, toc, footer]
+---
+
+<div class="dg-play" id="dg-play" data-worker="worker.js" data-examples="examples.json">
+<div class="dg-play__bar">
+<h1>Playground</h1>
+<label class="dg-play__field">Start from <select id="dg-play-example"></select></label>
+<p class="dg-play__status" id="dg-play-status" role="status">Starting Python</p>
+<button class="dg-play__button" id="dg-play-share" type="button">Copy link</button>
+</div>
+<div class="dg-play__panes">
+<section class="dg-play__editor" aria-label="Diagram source">
+<div class="dg-play__source" id="dg-play-editor"><textarea id="dg-play-source" spellcheck="false" aria-label="Diagram YAML"></textarea></div>
+<ol class="dg-play__problems" id="dg-play-problems" aria-label="Problems" hidden></ol>
+</section>
+<section class="dg-play__preview" aria-label="Preview">
+<div class="dg-play__bar dg-play__bar--preview">
+<div class="dg-play__tabs" role="group" aria-label="Show">
+<button type="button" data-mode="player" aria-pressed="true">Player</button>
+<button type="button" data-mode="image" aria-pressed="false">Image</button>
+</div>
+<label class="dg-play__field" id="dg-play-view-field" hidden>View <select id="dg-play-view"></select></label>
+<button class="dg-play__button" id="dg-play-contrast" type="button" aria-pressed="false">Contrast</button>
+<span class="dg-play__spacer"></span>
+<span class="dg-play__downloads" role="group" aria-label="Download">
+<button class="dg-play__button" type="button" data-download="light">Light SVG</button>
+<button class="dg-play__button" type="button" data-download="dark">Dark SVG</button>
+<button class="dg-play__button" type="button" data-download="html">HTML</button>
+</span>
+</div>
+<div class="dg-play__stage" id="dg-play-stage">
+<p class="dg-play__empty" id="dg-play-empty">The first visit downloads Python for the browser (Pyodide, about 6 MB); after that it comes from the cache.</p>
+</div>
+</section>
+</div>
+</div>

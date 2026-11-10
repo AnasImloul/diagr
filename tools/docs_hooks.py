@@ -4,13 +4,16 @@ import base64
 import contextlib
 import html
 import io
+import json
 import re
 import tempfile
+import zipfile
 from pathlib import Path
 
 import yaml
 from mkdocs.structure.files import File
 
+import diagr as package
 from diagr.build import prepare
 from diagr.cli import main as diagr
 from diagr.icons import Icons, Tile
@@ -126,7 +129,25 @@ def on_files(files, config):
         files.append(File.generated(config, f"examples/{id_}.md", content=page))
         items.append(ITEM.format(id=id_, title=title, description=description))
     files.append(File.generated(config, "examples/index.md", content=INDEX.format(items="\n".join(items))))
+    _playground(files, config)
     return files
+
+
+def _playground(files, config):
+    """The diagr package as a zip for the playground's worker to unpack, and the examples it offers."""
+    src = Path(package.__file__).resolve().parent
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted(src.rglob("*")):
+            if f.is_file() and "__pycache__" not in f.parts:
+                z.write(f, Path("diagr") / f.relative_to(src))
+    files.append(File.generated(config, "playground/diagr.zip", content=buf.getvalue()))
+    examples = []
+    # The playground opens on the first: the smallest example.
+    for yml in sorted(EXAMPLES.glob("*/diagram.yml"), key=lambda y: (y.parent.name != "order-flow", y)):
+        lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
+        examples.append({"title": yaml.safe_load(yml.read_text())["title"], "source": "\n".join(lines).strip() + "\n"})
+    files.append(File.generated(config, "playground/examples.json", content=json.dumps(examples)))
 
 
 GALLERY = "<!-- icon-gallery -->"

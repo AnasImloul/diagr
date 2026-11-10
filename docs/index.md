@@ -9,6 +9,7 @@ self-contained HTML page where the diagram can play a scenario step by step.
 <div class="dg-actions" markdown>
 [Quick start](#quick-start){ .md-button .md-button--primary }
 [Examples](examples/index.md){ .md-button }
+[Playground](playground.md){ .md-button }
 </div>
 
 <figure markdown>
