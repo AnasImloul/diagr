@@ -322,7 +322,8 @@ def place(d: Diagram) -> None:
     # Grouped nodes, layer by layer: a band's nodes are ordered by their predecessors' average cross position.
     for v in layers:
         for g, members in own.items():
-            if g is None:
+            # own is a defaultdict, and asking used() about a group adds it with no members.
+            if g is None or not members:
                 continue
             here = [k for k in members if layer[k] == v]
             here.sort(key=lambda k: (bary(preds[k]) or float(order.index(k)), order.index(k)))
