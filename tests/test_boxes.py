@@ -60,6 +60,24 @@ class EdgesToBoxes(Case):
         self.assertEqual(ya, (y0 + y3) / 2)
         self.assertNotEqual(x0, x3)
 
+    def test_box_to_box_jogs_round_titles_that_cover_the_overlap(self):
+        yml = """
+        id: z
+        layout: {direction: column, gap: 24, align: start}
+        groups:
+          ws: {title: dev, tone: neutral, layout: {direction: column, align: stretch}}
+          zone: {title: Zone, title_at: top, in: ws, tone: violet}
+          stack: {title: prod workspace, behind: {stack-dev: dev workspace}, tone: neutral, layout: row}
+          card: {title: Data processing, in: stack, title_at: middle, tone: blue, layout: row}
+        nodes:
+          z: {in: zone, icon: lake, title: Lake}
+          c: {in: card, icon: notebook, title: Notebook}
+        edges:
+          zone -> card: {}
+        """
+        self.assertClean(problems(yml))
+        self.assertEqual(len(prepared(yml).layout.edges["zone->card"].points), 4)
+
     def test_unknown_end_and_own_group(self):
         self.assertReports(problems(BOXES.replace("e -> bottom", "e -> botom")), "unknown node or group 'botom'")
         self.assertReports(problems(BOXES.replace("e -> bottom", "c -> bottom")), "to the group 'bottom' it is in")

@@ -386,13 +386,13 @@ def stack(d: Diagram, k: str, r: Rect) -> list[tuple[str, Rect]]:
     ]
 
 
-def follow(d: Diagram, t: Theme, k: str, old: Rect, rects: dict[str, Rect]) -> None:
+def follow(d: Diagram, t: Theme, k: str, old: Rect, rects: dict[str, Rect], fixed: set[str]) -> None:
     """After alignment moved a side of box k, its child boxes that sat flush with that side (the usual padding in
     from it) move with it, and so on down."""
     new, inset = rects[k], t.size("group_inset")
     top, bottom = title_band(d.groups[k], t)
     for c, cg in d.groups.items():
-        if cg.parent != k or c not in rects:
+        if cg.parent != k or c not in rects or c in fixed:
             continue
         r = rects[c]
         ex, ey = BEHIND_X * len(cg.behind), BEHIND_Y * len(cg.behind)
@@ -408,7 +408,7 @@ def follow(d: Diagram, t: Theme, k: str, old: Rect, rects: dict[str, Rect]) -> N
         moved = Rect(x0 + ex, y0 + ey, x1 - x0 - ex, y1 - y0 - ey)
         if moved != r:
             rects[c] = moved
-            follow(d, t, c, r, rects)
+            follow(d, t, c, r, rects, fixed)
 
 
 def recentre(
@@ -418,13 +418,14 @@ def recentre(
     rects: dict[str, Rect],
     nodes: dict[str, NodeBox],
     slots: dict[str, int],
+    fixed: set[str],
 ) -> None:
     """Keep what a box holds where it was relative to the box after alignment grew it: its pinned nodes and the child
     boxes that did not grow with it move by the shift of the box's middle. On each axis the move is skipped if it would
     bend an edge that runs straight along it to a node outside, or one with its own route or via."""
     for k in sorted(rects, key=lambda k: group_depth(d, k)):
         old, new = sized[k], rects[k]
-        if old == new:
+        if old == new or k in fixed:
             continue
         still = [c for c, cg in d.groups.items() if cg.parent == k and c in rects and rects[c] == sized[c]]
         boxes = set(still)
@@ -471,14 +472,16 @@ def _inside(d: Diagram, gid: str, outer: str) -> bool:
 
 
 def layout(d: Diagram, t: Theme) -> Layout:
+    from .flow import flow
     from .route import auto_routes, route_edge
 
     slots = sub_slots(d)
-    nodes = {
-        k: node_box(n, n.at[0] * d.grid.col, n.at[1] * d.grid.row, t, slots[k])
-        for k, n in d.nodes.items()
-        if n.at is not None
-    }
+    # Nodes and groups in a `layout` box get their places from it; the rest from their cells.
+    centres, frames = flow(d, t, slots)
+    for k, n in d.nodes.items():
+        if k not in centres and n.at is not None:
+            centres[k] = (n.at[0] * d.grid.col, n.at[1] * d.grid.row)
+    nodes = {k: node_box(d.nodes[k], x, y, t, slots[k]) for k, (x, y) in centres.items()}
     fitted: dict[str, Rect] = {}
     sized: dict[str, Rect] = {}
     layers: dict[str, list[tuple[str, Rect]]] = {}
@@ -490,12 +493,12 @@ def layout(d: Diagram, t: Theme) -> Layout:
             children = [
                 footprint(fitted[c], layers.get(c, [])) for c, cg in d.groups.items() if cg.parent == k and c in fitted
             ]
-            r = group_rect(d.groups[k], d, t, nodes, children)
+            r = frames.get(k) or group_rect(d.groups[k], d, t, nodes, children)
             if r:
                 fitted[k] = sized[k] = r
         if d.align:
             # Line up whole stacks: each box with the boxes stacked behind it, then put the front box back inside.
-            keys = [k for k in level if k in fitted]
+            keys = [k for k in level if k in fitted and k not in frames]
             ext = {k: (BEHIND_X * len(d.groups[k].behind), BEHIND_Y * len(d.groups[k].behind)) for k in keys}
             hull = {
                 k: Rect(r.x - ext[k][0], r.y - ext[k][1], r.w + ext[k][0], r.h + ext[k][1])
@@ -507,12 +510,12 @@ def layout(d: Diagram, t: Theme) -> Layout:
                 (ex, ey), r = ext[k], hull[k]
                 old, fitted[k] = fitted[k], Rect(r.x + ex, r.y + ey, r.w - ex, r.h - ey)
                 if fitted[k] != old:
-                    follow(d, t, k, old, fitted)
+                    follow(d, t, k, old, fitted, set(frames))
         for k in level:
             if k in fitted and d.groups[k].behind:
                 layers[k] = stack(d, k, fitted[k])
     if d.align:
-        recentre(d, t, sized, fitted, nodes, slots)
+        recentre(d, t, sized, fitted, nodes, slots, set(frames))
     # A box may have grown with its parent since its level: place the boxes behind it again.
     layers = {k: stack(d, k, fitted[k]) for k in layers}
     # Outer groups first, so inner ones are drawn on top and fill_at() finds the innermost.
@@ -527,8 +530,14 @@ def layout(d: Diagram, t: Theme) -> Layout:
     for k, ls in layers.items():
         for i, (lid, _) in enumerate(ls):
             covers[lid] = [groups[k]] + [r for _, r in ls[:i]]
+    # Titles, so a straight edge between two boxes can pick a line that misses them.
+    titles = [
+        group_title_box(d.groups[k], r, t, [nb.box for nb in nodes.values() if nb.node.group == k])
+        for k, r in groups.items()
+        if d.groups[k].box
+    ] + [behind_title_box(d.groups[k], d.groups[k].behind[lid], r, t) for k, ls in layers.items() for lid, r in ls]
     edges = {
-        k: route_edge(e, ends, d, t, auto.get(k), covers)
+        k: route_edge(e, ends, d, t, auto.get(k), covers, titles)
         for k, e in d.edges.items()
         if e.src.node in ends and e.dst.node in ends
     }

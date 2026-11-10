@@ -6,9 +6,9 @@ from typing import Any
 
 import yaml
 
-from .model import Diagram, Edge, Group, Move, Node, Port
+from .model import Diagram, Edge, Flow, Group, Move, Node, Port
 
-HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align")
+HEAD = ("id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 
@@ -33,7 +33,28 @@ def _group(g: Group) -> dict[str, Any]:
         out["span"] = _pair(g.span)
     if g.parent:
         out["in"] = g.parent
+    if g.title_at:
+        out["title_at"] = g.title_at
+    if g.flow:
+        out["layout"] = _layout(g.flow)
+    if not g.box:
+        out["box"] = False
+    if g.grow:
+        out["grow"] = _n(g.grow)
+    if g.behind:
+        out["behind"] = dict(g.behind)
     return out
+
+
+def _layout(fl: Flow) -> dict[str, Any] | str:
+    out: dict[str, Any] = {"direction": fl.direction}
+    if fl.gap != 24:
+        out["gap"] = _n(fl.gap)
+    if fl.align != "center":
+        out["align"] = fl.align
+    if fl.justify != "start":
+        out["justify"] = fl.justify
+    return fl.direction if list(out) == ["direction"] else out
 
 
 def _node(n: Node) -> dict[str, Any]:

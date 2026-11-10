@@ -234,6 +234,8 @@ class SceneBuilder:
 
         for gid, r in lay.groups.items():
             g = d.groups[gid]
+            if not g.box:
+                continue
             el = El("g", {"class": "grp", "data-id": gid, "id": f"g-{safe_id(gid)}"})
             # Boxes stacked behind, deepest first, each with its title in the strip the box in front leaves showing.
             for lid, lr in reversed(lay.layers.get(gid, [])):

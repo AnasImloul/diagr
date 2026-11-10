@@ -99,6 +99,67 @@
             ],
             "description": "Where the title goes: bottom-left (default), top-left (default for a stack), top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below"
           },
+          "layout": {
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "row",
+                  "column"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "row",
+                      "column"
+                    ],
+                    "description": "row or column (default column)"
+                  },
+                  "gap": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Space between items, in px (default 24)"
+                  },
+                  "align": {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "center",
+                      "end",
+                      "stretch"
+                    ],
+                    "description": "Across the direction: start, center (default), end, or stretch to fill"
+                  },
+                  "justify": {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "center",
+                      "end",
+                      "space-between",
+                      "space-around"
+                    ],
+                    "description": "Along the direction, for space left over: start (default), center, end, space-between or space-around"
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
+            "description": "Arrange what the box holds in a row or column, in file order, instead of by cells: row, column, or a mapping with direction, gap and align"
+          },
+          "box": {
+            "type": "boolean",
+            "description": "false: draw no box or title; the group only arranges what it holds"
+          },
+          "grow": {
+            "type": "number",
+            "minimum": 0,
+            "description": "In a box with layout: this group's share of the space left over (default 0)"
+          },
           "behind": {
             "type": "object",
             "propertyNames": {
@@ -376,6 +437,67 @@
                     "middle"
                   ],
                   "description": "Where the title goes: bottom-left (default), top-left (default for a stack), top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below"
+                },
+                "layout": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "row",
+                        "column"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "direction": {
+                          "type": "string",
+                          "enum": [
+                            "row",
+                            "column"
+                          ],
+                          "description": "row or column (default column)"
+                        },
+                        "gap": {
+                          "type": "number",
+                          "minimum": 0,
+                          "description": "Space between items, in px (default 24)"
+                        },
+                        "align": {
+                          "type": "string",
+                          "enum": [
+                            "start",
+                            "center",
+                            "end",
+                            "stretch"
+                          ],
+                          "description": "Across the direction: start, center (default), end, or stretch to fill"
+                        },
+                        "justify": {
+                          "type": "string",
+                          "enum": [
+                            "start",
+                            "center",
+                            "end",
+                            "space-between",
+                            "space-around"
+                          ],
+                          "description": "Along the direction, for space left over: start (default), center, end, space-between or space-around"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "Arrange what the box holds in a row or column, in file order, instead of by cells: row, column, or a mapping with direction, gap and align"
+                },
+                "box": {
+                  "type": "boolean",
+                  "description": "false: draw no box or title; the group only arranges what it holds"
+                },
+                "grow": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "In a box with layout: this group's share of the space left over (default 0)"
                 },
                 "behind": {
                   "type": "object",
@@ -746,6 +868,58 @@
     "align": {
       "type": "boolean",
       "description": "Line up the edges of sibling boxes that nearly line up (default true)"
+    },
+    "layout": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "row",
+            "column"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": [
+                "row",
+                "column"
+              ],
+              "description": "row or column (default column)"
+            },
+            "gap": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Space between items, in px (default 24)"
+            },
+            "align": {
+              "type": "string",
+              "enum": [
+                "start",
+                "center",
+                "end",
+                "stretch"
+              ],
+              "description": "Across the direction: start, center (default), end, or stretch to fill"
+            },
+            "justify": {
+              "type": "string",
+              "enum": [
+                "start",
+                "center",
+                "end",
+                "space-between",
+                "space-around"
+              ],
+              "description": "Along the direction, for space left over: start (default), center, end, space-between or space-around"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Arrange what the box holds in a row or column, in file order, instead of by cells: row, column, or a mapping with direction, gap and align"
     },
     "views": {
       "type": "object",

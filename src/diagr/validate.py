@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .icons import Icons, SvgIcon, Tile
+from .layout.flow import laid_out
 from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box
 from .model import Diagram, Effect, Loc, Scenario
 from .scenario import resolve_edge, text_key, walk_effects
@@ -40,6 +41,15 @@ def check_model(d: Diagram, t: Theme, icons: Icons) -> list[Problem]:
     for k in d.groups:
         if k in d.nodes:
             p.append(Problem(d.nodes[k].loc, f"'{k}' is both a group and a node; ids must be unique"))
+    flowed, flowed_groups = laid_out(d)
+    for k in flowed:
+        if d.nodes[k].at is not None:
+            p.append(Problem(d.nodes[k].loc, f"node '{k}' has 'at', but its box's 'layout' places it; remove 'at'"))
+    for k in flowed_groups:
+        g = d.groups[k]
+        root = d.flow is None and (g.parent not in flowed_groups)
+        if g.span is not None or (g.at is not None and not root):
+            p.append(Problem(g.loc, f"group '{k}' has 'at' or 'span', but a 'layout' places it; remove them"))
     stacked: set[str] = set()
     for g in d.groups.values():
         for lid in g.behind:
@@ -226,7 +236,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
             continue
         inside = _ancestors(d, b.node.group)
         for g, r in lay.groups.items():
-            if g not in inside and r.overlaps(b.box):
+            if g not in inside and d.groups[g].box and r.overlaps(b.box):
                 _warn(p, d.nodes[k].loc, f"node '{k}' overlaps group '{g}', which it is not in")
     for k, r in lay.groups.items():
         parent = d.groups[k].parent
@@ -247,7 +257,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
     own: dict[str, list[Rect]] = {}
     for nb in lay.nodes.values():
         own.setdefault(nb.node.group or "", []).append(nb.box)
-    titles = {k: group_title_box(d.groups[k], r, t, own.get(k, [])) for k, r in lay.groups.items()}
+    titles = {k: group_title_box(d.groups[k], r, t, own.get(k, [])) for k, r in lay.groups.items() if d.groups[k].box}
     behind = {
         lid: (k, behind_title_box(d.groups[k], d.groups[k].behind[lid], r, t))
         for k, ls in lay.layers.items()
@@ -272,7 +282,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         for lid, (g, box) in behind.items():
             if _crosses(segments, box):
                 _warn(p, e.loc, f"edge '{k}' crosses the title of '{lid}', stacked behind group '{g}'")
-    gl = list(lay.groups.items())
+    gl = [(k, r) for k, r in lay.groups.items() if d.groups[k].box]
     for i, (a, ra) in enumerate(gl):
         for b, rb in gl[i + 1 :]:
             if ra.overlaps(rb) and not (_inside(rb, ra) or _inside(ra, rb)):
@@ -297,4 +307,6 @@ def _ancestors(d: Diagram, gid: str | None) -> set[str]:
 
 
 def _inside(inner: Rect, outer: Rect) -> bool:
-    return outer.contains((inner.x, inner.y)) and outer.contains((inner.x1, inner.y1))
+    """Whether inner lies within outer, allowing half a px for rounding where the two share an edge."""
+    e = 0.5
+    return outer.x - e <= inner.x and inner.x1 <= outer.x1 + e and outer.y - e <= inner.y and inner.y1 <= outer.y1 + e

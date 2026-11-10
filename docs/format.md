@@ -176,6 +176,40 @@ edges:
 The [event-driven example](examples/event-driven.md) is laid out this way from start to finish. The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
 does more than any amount of reordering.
 
+## Row and column layout
+
+Instead of cells, a box can arrange what it holds the way CSS flexbox does: one after another, in the order they
+appear in the file, each as big as its contents.
+
+```yaml
+layout: {direction: row, gap: 24, align: stretch}    # the diagram itself: main column, then dashboarding
+groups:
+  main:     {title: main, box: false, layout: {direction: column, align: stretch}}
+  compute:  {title: Compute, in: main, layout: {direction: column, gap: 24, align: stretch}}
+  pipeline: {title: Orchestration, in: compute, title_at: middle, layout: row}
+  ci:       {title: Development & CI/CD, in: main, layout: {direction: row, justify: space-between}}
+nodes:
+  orchestrator: {in: pipeline, icon: pipeline, title: Data Pipeline}    # no at
+```
+
+- **`layout`** is `row` or `column`, or a mapping: `direction`, `gap` (px between items, default 24), `align`
+  across the direction (`start`, `center` (the default), `end`, or `stretch` to make child boxes as wide in a column,
+  or as tall in a row, as the box) and `justify` along it, for space left over (`start` (the default), `center`,
+  `end`, `space-between` or `space-around`).
+- **`grow`** on a group inside such a box gives it a share of the space left over along the direction, like
+  `flex-grow`: `grow: 1` on one child makes it fill the rest, and on two splits it evenly. Growing comes before
+  `justify`.
+- It works on a group, or on the whole diagram at the top level. Everything inside a box with `layout` is laid out
+  too: a child group without `layout` is a column. A node or group inside one cannot have `at` or `span`; the
+  outermost box with `layout` can take `at` for where it starts.
+- **`box: false`** makes a group that only arranges what it holds and draws nothing, like a plain `div`, for rows
+  and columns that need no frame.
+- In a row, nodes line up by their icons, whatever the length of their labels, so edges between them stay straight.
+- A box is as big as its contents plus 20px inside, more on the side its title is on; a `title_at: middle` heading
+  takes its place after the box's nodes. Edges are routed afterwards as usual: an edge between two boxes that line
+  up goes straight across where it misses their titles, or jogs through the gap between them when titles cover the
+  whole overlap.
+
 ## Components
 
 A component is a block of groups, nodes and edges defined once; `instances` puts named instances of it in the diagram.

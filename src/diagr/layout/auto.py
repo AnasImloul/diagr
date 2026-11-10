@@ -79,7 +79,10 @@ def _topological(order: list[str], edges: list[tuple[str, str]]) -> list[str]:
 
 
 def place(d: Diagram) -> None:
-    free = [k for k, n in d.nodes.items() if n.at is None]
+    from .flow import laid_out
+
+    flowed = laid_out(d)[0]
+    free = [k for k, n in d.nodes.items() if n.at is None and k not in flowed]
     if not free:
         return
     for k in free:

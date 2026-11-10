@@ -161,9 +161,15 @@ def _gap(
     return lo, hi
 
 
-def _straight(e: Edge, a: NodeBox, b: NodeBox) -> list[Point] | None:
+def _straight(e: Edge, a: NodeBox, b: NodeBox, titles: list[Rect] | None = None) -> list[Point] | None:
     """An edge with a box at one end or both goes straight across when the two line up: at a named port, at the
-    node's own x or y, or in the middle of where two boxes overlap. A side named on either end must agree."""
+    node's own x or y, or in the middle of where two boxes overlap (or as near it as misses every title). A side named
+    on either end must agree."""
+
+    def end(n: NodeBox, side: str) -> float:
+        if n.area:
+            return {"top": n.box.y, "bottom": n.box.y1, "left": n.box.x, "right": n.box.x1}[side]
+        return {"top": n.y - n.reach, "bottom": n.bottom, "left": n.x - n.reach, "right": n.x + n.reach}[side]
 
     def span(n: NodeBox, vertical: bool, inset: float) -> tuple[float, float]:
         if n.area:
@@ -198,20 +204,45 @@ def _straight(e: Edge, a: NodeBox, b: NodeBox) -> list[Point] | None:
         elif not b.area:
             c = b.x if vertical else b.y
         else:
-            c = (
-                max(span(a, vertical, 12)[0], span(b, vertical, 12)[0])
-                + min(span(a, vertical, 12)[1], span(b, vertical, 12)[1])
-            ) / 2
+            lo12 = max(span(a, vertical, 12)[0], span(b, vertical, 12)[0])
+            hi12 = min(span(a, vertical, 12)[1], span(b, vertical, 12)[1])
+            p0, p1 = end(a, sides[0]), end(b, sides[1])
+            found = _clear_of(titles or [], (lo12 + hi12) / 2, lo12, hi12, p0, p1, vertical)
+            if found is None:
+                # Titles cover the whole overlap: a Z through the gap between the boxes instead, each upright part
+                # where it misses them.
+                gap = (p0 + p1) / 2
+                sa, sb = span(a, vertical, 12), span(b, vertical, 12)
+                ca = _clear_of(titles or [], (sa[0] + sa[1]) / 2, sa[0], sa[1], p0, gap, vertical)
+                cb = _clear_of(titles or [], (sb[0] + sb[1]) / 2, sb[0], sb[1], gap, p1, vertical)
+                if ca is not None and cb is not None:
+                    pts = [(ca, p0), (ca, gap), (cb, gap), (cb, p1)]
+                    return pts if vertical else [(y, x) for x, y in pts]
+                found = (lo12 + hi12) / 2
+            c = found
         if not lo - 0.5 <= c <= hi + 0.5:
             continue
-
-        def end(n: NodeBox, side: str) -> float:
-            if n.area:
-                return {"top": n.box.y, "bottom": n.box.y1, "left": n.box.x, "right": n.box.x1}[side]
-            return {"top": n.y - n.reach, "bottom": n.bottom, "left": n.x - n.reach, "right": n.x + n.reach}[side]
-
         p0, p1 = end(a, sides[0]), end(b, sides[1])
         return [(c, p0), (c, p1)] if vertical else [(p0, c), (p1, c)]
+    return None
+
+
+def _clear_of(
+    titles: list[Rect], mid: float, lo: float, hi: float, p0: float, p1: float, vertical: bool
+) -> float | None:
+    """The point nearest mid, between lo and hi, where a straight line from p0 to p1 misses every title, or None."""
+    a, b = sorted((p0, p1))
+
+    def clear(c: float) -> bool:
+        line = Rect(c - 1, a, 2, b - a) if vertical else Rect(a, c - 1, b - a, 2)
+        return not any(r.overlaps(line) for r in titles)
+
+    if clear(mid):
+        return mid
+    for i in range(1, int(max(0.0, hi - lo) / 8) + 1):
+        for c in (mid + 8 * i, mid - 8 * i):
+            if lo <= c <= hi and clear(c):
+                return c
     return None
 
 
@@ -383,6 +414,7 @@ def route_edge(
     t: Theme,
     auto: list[Point] | None = None,
     covers: dict[str, list[Rect]] | None = None,
+    titles: list[Rect] | None = None,
 ) -> EdgePath:
     a, b = nodes[e.src.node], nodes[e.dst.node]
     problems: list[str] = []
@@ -397,7 +429,7 @@ def route_edge(
         pts = _solve(e, a.port(s_side, e.src.offset), b.port(t_side, e.dst.offset), d, problems)
     elif auto is not None:
         pts = auto
-    elif (a.area or b.area) and (straight := _straight(e, a, b)):
+    elif (a.area or b.area) and (straight := _straight(e, a, b, titles)):
         pts = straight
     else:
         s_side, t_side, bend = _default_sides(a, b)

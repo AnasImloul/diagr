@@ -21,6 +21,16 @@ class Grid:
 
 
 @dataclass
+class Flow:
+    """How a box (or the diagram) arranges what it holds, like CSS flexbox: in a row or a column, in file order."""
+
+    direction: str = "column"
+    gap: float = 24
+    align: str = "center"
+    justify: str = "start"
+
+
+@dataclass
 class Group:
     id: str
     title: str
@@ -35,6 +45,12 @@ class Group:
     behind: dict[str, str] = field(default_factory=dict)
     # Where the title goes: bottom-left, top-left, top or bottom; "" is bottom-left, or top-left for a stack.
     title_at: str = ""
+    # Arrange the group's nodes and child groups in a row or column instead of by their cells.
+    flow: Flow | None = None
+    # False for a group that only arranges what it holds: no box or title is drawn.
+    box: bool = True
+    # In a box with `layout`: the share of the leftover space along its direction this group takes, like flex-grow.
+    grow: float = 0
 
 
 @dataclass
@@ -168,6 +184,7 @@ class Diagram:
     step_list: bool = True
     direction: str = "right"
     align: bool = True
+    flow: Flow | None = None
     views: dict[str, View] = field(default_factory=dict)
     # Edge id -> the step numbers its badge shows, for a dynamic view: "2" or "2,5".
     numbers: dict[str, str] = field(default_factory=dict)

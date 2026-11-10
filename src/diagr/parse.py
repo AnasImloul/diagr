@@ -7,7 +7,7 @@ from . import fields as f
 from .components import expand
 from .effects import EFFECT_SCHEMA, parse_effects
 from .layout.auto import place
-from .model import Component, Diagram, Edge, Grid, Group, Instance, Move, Node, Port, Scenario, Step, View
+from .model import Component, Diagram, Edge, Flow, Grid, Group, Instance, Move, Node, Port, Scenario, Step, View
 from .scenario import walk_effects
 from .source import DiagramError, Problem, Y, YMap, YScalar, YSeq, did_you_mean, load
 from .views import check_views
@@ -76,6 +76,32 @@ class Param(f.T):
 
 
 TITLE_AT = ("bottom-left", "top-left", "top", "bottom", "middle")
+DIRECTIONS = ("row", "column")
+
+LAYOUT = f.Obj(
+    "layout",
+    {
+        "direction": f.F(f.Str(enum=DIRECTIONS, description="row or column (default column)")),
+        "gap": f.F(f.Num(minimum=0, description="Space between items, in px (default 24)")),
+        "align": f.F(
+            f.Str(
+                enum=("start", "center", "end", "stretch"),
+                description="Across the direction: start, center (default), end, or stretch to fill",
+            )
+        ),
+        "justify": f.F(
+            f.Str(
+                enum=("start", "center", "end", "space-between", "space-around"),
+                description="Along the direction, for space left over: start (default), center, end, space-between "
+                "or space-around",
+            )
+        ),
+    },
+    description="Arrange what the box holds in a row or column, in file order, instead of by cells: "
+    "row, column, or a mapping with direction, gap and align",
+    shorthand=f.Str(enum=DIRECTIONS),
+    shorthand_field="direction",
+)
 
 GROUP = f.Obj(
     "group",
@@ -93,6 +119,11 @@ GROUP = f.Obj(
                 description="Where the title goes: bottom-left (default), top-left (default for a stack), "
                 "top or bottom (centred along that edge), or middle: a heading beside the box's nodes, sub below",
             )
+        ),
+        "layout": f.F(LAYOUT),
+        "box": f.F(f.Bool(description="false: draw no box or title; the group only arranges what it holds")),
+        "grow": f.F(
+            f.Num(minimum=0, description="In a box with layout: this group's share of the space left over (default 0)")
         ),
         "behind": f.F(
             f.MapOf(
@@ -259,6 +290,7 @@ DIAGRAM = f.Obj(
         "step_list": f.F(f.Bool(description="Show numbered badges and the step list in static output (default true)")),
         "direction": f.F(f.Str(enum=("right", "down"), description="Which way automatically placed nodes flow")),
         "align": f.F(f.Bool(description="Line up the edges of sibling boxes that nearly line up (default true)")),
+        "layout": f.F(LAYOUT),
         "views": f.F(
             f.MapOf(
                 VIEW,
@@ -313,6 +345,17 @@ def _group(e: f.Entry) -> Group:
         parent=g.get("in"),
         behind={b.key: b.value for b in g.get("behind", [])},
         title_at=g.get("title_at", ""),
+        flow=_flow(g.get("layout")),
+        box=g.get("box", True),
+        grow=g.get("grow", 0),
+    )
+
+
+def _flow(rec: f.Rec | None) -> Flow | None:
+    if rec is None:
+        return None
+    return Flow(
+        rec.get("direction", "column"), rec.get("gap", 24), rec.get("align", "center"), rec.get("justify", "start")
     )
 
 
@@ -400,6 +443,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         step_list=rec.get("step_list", True),
         direction=rec.get("direction", "right"),
         align=rec.get("align", True),
+        flow=_flow(rec.get("layout")),
         base=base,
         file=file,
     )
