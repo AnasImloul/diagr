@@ -362,7 +362,13 @@ document.getElementById("toggle").addEventListener("click", function () {
     else if ((e.key === "f" || e.key === "F") && document.fullscreenEnabled) toggleFull();
   });
 
-  window.diagrZoom = { zoom: function (nz) { if (nz) zoomCenter(nz); return z; }, fit: fit, fullscreen: toggleFull };
+  // view() is the zoom and the diagram point in the middle; view(v) returns to it, so a rebuilt page keeps its place.
+  function view(v) {
+    if (v) { z = clamp(v.z, 1, MAX); cx = v.x; cy = v.y; apply(); }
+    return { z: z, x: cx, y: cy };
+  }
+  window.diagrZoom = { zoom: function (nz) { if (nz) zoomCenter(nz); return z; }, view: view, fit: fit,
+                       fullscreen: toggleFull };
   apply();
 })();
 </script>
