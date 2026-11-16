@@ -133,6 +133,26 @@ nodes:
     + "".join(f"  p{i} -> m{i} -> q{i}: {{}}\n  q{i} -> p{i}: {{}}\n" for i in range(3))
 )
 
+# A group with pinned nodes, and one whose nodes are placed after it.
+BESIDE_PINNED = """
+id: t
+groups:
+  g:
+    title: G
+    nodes:
+      a: {at: [0, 0], icon: server, title: A}
+      b: {at: [1, 0], icon: server, title: B}
+  h:
+    title: H
+    nodes:
+      x: {icon: server, title: X}
+      y: {icon: server, title: Y}
+edges:
+  a -> b: {}
+  a -> x: {}
+  b -> y: {}
+"""
+
 
 class Placement(Case):
     def test_layers_follow_edges(self):
@@ -307,6 +327,10 @@ class Placement(Case):
             )
             seen.add(tuple(sorted(f.read_text(encoding="utf-8") for f in out.glob("*.svg"))))
         self.assertEqual(len(seen), 1)
+
+    def test_a_group_moves_past_one_with_pinned_nodes(self):
+        lay = prepared(BESIDE_PINNED).layout
+        self.assertGreater(lay.groups["h"].x, lay.groups["g"].x1)
 
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout

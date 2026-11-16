@@ -202,9 +202,10 @@ class _Placer:
 
     def box_order(self) -> None:
         """Sibling boxes joined by a solid edge go one after the other, so they sit side by side rather than one below
-        the other: the box an edge goes into starts after the box it comes from, unless that closes a cycle. Boxes with
-        a pinned node keep their layers. An edge that would close a cycle with this order, directly or by way of other
-        edges, does not push its target along: the boxes would otherwise push each other further on every round."""
+        the other: the box an edge goes into starts after the box it comes from, unless that closes a cycle. A box with
+        a pinned node keeps its layers, but the box after it still moves past it. An edge that would close a cycle
+        with this order, directly or by way of other edges, does not push its target along: the boxes would otherwise
+        push each other further on every round."""
         d = self.d
         pairs: list[tuple[str, str]] = []
         for a, b in self.dag:
@@ -219,7 +220,7 @@ class _Placer:
         self.boxes = [
             (x, y)
             for x, y in _acyclic(list(d.groups), list(dict.fromkeys(pairs)))
-            if all(d.nodes[k].at is None for k in self.within[x] + self.within[y])
+            if all(d.nodes[k].at is None for k in self.within[y])
         ]
         # The order as edges: every node of a box leads to the point after it, which leads to every node of the next.
         ahead: dict[_Step, set[_Step]] = defaultdict(set)
