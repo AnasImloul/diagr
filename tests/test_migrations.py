@@ -82,6 +82,54 @@ scenarios:
         do: [activate b]
 """
 
+# Effects in actions, the diagram's and a component's, and in a short step, as version 1 allowed them.
+V1_ACTIONS = """
+id: m
+components:
+  box:
+    nodes:
+      x: {at: [0, 0], icon: api, title: X}
+    actions:
+      poke: [set x.sub poked, {repeat: 2, do: [activate x]}]
+instances:
+  i: {component: box, at: [0, 1]}
+nodes:
+  a: {at: [0, 0], icon: api, title: A}
+  b: {at: [1, 0], icon: api, title: B}
+edges:
+  a -> b: {}
+actions:
+  save: [activate a, set b.sub busy, status working]
+scenarios:
+  s:
+    steps:
+      - Go: [save, poke i, set a.sub hello, status 200ms working]
+"""
+
+V2_ACTIONS = """
+version: 2
+id: m
+components:
+  box:
+    nodes:
+      x: {at: [0, 0], icon: api, title: X}
+    actions:
+      poke: [{x.sub: poked}, {repeat 2: [activate x]}]
+instances:
+  i: {component: box, at: [0, 1]}
+nodes:
+  a: {at: [0, 0], icon: api, title: A}
+  b: {at: [1, 0], icon: api, title: B}
+edges:
+  a -> b: {}
+actions:
+  save: [activate a, {b.sub: busy}, {status: working}]
+scenarios:
+  s:
+    steps:
+      - Go: [save, poke i, {a.sub: hello}, {status 200ms: working}]
+"""
+
 
 class Upgrade(Case):
     def built(self, yml: str) -> list[str]:
@@ -99,6 +147,12 @@ class Upgrade(Case):
         self.assertReports(found, "move node 'a' into group 'inner', without 'in'")
         self.assertEqual([p.loc and p.loc.line for p in found if "write 'repeat 2: [...]'" in p.message], [23])
         self.assertReports(problems(V1), "write 'scenarios.second.trigger: {at: b, label: Again}'", "warning")
+
+    def test_effects_in_actions_and_short_steps_are_upgraded(self):
+        self.assertEqual(self.built(V1_ACTIONS), self.built(V2_ACTIONS))
+        found = loads(V1_ACTIONS, "t.yml", ROOT).upgraded
+        lines = sorted(p.loc.line for p in found if p.loc)
+        self.assertEqual(lines, [8, 8, 17, 17, 21, 21])
 
     def test_current_files_without_a_version_pass_unchanged(self):
         for example in sorted((ROOT / "examples").glob("*/diagram.yml")):

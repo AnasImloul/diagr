@@ -550,6 +550,9 @@ Version 2 changed:
 - `{repeat: 3, do: [...]}` is `repeat 3: [...]`.
 - Text changes are `node.sub 300ms: text` and `status: text`, not `set node.sub text` or `status text`.
 
+These last two apply wherever effects are written: in a step's `do`, in a `Title: [effects]` step and in actions,
+the diagram's and the components'.
+
 ## Validation
 
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and

@@ -13,6 +13,7 @@ from .changes import (
     Reshape,
     Rewrite,
     RewriteKey,
+    ShortSteps,
 )
 
 # The diagram itself, and each component: both hold groups and nodes.
@@ -22,8 +23,14 @@ BOXES = Each("", "components.*")
 NODES = Each("nodes.*", nested="groups.*")
 COMPONENT_NODES = Each("components.*.nodes.*", nested="groups.*")
 
-# Every effect of every step, inside parallel and repeat too.
-EFFECTS = Effects("scenarios.*.steps.*.do")
+# A step's own keys in version 1; a step with one other key holding a list is 'Title: [effects]'.
+STEP_KEYS = ("title", "text", "at", "status", "focus", "do")
+
+# Every effect version 1 allowed, inside parallel and repeat too: in steps, in short steps and in actions, the
+# diagram's and the components'.
+EFFECTS = Effects(
+    "scenarios.*.steps.*.do", ShortSteps("scenarios.*.steps.*", STEP_KEYS), "actions.*", "components.*.actions.*"
+)
 
 # In version 2 an action may be called 'set', and then 'set ...' calls it: leave those alone.
 SET_IS_AN_ACTION = Has("actions.set", "components.*.actions.set")

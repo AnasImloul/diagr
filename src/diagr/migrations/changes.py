@@ -9,7 +9,9 @@ Where to look:
 - `Each("nodes.*")` is every entry of the top-level `nodes`; `*` is every entry of a mapping or item of a list, and
   "" is the whole file. `nested="groups.*"` reaches inside nesting: it may repeat any number of times before the
   path's last two parts, so `Each("nodes.*", nested="groups.*")` is every node, inside groups too.
-- `Effects("scenarios.*.steps.*.do")` is every effect in those lists, inside `parallel` and `repeat` too.
+- `Effects("scenarios.*.steps.*.do")` is every effect in those lists, inside `parallel` and `repeat` too. It also
+  takes other kinds of places, such as `ShortSteps("scenarios.*.steps.*", keys)`: the list of each step written
+  'Title: [effects]'.
 
 Text patterns, in `Rewrite` and `RewriteKey`, read like the syntax they match:
 
@@ -109,12 +111,31 @@ class Each:
         return out
 
 
-class Effects:
-    """Every effect in the lists at these paths, and inside them: in a list of effects, in a mapping whose value is a
-    list (`parallel: [...]`, `repeat 3: [...]`) and in the `do` of `{repeat: 3, do: [...]}`."""
+class ShortSteps:
+    """The list of each step at this path written 'Title: [effects]': a step with one key, not one of `keys` (the
+    step's own fields), that holds a list."""
 
-    def __init__(self, *paths: str):
-        self.paths = paths
+    def __init__(self, path: str, keys: tuple[str, ...]):
+        self.path, self.keys = path, keys
+
+    def spots(self, tree: Y) -> list[Spot]:
+        out = []
+        for s in Each(self.path).spots(tree):
+            step = s.value
+            if isinstance(step, YMap) and len(step.pairs) == 1:
+                k, v = step.pairs[0]
+                if k.value not in self.keys and isinstance(v, YSeq):
+                    out.append(Spot(step, k))
+        return out
+
+
+class Effects:
+    """Every effect in the lists at these places, and inside them: in a list of effects, in a mapping whose value is a
+    list (`parallel: [...]`, `repeat 3: [...]`) and in the `do` of `{repeat: 3, do: [...]}`. A place is a dotted path,
+    as for `Each`, or anything else with `spots`, such as `ShortSteps`."""
+
+    def __init__(self, *places: str | ShortSteps):
+        self.places = places
 
     def spots(self, tree: Y) -> list[Spot]:
         out: list[Spot] = []
@@ -130,8 +151,9 @@ class Effects:
                     for _, v in item.pairs:
                         visit(v)
 
-        for s in Each(*self.paths).spots(tree):
-            visit(s.value)
+        for place in self.places:
+            for s in (Each(place) if isinstance(place, str) else place).spots(tree):
+                visit(s.value)
         return out
 
 
