@@ -157,6 +157,19 @@ class Placement(Case):
         lay = prepared(BOTH_WAYS).layout
         self.assertLess(lay.edges["c1->a2"].points[-2][0], lay.groups["g"].x)
 
+    def test_rows_fit_the_theme_in_use(self):
+        base = self.tmp()
+        (base / "big.yml").write_text(
+            "extends: default\nsizes: {icon: 110, title: 22, line: 30, group_top: 70}\n", encoding="utf-8"
+        )
+        tall = ", sub: [one, two]}"
+        yml = (
+            "id: t\ntheme: ./big.yml\nnodes:\n  s: {icon: server, title: S}\n"
+            + "".join(f"  {k}: {{icon: server, title: {k.upper()}{tall}\n" for k in "abc")
+            + "edges:\n  s -> (a b c): {}\n"
+        )
+        self.assertClean(problems(yml, base))
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))

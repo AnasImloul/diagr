@@ -33,8 +33,8 @@ class Prepared:
 
 
 def prepare(d: Diagram, theme: str | None = None) -> Prepared:
-    place(d)
     t = load_theme(theme, Path.cwd()) if theme else load_theme(d.theme, d.base)
+    place(d, t)
     icons = Icons([(d.base / f).resolve() for f in d.icons])
     problems = check_model(d, t, icons)
     if any(p.level == "error" for p in problems):

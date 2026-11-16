@@ -15,6 +15,7 @@ from .layout.flow import laid_out
 from .layout.route import ENTER, EXIT, as_route
 from .model import Diagram, Edge, Effect, Group, Node, Port, held
 from .syntax import EDGE, GROUP, NODE, PAIR_GAP, num
+from .theme import load_theme
 
 HEAD = ("version", "id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
@@ -173,7 +174,7 @@ def _pin(d: Diagram) -> None:
 def to_yaml(d: Diagram, source: dict[str, Any]) -> str:
     """source is the file as plain YAML data: its other keys, such as the scenarios, are kept as written. Placed
     nodes are written with their positions and their edges with routes, so the output draws the same picture."""
-    place(d)
+    place(d, load_theme(d.theme, d.base))
     if any(n.auto for n in d.nodes.values()):
         _pin(d)
     head = {k: source[k] for k in HEAD if k in source}

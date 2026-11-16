@@ -11,31 +11,16 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from ..model import Diagram, Node, boxes_around
+from ..model import Diagram, boxes_around
+from ..theme import Theme
 from .flow import laid_out
-from .geometry import BUTTON_H, STRIP_H
+from .geometry import node_box
 
-# How far a box reaches past its cells, in px, for the default theme: (before, after) on the cross axis. A node sits
-# inside its cell; a group adds padding above and a title band below, and each level of nesting adds to both. On the
-# x axis a group sits inside its cells by its inset.
-NODE_Y, GROUP_Y, LEVEL_Y = (-40, -14), (40, 26), (12, 40)
-NODE_X, GROUP_X, LEVEL_X = (-30, -30), (-12, -12), (12, 12)
+# Room kept past a node with nothing below its title, and between neighbouring boxes, in px.
+NODE_AFTER = -14
 MARGIN = 16
 # Extra main-axis room where a layer boundary also crosses a group boundary, in cells.
 LAYER_GAP = 0.3
-
-
-def _below(n: Node) -> float:
-    """How far a node's box reaches below its centre, in px, as node_box() draws it with the default theme."""
-    if n.junction:
-        return 4
-    last = 46 + 16 * len(n.sub)
-    if n.cells:
-        last += 8 + STRIP_H + (16 if any(n.cells) else -4)
-    bottom = last + 4
-    if n.trigger:
-        bottom += 17 + BUTTON_H + 4
-    return bottom
 
 
 def _acyclic(order: list[str], edges: list[tuple[str, str]]) -> list[tuple[str, str]]:
@@ -100,14 +85,14 @@ def _topological(order: list[str], edges: list[tuple[str, str]]) -> list[str]:
     return done
 
 
-def place(d: Diagram) -> None:
+def place(d: Diagram, t: Theme) -> None:
     flowed = laid_out(d)[0]
     free = [k for k, n in d.nodes.items() if n.at is None and k not in flowed]
     if not free:
         return
     for k in free:
         d.nodes[k].auto = True
-    p = _Placer(d, free)
+    p = _Placer(d, free, t)
     p.box_order()
     p.assign_layers()
     p.order_boxes()
@@ -122,9 +107,20 @@ class _Placer:
     """The state the phases of `place` share, in cells: each node's layer on the main axis, each group's band on the
     cross axis, and where nodes land."""
 
-    def __init__(self, d: Diagram, free: list[str]):
-        self.d, self.free = d, free
+    def __init__(self, d: Diagram, free: list[str], t: Theme):
+        self.d, self.free, self.t = d, free, t
         self.down = down = d.direction == "down"
+        # How far a box reaches past its cells, in px, as the theme draws it: (before, after) on the cross axis, for a
+        # node, a group and each level of nesting. A node sits inside its cell; a group adds padding above and a title
+        # band below, and each level of nesting adds to both. On the x axis a group sits inside its cells by its inset.
+        half = t.size("icon") / 2
+        inset, self.band = t.size("group_inset"), 2 * t.size("group_bottom")
+        # A node's box starts this far above its centre, at the top of its icon's badge.
+        self.top = half + 14
+        y = ((-self.top, NODE_AFTER), (t.size("group_top"), t.size("group_bottom") + 6), (inset, self.band))
+        x = ((-(half + 4), -(half + 4)), (-inset, -inset), (inset, inset))
+        self.ext_cross, self.ext_main = (x, y) if down else (y, x)
+        self.depths: dict[str, float] = {}
         self.order = list(d.nodes)
         # An edge pinned to sides across the flow (bottom to top when it runs right) links nodes in one layer.
         across = ("left", "right") if down else ("top", "bottom")
@@ -263,21 +259,28 @@ class _Placer:
     def inside(self, g: str | None) -> list[str]:
         return self.own[g] + [k for c in self.children[g] if self.used(c) for k in self.inside(c)]
 
+    def below(self, k: str) -> float:
+        """How far a node's box reaches below its centre, in px."""
+        if k not in self.depths:
+            n = self.d.nodes[k]
+            self.depths[k] = node_box(n, 0, 0, self.t, len(n.sub)).box.y1
+        return self.depths[k]
+
     def slot(self, k: str) -> float:
         """Cross cells a node takes: one, or more on the y axis for a tall node (sub lines, cells, a trigger)."""
         if self.down:
             return 1.0
-        return max(1.0, -(-(_below(self.d.nodes[k]) + 40 + MARGIN) * 20 // self.cell) / 20)
+        return max(1.0, -(-(self.below(k) + self.top + MARGIN) * 20 // self.cell) / 20)
 
     def reach(self, item: str | None) -> tuple[float, float]:
         """How far an item (a group id, or None for a block of loose nodes) reaches past its cells."""
         down, cell = self.down, self.cell
-        node_ext, group_ext, level_ext = (NODE_X, GROUP_X, LEVEL_X) if down else (NODE_Y, GROUP_Y, LEVEL_Y)
-        tall = 0.0 if down else max((_below(self.d.nodes[k]) - cell / 2 for k in self.inside(item)), default=0)
+        node_ext, group_ext, level_ext = self.ext_cross
+        tall = 0.0 if down else max((self.below(k) - cell / 2 for k in self.inside(item)), default=0)
         if item is None:
             return (node_ext[0], max(node_ext[1], tall))
         k = self.depth(item)
-        return (group_ext[0] + level_ext[0] * (k - 1), max(group_ext[1], tall + 40) + level_ext[1] * (k - 1))
+        return (group_ext[0] + level_ext[0] * (k - 1), max(group_ext[1], tall + self.band) + level_ext[1] * (k - 1))
 
     def gap(self, a: str | None, b: str | None) -> float:
         px = max(0.0, self.reach(a)[1] + self.reach(b)[0] + MARGIN)
@@ -353,13 +356,15 @@ class _Placer:
     def _edge(self, v: float, gs: set[str], after: int) -> float:
         """How far the boxes of layer v reach past its cells, before it (after=0) or past it (after=1)."""
         down = self.down
-        m_node, m_group, m_level = (NODE_Y, GROUP_Y, LEVEL_Y) if down else (NODE_X, GROUP_X, LEVEL_X)
+        m_node, m_group, m_level = self.ext_main
         nodes = self.at_layer[v]
-        tall = max((_below(self.d.nodes[k]) - self.long / 2 for k in nodes), default=0.0) if down and after else 0.0
+        tall = max((self.below(k) - self.long / 2 for k in nodes), default=0.0) if down and after else 0.0
         px = max(m_node[after], tall)
         for g in gs:
             px = max(
-                px, max(m_group[after], tall + 40 if tall else m_group[after]) + m_level[after] * (self.depth(g) - 1)
+                px,
+                max(m_group[after], tall + self.band if tall else m_group[after])
+                + m_level[after] * (self.depth(g) - 1),
             )
         return px
 
@@ -426,8 +431,8 @@ class _Placer:
                     options |= {start[c] - self.gap(None, c) - h, start[c] + size[c] + self.gap(c, None)}
             # Its edges forward run along its row: keep it off rows where they would pass through a node on the way.
             ends = [main[layer[s]] for s in self.succs[k] if layer[s] > v]
-            # A node's slot starts 40px above its centre (its icon and badge) and ends below its labels and button.
-            top = (40 + 8) / self.cell
+            # A node's slot starts at the top of its box and ends below its labels and button.
+            top = (self.top + 8) / self.cell
             between = [(c - top, c + s - top) for m, c, s in taken if ends and main[v] < m < max(ends)]
             aims = {g for s in self.succs[k] for g in self.chain(s)}
             for c in children[None]:
