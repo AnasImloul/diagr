@@ -281,7 +281,9 @@ class EdgeValue(f.T):
             out, bad = [], False
             for item in y.items:
                 try:
-                    out.append(self.check(item, problems) if not isinstance(item, YSeq) else self._fail(item, problems))
+                    if isinstance(item, YSeq):
+                        self._fail(item, problems, "a list here holds one label or mapping per edge, not another list")
+                    out.append(self.check(item, problems))
                 except f.Invalid:
                     bad = True
             if bad:
@@ -326,10 +328,17 @@ class StepT(f.T):
         return "a mapping"
 
     def check(self, y, problems):
-        if isinstance(y, YMap) and len(y.pairs) == 1 and y.pairs[0][0].value not in STEP_FIELDS:
+        if isinstance(y, YMap) and len(y.pairs) == 1:
             k, v = y.pairs[0]
-            if isinstance(v, YSeq):
+            if isinstance(v, YSeq) and k.value not in STEP_FIELDS:
                 return f.Rec(y.loc, {"title": k.value, "do": v}, {"title": k.loc, "do": v.loc})
+            if isinstance(v, YSeq) and k.value in ("title", "text", "at", "status"):
+                return self._fail(
+                    k,
+                    problems,
+                    f"'{k.value}' is a step's own field, so this is not read as a step titled {k.value}: write "
+                    f"'{k.value.capitalize()}: [...]' or '{{title: {k.value}, do: [...]}}'",
+                )
         return STEP.check(y, problems)
 
     def schema(self):

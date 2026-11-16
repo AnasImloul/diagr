@@ -58,6 +58,15 @@ class Format(Case):
         self.assertClean(problems(BASE + "title: 2024\nscenarios: {s: {steps: [{title: yes, do: [done a]}]}}\n"))
         self.assertEqual(json_schema()["properties"]["title"]["type"], ["string", "number", "boolean"])
 
+    def test_list_inside_an_edge_list(self):
+        yml = BASE.replace("a -> b: writes", "a -> b: [[x, y]]")
+        self.assertReports(problems(yml), "one label or mapping per edge, not another list")
+
+    def test_short_step_named_like_a_step_field(self):
+        found = problems(BASE + "scenarios:\n  s:\n    steps:\n    - status: [done a]\n")
+        self.assertReports(found, "'status' is a step's own field")
+        self.assertReports(found, "write 'Status: [...]'")
+
     def test_quoted_repeat_count(self):
         yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"
         self.assertReports(problems(yml), "'repeat' needs a whole number")
