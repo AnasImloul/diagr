@@ -276,6 +276,16 @@ class Placement(Case):
         lay = prepared(BACK).layout
         self.assertEqual(shared({f"q{i}->p{i}": lay.edges[f"q{i}->p{i}"].points for i in range(3)}), [])
 
+    def test_arrowheads_into_a_full_side_share_points(self):
+        sources = " ".join(f"s{i}" for i in range(8))
+        nodes = "".join(f"  s{i}: {{icon: server, title: S{i}}}\n" for i in range(8))
+        lay = prepared(
+            f"id: t\nnodes:\n{nodes}  t: {{icon: server, title: T}}\nedges:\n  ({sources}) -> t: {{}}\n"
+        ).layout
+        ends = sorted({round(lay.edges[f"s{i}->t"].points[-1][1], 1) for i in range(8)})
+        self.assertEqual(len(ends), 4)
+        self.assertGreaterEqual(min(b - a for a, b in zip(ends, ends[1:], strict=False)), 12)
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))

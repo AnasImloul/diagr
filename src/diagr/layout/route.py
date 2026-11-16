@@ -401,8 +401,8 @@ class _Router:
                 self.ways[k] = "before" if clear["before"] or not clear["after"] else "after"
 
     def spread_ends(self) -> None:
-        """Edges that come into a node on one side meet it side by side, in the order they come from, rather than on
-        one point; an edge with a port of its own keeps it."""
+        """Edges that come into a node on one side meet it side by side, in the order they come from, at as many
+        points as fit rather than on one; an edge with a port of its own keeps it."""
         d, nodes = self.d, self.nodes
         coming: dict[str, list[tuple[float, str]]] = {}
         for k in [*self.found, *self.back]:
@@ -413,11 +413,15 @@ class _Router:
                 else:
                     at = -math.inf if self.ways[k] == "before" else math.inf
                 coming.setdefault(e.dst.node, []).append((at, k))
+        # As many points as fit 12px apart along the icon, for arrowheads 10.5px wide; when more edges come in, they
+        # share them in turn, so their last runs join and arrive as one.
+        room = self.t.size("icon") - 12
         for ins in coming.values():
             if len(ins) > 1:
-                step = min(20.0, (self.t.size("icon") - 12) / (len(ins) - 1))
+                points = min(len(ins), int(room // 12) + 1)
+                step = min(20.0, room / (points - 1)) if points > 1 else 0.0
                 for i, (_, k) in enumerate(sorted(ins)):
-                    self.shift[k] = (i - (len(ins) - 1) / 2) * step
+                    self.shift[k] = (i * points // len(ins) - (points - 1) / 2) * step
 
     def forward_lanes(self) -> dict[str, list[Point]]:
         d, nodes, found = self.d, self.nodes, self.found
