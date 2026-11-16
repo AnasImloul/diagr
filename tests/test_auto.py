@@ -103,6 +103,37 @@ edges:
 """
 
 
+def shared(points: dict[str, list[tuple[float, float]]]) -> list[tuple[str, str]]:
+    """Pairs of paths with a stretch longer than 4px on one line."""
+    runs = []
+    for k, pts in points.items():
+        for (ax, ay), (bx, by) in zip(pts, pts[1:], strict=False):
+            if abs(ay - by) < 0.5:
+                runs.append((k, "h", round(ay, 1), min(ax, bx), max(ax, bx)))
+            elif abs(ax - bx) < 0.5:
+                runs.append((k, "v", round(ax, 1), min(ay, by), max(ay, by)))
+    return [
+        (a[0], b[0])
+        for i, a in enumerate(runs)
+        for b in runs[i + 1 :]
+        if a[0] != b[0] and a[1:3] == b[1:3] and min(a[4], b[4]) - max(a[3], b[3]) > 4
+    ]
+
+
+# Three rows p -> m -> q, each with an edge from its q back to its p: the backward edges leave one column and turn
+# into another.
+BACK = (
+    """
+id: t
+nodes:
+"""
+    + "".join(f"  {k}{i}: {{icon: server, title: {k.upper()}{i}}}\n" for k in "pmq" for i in range(3))
+    + """edges:
+"""
+    + "".join(f"  p{i} -> m{i} -> q{i}: {{}}\n  q{i} -> p{i}: {{}}\n" for i in range(3))
+)
+
+
 class Placement(Case):
     def test_layers_follow_edges(self):
         nodes = prepared(CHAIN).diagram.nodes
@@ -240,6 +271,10 @@ class Placement(Case):
         theme.write_text("extends: default\nsizes: {icon: 110, title: 22, line: 30, group_top: 70}\n", encoding="utf-8")
         example = ROOT / "examples/event-driven/diagram.yml"
         self.assertClean(problems(example.read_text(encoding="utf-8"), example.parent, str(theme)))
+
+    def test_backward_edges_run_on_lines_of_their_own(self):
+        lay = prepared(BACK).layout
+        self.assertEqual(shared({f"q{i}->p{i}": lay.edges[f"q{i}->p{i}"].points for i in range(3)}), [])
 
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
