@@ -196,6 +196,45 @@ class Placement(Case):
         """
         self.assertClean(problems(yml))
 
+    def test_lane_turns_late_rather_than_run_along_a_busy_row(self):
+        yml = """
+        id: t
+        groups:
+          g:
+            title: G
+            nodes:
+              a: {icon: server, title: A}
+              b: {icon: server, title: B}
+              x: {icon: server, title: X}
+          h:
+            title: H
+            nodes:
+              c: {icon: server, title: C}
+              d: {icon: server, title: D}
+              z: {icon: server, title: Z}
+        edges:
+          a -> b: {}
+          b -> x: {}
+          x -> z: {}
+          a -> c: {}
+          b -> d: {}
+        """
+        self.assertClean(problems(yml))
+
+    def test_lanes_turn_clear_of_a_wide_title(self):
+        yml = """
+        id: t
+        nodes:
+          s: {icon: server, title: Source}
+          a: {icon: server, title: Customer relationship management platform}
+          b: {icon: server, title: Enterprise resource planning integration hub}
+          c: {icon: server, title: Customer records}
+          e: {icon: server, title: Stock}
+        edges:
+          s -> (a b c e): {}
+        """
+        self.assertClean(problems(yml))
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))

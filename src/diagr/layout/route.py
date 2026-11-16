@@ -153,6 +153,14 @@ def _gap(
     return lo, hi
 
 
+def _through(pts: list[Point], r: Rect) -> bool:
+    """Whether a path runs through r, as `check` sees it."""
+    for (ax, ay), (bx, by) in zip(pts, pts[1:], strict=False):
+        if min(ax, bx) < r.x1 and max(ax, bx) > r.x and min(ay, by) < r.y1 and max(ay, by) > r.y:
+            return True
+    return False
+
+
 def _straight(e: Edge, a: NodeBox, b: NodeBox, titles: list[Rect] | None = None) -> list[Point] | None:
     """An edge with a box at one end or both goes straight across when the two line up: at a named port, at the
     node's own x or y, or in the middle of where two boxes overlap (or as near it as misses every title). A side named
@@ -320,9 +328,41 @@ class _Router:
                     self.room[k] = (p0[main] + 8, p1[main] - 8)
                     mid = max(p0[main], (b.y if down else b.x) - self.cell / 2)
                     lo, hi = mid - 12, mid + 12
+                hits = self._hits(e, a, b, lo, hi)
+                if hits:
+                    # Turning early runs through nodes: try turning just before the target instead, along the
+                    # source's row, which placement keeps clear.
+                    late = self._late(a, b, gb, p0, p1)
+                    if late and self._hits(e, a, b, *late) < hits:
+                        lo, hi = late
+                        self.room.pop(k, None)
                 self.found[k] = (lo, hi, p0[cross], p1[cross])
             elif (b.y < a.y - 0.5 if down else b.x < a.x - 0.5) and _behind(e, d):
                 self.back.append(k)
+
+    def _hits(self, e: Edge, a: NodeBox, b: NodeBox, lo: float, hi: float) -> int:
+        """How many nodes a lane turning in lo..hi runs through."""
+        pts = _lane(e, a, b, self.d, lo + (hi - lo) * 0.4)
+        return sum(1 for n in self.nodes.values() if n is not a and n is not b and not n.point and _through(pts, n.box))
+
+    def _late(self, a: NodeBox, b: NodeBox, gb: set[str], p0: Point, p1: Point) -> tuple[float, float] | None:
+        """The stretch just before the target where a turn across from the source's row to the target's misses every
+        node and every box the target is not in, or None when it is too short."""
+        main, cross = self.main, self.cross
+        c0, c1 = sorted((p0[cross], p1[cross]))
+        lo, hi = p0[main], p1[main]
+        others = [n.box for n in self.nodes.values() if n is not a and n is not b and not n.point]
+        others += [r for g, r in self.groups.items() if g not in gb]
+        for r in others:
+            r_lo, r_hi = (r.y, r.y1) if self.down else (r.x, r.x1)
+            r0, r1 = (r.x, r.x1) if self.down else (r.y, r.y1)
+            if r0 >= c1 or r1 <= c0 or r_hi <= lo or r_lo >= hi:
+                continue
+            if r_hi < hi:
+                lo = r_hi
+            else:
+                hi = r_lo
+        return (lo, hi) if hi - lo >= 8 else None
 
     def share_trunks(self) -> set[str]:
         """Lanes from one source share one turn where their gaps overlap, so they leave as a single trunk. The edges
