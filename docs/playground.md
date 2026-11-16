@@ -16,6 +16,7 @@ hide: [navigation, toc, footer]
 <div class="dg-play__source" id="dg-play-editor"><textarea id="dg-play-source" spellcheck="false" aria-label="Diagram YAML"></textarea></div>
 <ol class="dg-play__problems" id="dg-play-problems" aria-label="Problems" hidden></ol>
 </section>
+<div class="dg-play__split" id="dg-play-split" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize the editor" aria-valuemin="20" aria-valuemax="75" aria-valuenow="40"></div>
 <section class="dg-play__preview" aria-label="Preview">
 <div class="dg-play__bar dg-play__bar--preview">
 <div class="dg-play__tabs" role="group" aria-label="Show">

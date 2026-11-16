@@ -512,14 +512,14 @@ iframe.diagr-embed {
 }
 
 .md-main:has(.dg-play) .md-content__button,
-.md-main:has(.dg-play) ~ .md-top {
+.md-main:has(.dg-play) ~ :is(.md-top, .md-footer) {
   display: none;
 }
 
 .md-typeset .dg-play {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  height: calc(100dvh - 2.4rem);
+  height: calc(100dvh - var(--dg-header-height, 2.4rem));
   font-size: 0.7rem;
 }
 
@@ -625,8 +625,49 @@ iframe.diagr-embed {
 
 .md-typeset .dg-play__panes {
   display: grid;
-  grid-template-columns: minmax(20rem, 2fr) minmax(0, 3fr);
+  grid-template-columns: minmax(16rem, var(--dg-play-split, 40%)) 0 minmax(0, 1fr);
   min-height: 0;
+}
+
+.md-typeset .dg-play__split {
+  position: relative;
+  z-index: 2;
+  touch-action: none;
+  cursor: col-resize;
+}
+
+.md-typeset .dg-play__split::before {
+  content: "";
+  position: absolute;
+  inset: 0 -0.25rem;
+}
+
+.md-typeset .dg-play__split::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -2px;
+  width: 3px;
+  background-color: var(--dg-link);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.md-typeset .dg-play__split:is(:hover, :focus-visible)::after,
+.md-typeset .dg-play.is-resizing .dg-play__split::after {
+  opacity: 1;
+}
+
+.md-typeset .dg-play__split:focus-visible {
+  outline: none;
+}
+
+.md-typeset .dg-play.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.md-typeset .dg-play.is-resizing iframe {
+  pointer-events: none;
 }
 
 .md-typeset .dg-play__editor {
@@ -793,6 +834,11 @@ iframe.diagr-embed {
   margin: 1.5rem auto;
 }
 
+.md-typeset .dg-play__image.is-loading {
+  position: absolute;
+  visibility: hidden;
+}
+
 .md-typeset .dg-play__empty {
   max-width: 28rem;
   margin: 4rem auto;
@@ -824,6 +870,10 @@ body[data-md-color-scheme="slate"] {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .md-typeset .dg-play__split {
+    display: none;
+  }
+
   .md-typeset .dg-play__editor {
     height: 55dvh;
     border-right: 0;
@@ -842,7 +892,8 @@ body[data-md-color-scheme="slate"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .md-typeset .dg-play__stage {
+  .md-typeset .dg-play__stage,
+  .md-typeset .dg-play__split::after {
     transition: none;
   }
 }

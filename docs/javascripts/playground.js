@@ -3,6 +3,7 @@
   // the static image of the last good build. The source lives in the URL, so a link reopens the same diagram.
   var CM = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.21/";
   var STORE = "diagr-playground";
+  var SPLIT = "diagr-playground-split";
   var WAIT = 300;
 
   var worker = null;
@@ -56,22 +57,42 @@
     return new Response(stream).text();
   }
 
+  // The hash holds the source and what the preview shows: #s=<source>&m=image&v=<view>&c=1, defaults left out.
   function fromHash() {
-    var m = /[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash);
-    return m ? decode(m[1]).catch(function () { return null; }) : Promise.resolve(null);
+    var params = new URLSearchParams(location.hash.slice(1));
+    var got = {
+      mode: params.get("m") === "image" ? "image" : "player",
+      view: params.get("v") || "",
+      contrast: params.get("c") === "1",
+    };
+    var code = params.get("s");
+    if (!code || !/^[A-Za-z0-9_-]+$/.test(code)) return Promise.resolve(got);
+    return decode(code).then(
+      function (text) { got.source = text; return got; },
+      function () { return got; }
+    );
   }
 
-  function stored() {
+  function toHash(code, state) {
+    var params = new URLSearchParams();
+    params.set("s", code);
+    if (state.mode !== "player") params.set("m", state.mode);
+    if (state.view) params.set("v", state.view);
+    if (state.contrast) params.set("c", "1");
+    return "#" + params.toString();
+  }
+
+  function stored(key) {
     try {
-      return localStorage.getItem(STORE);
+      return localStorage.getItem(key);
     } catch (e) {
       return null;
     }
   }
 
-  function store(text) {
+  function store(key, value) {
     try {
-      localStorage.setItem(STORE, text);
+      localStorage.setItem(key, value);
     } catch (e) {}
   }
 
@@ -99,6 +120,9 @@
     var busy = false;
     var queue = [];
     var shown = null;
+    var pending = null;
+    var keepPlace = true;
+    var hashSeq = 0;
     var examples = [];
 
     function source() {
@@ -169,13 +193,21 @@
       return state.mode === "player" ? "html" : scheme();
     }
 
+    // Encodings can finish out of order; only the latest one writes the address bar.
+    function link(text) {
+      var mine = ++hashSeq;
+      return encode(text).then(function (code) {
+        var url = location.href.split("#")[0] + toHash(code, state);
+        if (mine === hashSeq) history.replaceState(null, "", url);
+        return url;
+      });
+    }
+
     function build() {
       clearTimeout(timer);
       var text = source();
-      store(text);
-      encode(text).then(function (code) {
-        history.replaceState(null, "", "#s=" + code);
-      });
+      store(STORE, text);
+      link(text);
       if (workerState === "ready") say("Building");
       send({ kind: "build", source: text, want: want(), view: state.view, contrast: state.contrast });
     }
@@ -284,38 +316,79 @@
       });
     }
 
-    // A new frame loads behind the old one and replaces it once drawn, so editing doesn't flash.
+    // Where the reader is in the shown player: the scenario, the frame, whether it loops, the zoom and the scroll.
+    function place() {
+      var frame = stage.querySelector("iframe:not(.is-loading)");
+      var win = frame && frame.contentWindow;
+      if (!win) return null;
+      var at = { y: win.scrollY };
+      if (win.diagr) {
+        at.scenario = win.diagr.scenario();
+        at.frame = win.diagr.frame();
+        at.looping = win.diagr.looping();
+      }
+      if (win.diagrZoom) at.zoom = win.diagrZoom.view();
+      return at;
+    }
+
+    function restore(frame, at) {
+      var win = frame.contentWindow;
+      if (!at || !win) return;
+      var d = win.diagr;
+      if (d && at.scenario && d.scenarios.indexOf(at.scenario) >= 0) {
+        d.scenario(at.scenario);
+        d.seek(Math.min(at.frame, d.frames));
+        if (at.looping) d.play();
+      }
+      if (win.diagrZoom && at.zoom) win.diagrZoom.view(at.zoom);
+      win.scrollTo(0, at.y);
+    }
+
+    // The new preview loads behind the shown one and replaces it once drawn, so editing doesn't flash. A preview
+    // still loading when a newer one arrives is dropped, so it can't land on top of the newer one.
+    function swap(el) {
+      if (pending) pending.remove();
+      pending = el;
+      stage.appendChild(el);
+      hideEmpty();
+    }
+
+    function settle(el) {
+      if (pending !== el) return;
+      pending = null;
+      stage.querySelectorAll("iframe, img").forEach(function (other) {
+        if (other !== el) other.remove();
+      });
+    }
+
     function player(html) {
-      var old = stage.querySelector("iframe, img");
       var frame = document.createElement("iframe");
       frame.className = "dg-play__frame is-loading";
       frame.title = "Diagram preview";
       frame.addEventListener("load", function () {
+        if (pending !== frame) return;
         dress(frame);
+        restore(frame, keepPlace ? place() : null);
+        keepPlace = true;
         frame.classList.remove("is-loading");
-        stage.querySelectorAll("iframe, img").forEach(function (el) {
-          if (el !== frame) el.remove();
-        });
+        settle(frame);
       }, { once: true });
       frame.srcdoc = html;
-      stage.appendChild(frame);
-      if (!old) hideEmpty();
+      swap(frame);
     }
 
     function image(svg, which) {
       var img = document.createElement("img");
-      img.className = "dg-play__image";
+      img.className = "dg-play__image is-loading";
       img.alt = "Diagram preview, " + which;
       var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
-      img.onload = function () {
-        stage.querySelectorAll("iframe, img").forEach(function (el) {
-          if (el !== img) el.remove();
-        });
+      img.onload = img.onerror = function () {
         URL.revokeObjectURL(url);
+        img.classList.remove("is-loading");
+        settle(img);
       };
       img.src = url;
-      stage.appendChild(img);
-      hideEmpty();
+      swap(img);
     }
 
     function hideEmpty() {
@@ -326,6 +399,10 @@
     function download(which) {
       var id = send({ kind: "download", source: source(), want: which, view: state.view, contrast: state.contrast });
       downloads[id] = function (r) {
+        if (r.crash) {
+          console.error(r.crash);
+          return say("diagr crashed while building the download, see the console", "error");
+        }
         if (r.out === undefined) return say("Fix the errors to download", "error");
         var name = r.id + (which === "html" ? ".html" : "-" + which + ".svg");
         var type = which === "html" ? "text/html" : "image/svg+xml";
@@ -340,27 +417,41 @@
     function pick(text) {
       setSource(text);
       state.view = "";
+      keepPlace = false;
       build();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      modeButtons.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.mode === mode)); });
+    }
+
+    function setContrast(on) {
+      state.contrast = on;
+      contrastButton.setAttribute("aria-pressed", String(on));
     }
 
     modeButtons.forEach(function (b) {
       b.addEventListener("click", function () {
-        state.mode = b.dataset.mode;
-        modeButtons.forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+        setMode(b.dataset.mode);
         build();
       });
     });
 
     contrastButton.addEventListener("click", function () {
-      state.contrast = !state.contrast;
-      contrastButton.setAttribute("aria-pressed", String(state.contrast));
+      setContrast(!state.contrast);
       var frame = stage.querySelector("iframe:not(.is-loading)");
-      if (state.mode === "player" && frame) dress(frame);
-      else build();
+      if (state.mode === "player" && frame) {
+        dress(frame);
+        link(source());
+      } else {
+        build();
+      }
     });
 
     viewSelect.addEventListener("change", function () {
       state.view = viewSelect.value;
+      keepPlace = false;
       build();
     });
 
@@ -376,9 +467,7 @@
 
     $("dg-play-share").addEventListener("click", function () {
       var button = this;
-      encode(source()).then(function (code) {
-        var url = location.href.split("#")[0] + "#s=" + code;
-        history.replaceState(null, "", url);
+      link(source()).then(function (url) {
         return navigator.clipboard.writeText(url);
       }).then(function () {
         button.textContent = "Copied";
@@ -425,6 +514,66 @@
       })
       .catch(function () { return []; });
 
+    // The split between the editor and the preview, as the editor's share of the width: drag the handle, or focus it
+    // and use the arrow keys. A double-click puts it back.
+    (function split() {
+      var handle = $("dg-play-split");
+      var panes = root.querySelector(".dg-play__panes");
+      var START = 40;
+      var MIN = 20;
+      var MAX = 75;
+      var dragging = false;
+
+      function set(pct) {
+        pct = Math.round(Math.min(MAX, Math.max(MIN, pct)) * 10) / 10;
+        root.style.setProperty("--dg-play-split", pct + "%");
+        handle.setAttribute("aria-valuenow", String(Math.round(pct)));
+        return pct;
+      }
+
+      function done(pct) {
+        store(SPLIT, String(pct));
+        if (editor) editor.refresh();
+      }
+
+      var current = set(Number(stored(SPLIT)) || START);
+
+      handle.addEventListener("pointerdown", function (e) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        dragging = true;
+        handle.setPointerCapture(e.pointerId);
+        root.classList.add("is-resizing");
+      });
+      handle.addEventListener("pointermove", function (e) {
+        if (!dragging) return;
+        var box = panes.getBoundingClientRect();
+        current = set(((e.clientX - box.left) / box.width) * 100);
+      });
+      ["pointerup", "pointercancel"].forEach(function (type) {
+        handle.addEventListener(type, function () {
+          if (!dragging) return;
+          dragging = false;
+          root.classList.remove("is-resizing");
+          done(current);
+        });
+      });
+      handle.addEventListener("dblclick", function () {
+        current = set(START);
+        done(current);
+      });
+      handle.addEventListener("keydown", function (e) {
+        var moves = { ArrowLeft: current - 2, ArrowRight: current + 2, Home: MIN, End: MAX };
+        if (!(e.key in moves)) return;
+        e.preventDefault();
+        current = set(moves[e.key]);
+        done(current);
+      });
+    })();
+
+    // Tab indents, so Escape then Tab is the way out of the editor for keyboard users.
+    var leaving = false;
+
     var editorReady = codemirror().then(function (CodeMirror) {
       editor = CodeMirror.fromTextArea(textarea, {
         mode: "yaml",
@@ -433,7 +582,9 @@
         tabSize: 2,
         indentWithTabs: false,
         lineWrapping: false,
+        screenReaderLabel: "Diagram YAML. Press Escape then Tab to leave the editor.",
         extraKeys: {
+          Esc: function () { leaving = true; },
           Tab: function (cm) {
             if (cm.somethingSelected()) cm.indentSelection("add");
             else cm.replaceSelection("  ", "end");
@@ -441,6 +592,11 @@
           "Shift-Tab": function (cm) { cm.indentSelection("subtract"); },
         },
       });
+      editor.on("keydown", function (cm, e) {
+        if (e.key === "Tab" && leaving) e.codemirrorIgnore = true;
+        else if (e.key !== "Escape") leaving = false;
+      });
+      editor.on("blur", function () { leaving = false; });
       editor.on("change", later);
     }, function () {
       textarea.classList.add("is-plain");
@@ -448,11 +604,25 @@
     });
 
     Promise.all([fromHash(), examplesReady, editorReady]).then(function (got) {
-      var text = got[0] || stored() || (got[1][0] && got[1][0].source) || "";
+      var linked = got[0];
+      var text = linked.source || stored(STORE) || (got[1][0] && got[1][0].source) || "";
+      if (linked.source) {
+        setMode(linked.mode);
+        setContrast(linked.contrast);
+        state.view = linked.view;
+      }
       setSource(text);
       if (editor) editor.clearHistory();
       build();
     });
+  }
+
+  // The playground fills the window under the header, whatever height the header has at this width.
+  var header = document.querySelector(".md-header");
+  if (header && window.ResizeObserver) {
+    new ResizeObserver(function () {
+      document.documentElement.style.setProperty("--dg-header-height", header.offsetHeight + "px");
+    }).observe(header);
   }
 
   init();
