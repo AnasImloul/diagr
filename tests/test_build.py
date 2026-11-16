@@ -270,6 +270,14 @@ class Accessibility(Case):
         self.assertEqual(page_keys, 4)
         self.assertEqual(scoped, page_keys)
 
+    def test_a_looping_scenario_is_not_read_out_until_the_reader_takes_over(self):
+        html = render_html(
+            prepared(BASE + "scenarios:\n  s:\n    loop: true\n    steps:\n    - {title: go, do: [done a]}\n")
+        )
+        self.assertIn('<div id="status" aria-live="polite">', html)
+        self.assertIn('statusEl.setAttribute("aria-live", "off")', html)
+        self.assertIn('wrap.addEventListener("keydown", listen, { once: true })', html)
+
     def test_steps_are_buttons(self):
         html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"))
         self.assertIn('<button type="button" aria-label="Step 1: go">go</button>', html)

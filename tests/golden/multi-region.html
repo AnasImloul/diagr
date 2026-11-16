@@ -537,7 +537,17 @@ svg.diagr[data-scenario="deploy"] [data-badges]:not([data-badges="deploy"]) { di
     new IntersectionObserver(function (entries) { inView = entries[0].isIntersecting; onVisibility(); }).observe(svg);
   }
   var auto = scenarios.filter(function (x) { return x.loop; })[0];
-  if (auto && !reduced) { choose(auto.id); play(); }
+  if (auto && !reduced) {
+    // A scenario that plays on its own is not read out line by line; once the reader takes over, it is.
+    var wrap = document.querySelector(".wrap");
+    if (statusEl && wrap) {
+      statusEl.setAttribute("aria-live", "off");
+      var listen = function () { statusEl.setAttribute("aria-live", "polite"); };
+      wrap.addEventListener("pointerdown", listen, { once: true });
+      wrap.addEventListener("keydown", listen, { once: true });
+    }
+    choose(auto.id); play();
+  }
 })();
 </script>
 </body>
