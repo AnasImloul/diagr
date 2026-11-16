@@ -332,6 +332,9 @@ class Placement(Case):
         lay = prepared(BESIDE_PINNED).layout
         self.assertGreater(lay.groups["h"].x, lay.groups["g"].x1)
 
+    def test_lane_turns_before_a_pinned_neighbour_on_its_row(self):
+        self.assertClean(problems(BESIDE_PINNED))
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))

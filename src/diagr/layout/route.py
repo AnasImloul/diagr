@@ -331,12 +331,13 @@ class _Router:
                     lo, hi = mid - 12, mid + 12
                 hits = self._hits(e, a, b, lo, hi)
                 if hits:
-                    # Turning early runs through nodes: try turning just before the target instead, along the
-                    # source's row, which placement keeps clear.
-                    late = self._late(a, b, gb, p0, p1)
-                    if late and self._hits(e, a, b, *late) < hits:
-                        lo, hi = late
-                        self.room.pop(k, None)
+                    # Turning in the first gap runs through nodes: try turning just before the target instead, along
+                    # the source's row, which placement keeps clear, or else just after the source, before whatever
+                    # stands next to it on its row.
+                    for stretch in (self._late(a, b, gb, p0, p1), self._soon(a, b, ga | gb, p0, p1)):
+                        if stretch and (n := self._hits(e, a, b, *stretch)) < hits:
+                            (lo, hi), hits = stretch, n
+                            self.room.pop(k, None)
                 self.found[k] = (lo, hi, p0[cross], p1[cross])
             elif (b.y < a.y - 0.5 if down else b.x < a.x - 0.5) and _behind(e, d):
                 self.back.append(k)
@@ -367,6 +368,25 @@ class _Router:
                 lo = r_hi
             else:
                 hi = r_lo
+        return (lo, hi) if hi - lo >= 8 else None
+
+    def _soon(self, a: NodeBox, b: NodeBox, ends: set[str], p0: Point, p1: Point) -> tuple[float, float] | None:
+        """The stretch just after the source where a turn across from its row to the target's misses every node and
+        every box neither end is in, or None when it is too short."""
+        main, cross = self.main, self.cross
+        c0, c1 = sorted((p0[cross], p1[cross]))
+        lo, hi = p0[main], p1[main]
+        others = [n.box for n in self.nodes.values() if n is not a and n is not b and not n.point]
+        others += [r for g, r in self.groups.items() if g not in ends]
+        for r in others:
+            r_lo, r_hi = (r.y, r.y1) if self.down else (r.x, r.x1)
+            r0, r1 = (r.x, r.x1) if self.down else (r.y, r.y1)
+            if r0 >= c1 or r1 <= c0 or r_hi <= lo or r_lo >= hi:
+                continue
+            if r_lo > lo:
+                hi = r_lo
+            else:
+                lo = r_hi
         return (lo, hi) if hi - lo >= 8 else None
 
     def share_trunks(self) -> set[str]:
