@@ -77,7 +77,11 @@ None of these is unique on its own; the combination is what diagr is for.
 
 - **The diagram has dozens of densely connected nodes**: the layout engines behind D2, Mermaid and Graphviz minimise
   crossings far harder than diagr does. diagr places nodes in simple layers and expects you to pin the few that
-  matter.
+  matter. A few dozen loose nodes still lay out cleanly, but past about forty, spread over several groups and with
+  edges running both ways, some edges start to pass through nodes; `diagr check` lists each one, and pinning a few
+  nodes usually clears them.
+- **You need PNG or PDF**: diagr writes SVG and HTML only. A browser or a tool such as `rsvg-convert` turns the SVGs
+  into either.
 - **You want one model of the whole system** shared by many diagrams: Structurizr, LikeC4 or IcePanel. diagr's views
   work within one file.
 - **The diagram lives in a Markdown file on a platform that renders Mermaid**, such as a GitHub README: Mermaid needs
