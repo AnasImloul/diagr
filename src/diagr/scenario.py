@@ -209,8 +209,13 @@ class _Compiler:
             return [Frame({}, e.ms or 0, step)]
         if v == "parallel":
             # Lockstep: frame k plays every child's k-th frame together and lasts as long as the slowest of them,
-            # so flows side by side advance one hop at a time.
-            lanes = [self.frames(c, step, i) for c in e.children]
+            # so flows side by side advance one hop at a time. Each lane starts from the state before the block, not
+            # from what the lanes before it did.
+            start, lanes = self.state, []
+            for c in e.children:
+                self.state = dict(start)
+                lanes.append(self.frames(c, step, i))
+            self.state = start
             out = []
             for k in range(max((len(lane) for lane in lanes), default=0)):
                 merged = Frame(step=step)

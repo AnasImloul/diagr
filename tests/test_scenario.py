@@ -86,6 +86,13 @@ class Compile(unittest.TestCase):
         self.assertEqual(frames[2].dur, 1400)
         self.assertEqual(frames[3].set, {"c:a:1": "ok", "cap:a": None, "n:a": "done"})
 
+    def test_a_lane_in_a_list_starts_where_the_others_do(self):
+        yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: one\n      do:\n"
+        listed = prepared(yml + "        - parallel: [[activate a 500ms], flow a -> b]\n")
+        plain = prepared(yml + "        - parallel: [activate a 500ms, flow a -> b]\n")
+        frames = [[f.to_json() for f in p.scenarios["s"].frames] for p in (listed, plain)]
+        self.assertEqual(frames[0], frames[1])
+
     def test_nested_parallel_is_one_lane(self):
         yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: one\n      do:\n"
         nested = prepared(yml + "        - parallel: [{parallel: [flow a -> b, 'status: go']}, done b]\n")
