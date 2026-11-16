@@ -286,6 +286,28 @@ class Placement(Case):
         self.assertEqual(len(ends), 4)
         self.assertGreaterEqual(min(b - a for a, b in zip(ends, ends[1:], strict=False)), 12)
 
+    def test_output_does_not_depend_on_string_hashing(self):
+        import os
+        import subprocess
+        import sys
+
+        folder = self.tmp()
+        files = []
+        for name, yml in (("back", BACK), ("groups", GROUPS), ("both", BOTH_WAYS)):
+            (folder / f"{name}.yml").write_text(yml.replace("id: t\n", f"id: {name}\n"), encoding="utf-8")
+            files.append(str(folder / f"{name}.yml"))
+        seen = set()
+        for seed in ("1", "2", "3"):
+            out = folder / seed
+            subprocess.run(
+                [sys.executable, "-m", "diagr", "build", *files, "-o", str(out)],
+                env={**os.environ, "PYTHONHASHSEED": seed},
+                check=True,
+                capture_output=True,
+            )
+            seen.add(tuple(sorted(f.read_text(encoding="utf-8") for f in out.glob("*.svg"))))
+        self.assertEqual(len(seen), 1)
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))

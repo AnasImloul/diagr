@@ -433,7 +433,7 @@ class _Router:
             # One turn per source; a lane heading towards higher cross values turns later the lower it starts.
             sources = sorted(
                 {(d.edges[k].src.node, found[k][2], found[k][3] > found[k][2]) for k in keys},
-                key=lambda s: (s[2], -s[1] if s[2] else s[1]),
+                key=lambda s: (s[2], -s[1] if s[2] else s[1], s[0]),
             )
             # A little before the middle, so the run after the turn is the longest and carries the label: the run
             # before it is often shared with the source's other edges.
