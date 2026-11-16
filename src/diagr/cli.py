@@ -51,7 +51,7 @@ def cmd_build(args) -> int:
             d = load_file(f)
             _claim(names, f, d)
             ps = prepare_all(d, args.theme)
-            written = [w for p in ps for w in write_files(p, args.out, args.debug, transparent=args.transparent)]
+            written = [w for p in ps for w in write_files(p, args.out, debug=args.debug, transparent=args.transparent)]
         except DiagramError as e:
             _report(e.problems)
             status = 1
@@ -219,7 +219,11 @@ def cmd_watch(args) -> int:
                         _claim(names, str(f), d)
                         ps = prepare_all(d, args.theme)
                         written = [
-                            w for p in ps for w in write_files(p, args.out, args.debug, bool(server), args.transparent)
+                            w
+                            for p in ps
+                            for w in write_files(
+                                p, args.out, debug=args.debug, live=bool(server), transparent=args.transparent
+                            )
                         ]
                         _report([w for p in ps for w in p.warnings])
                         print(f"{time.strftime('%H:%M:%S')} built {', '.join(w.name for w in written)}")

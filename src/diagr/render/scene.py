@@ -39,6 +39,8 @@ class El:
     children: list[El | Raw | str] = field(default_factory=list)
     paint: dict[str, str] = field(default_factory=dict)
     only: str | None = None
+    # What the element is, for a renderer looking for it ('edge', 'label', 'pill'); it is never written out.
+    role: str | None = None
 
     def add(self, *items: El | Raw | str) -> El:
         self.children.extend(items)
@@ -374,6 +376,7 @@ class SceneBuilder:
                 "data-from": e.src.node,
                 "data-to": e.dst.node,
             },
+            role="edge",
         )
         _flag(el, e.mark, e.hidden)
         el.add(
@@ -403,7 +406,7 @@ class SceneBuilder:
     def edge_label(self, eid: str, p: EdgePath) -> El:
         """An edge's label and step numbers, drawn after every edge so no edge runs over them."""
         e = p.edge
-        lab = El("g", {"class": "elab", "data-edge": eid})
+        lab = El("g", {"class": "elab", "data-edge": eid}, role="label")
         if e.hidden:
             lab.attrs["data-hidden"] = "1"
         if e.label and p.label_at and p.label_box:
@@ -414,6 +417,7 @@ class SceneBuilder:
                     "rect",
                     {"x": num(lb.x), "y": num(lb.y), "width": num(lb.w), "height": num(lb.h), "rx": 4},
                     paint={"fill": self.fill_at(x, y)},
+                    role="pill",
                 )
             )
             lab.add(

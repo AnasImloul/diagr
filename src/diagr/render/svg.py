@@ -77,15 +77,16 @@ def step_list(comp: Compiled, x0: float, y0: float, width: float) -> tuple[list[
 
 
 def _uncover_labels(el: El, edges: list[El], holes: list[dict[str, object]]) -> None:
-    """Take out the pills that hide the edges under labels outside any group, keeping where they were."""
+    """Take out the pills painted the page colour, those of labels outside any group, keeping where they were."""
     for child in el.children:
         if not isinstance(child, El):
             continue
-        kind = child.attrs.get("class")
-        if kind == "edge":
+        if child.role == "edge":
             edges.append(child)
-        elif kind == "elab":
-            pills = [c for c in child.children if isinstance(c, El) and c.tag == "rect" and c.paint.get("fill") == "bg"]
+        elif child.role == "label":
+            pills = [
+                c for c in child.children if isinstance(c, El) and c.role == "pill" and c.paint.get("fill") == "bg"
+            ]
             if not child.attrs.get("data-hidden"):
                 holes.extend(p.attrs for p in pills)
             child.children = [c for c in child.children if c not in pills]
@@ -93,15 +94,14 @@ def _uncover_labels(el: El, edges: list[El], holes: list[dict[str, object]]) -> 
             _uncover_labels(child, edges, holes)
 
 
-def label_mask(mask_id: str, x: float, y: float, w: float, h: float, holes: list[dict[str, object]]) -> str:
+def label_mask(mask_id: str, x: float, y: float, w: float, h: float, holes: list[dict[str, object]]) -> El:
     """A mask that cuts the edges where a label sits, as the label's pill does on a background of its own."""
-    cut = "".join(
-        f'<rect x="{a["x"]}" y="{a["y"]}" width="{a["width"]}" height="{a["height"]}" rx="{a.get("rx", 0)}" '
-        'fill="black"/>'
-        for a in holes
+    box = {"x": num(x), "y": num(y), "width": num(w), "height": num(h)}
+    cut = [El("rect", {**a, "fill": "black"}) for a in holes]
+    mask = El(
+        "mask", {"id": mask_id, "maskUnits": "userSpaceOnUse", **box}, [El("rect", {**box, "fill": "white"}), *cut]
     )
-    box = f'x="{num(x)}" y="{num(y)}" width="{num(w)}" height="{num(h)}"'
-    return f'<defs><mask id="{mask_id}" maskUnits="userSpaceOnUse" {box}><rect {box} fill="white"/>{cut}</mask></defs>'
+    return El("defs", {}, [mask])
 
 
 def render_static(sb: SceneBuilder, t: Theme, scheme: str, transparent: bool = False) -> str:
@@ -113,7 +113,7 @@ def render_static(sb: SceneBuilder, t: Theme, scheme: str, transparent: bool = F
         items, h = step_list(sb.comp, b.x, b.y1, b.w)
         extra, height = items, b.h + h
     defs = sb.defs()
-    mask = ""
+    mask: El | None = None
     if transparent:
         edges: list[El] = []
         holes: list[dict[str, object]] = []
@@ -144,7 +144,7 @@ def render_static(sb: SceneBuilder, t: Theme, scheme: str, transparent: bool = F
         parts.append(f'<desc id="{name}-desc">{escape(sb.d.description)}</desc>')
     parts.append(serialise(defs, "static", resolve))
     if mask:
-        parts.append(mask)
+        parts.append(serialise(mask, "static", resolve))
     if not transparent:
         box = f'x="{num(b.x)}" y="{num(b.y)}" width="{num(b.w)}" height="{num(height)}"'
         parts.append(f'<rect {box} fill="{t.hex(scheme, "bg")}"/>')

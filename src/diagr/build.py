@@ -69,16 +69,18 @@ def build_files(
     path: str | Path,
     out: str | Path,
     theme: str | None = None,
+    *,
     debug: bool = False,
     live: bool = False,
     transparent: bool = False,
 ) -> tuple[list[Path], list[Problem]]:
     ps = prepare_all(load_file(path), theme)
-    return [f for p in ps for f in write_files(p, out, debug, live, transparent)], [w for p in ps for w in p.warnings]
+    written = [f for p in ps for f in write_files(p, out, debug=debug, live=live, transparent=transparent)]
+    return written, [w for p in ps for w in p.warnings]
 
 
 def write_files(
-    p: Prepared, out: str | Path, debug: bool = False, live: bool = False, transparent: bool = False
+    p: Prepared, out: str | Path, *, debug: bool = False, live: bool = False, transparent: bool = False
 ) -> list[Path]:
     """The two static SVGs and the HTML page; debug adds the authoring overlay, live the reload script, and
     transparent leaves the background out of the SVGs."""
