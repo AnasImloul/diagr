@@ -130,15 +130,18 @@ def render_static(sb: SceneBuilder, t: Theme, scheme: str, transparent: bool = F
             return "none"
         return t.hex(scheme, token)
 
-    label = escape(sb.d.description or sb.d.title or sb.d.id, quote=True)
+    # Named by its title and described by its description; the ids carry the scheme, so the light and the dark image
+    # can sit in one page.
+    name = f"{safe_id(sb.d.id)}-{scheme}"
+    described = f' aria-describedby="{name}-desc"' if sb.d.description else ""
     head = (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{num(b.x)} {num(b.y)} {num(b.w)} {num(height)}" '
         f'width="{num(b.w)}" height="{num(height)}" font-family="{escape(t.font, quote=True)}" role="img" '
-        f'aria-label="{label}">'
+        f'aria-labelledby="{name}-title"{described}>'
     )
-    parts = [head]
-    if sb.d.title:
-        parts.append(f"<title>{escape(sb.d.title)}</title>")
+    parts = [head, f'<title id="{name}-title">{escape(sb.d.title or sb.d.id)}</title>']
+    if sb.d.description:
+        parts.append(f'<desc id="{name}-desc">{escape(sb.d.description)}</desc>')
     parts.append(serialise(defs, "static", resolve))
     if mask:
         parts.append(mask)

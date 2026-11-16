@@ -249,6 +249,14 @@ class Accessibility(Case):
     def test_svg_without_triggers_is_an_image(self):
         self.assertIn('role="img"', render_html(prepared(BASE)))
 
+    def test_static_svg_is_named_by_its_title_and_described_by_its_description(self):
+        p = prepared(BASE + "title: Writes\ndescription: A writes to B.\n")
+        svg = render_static(p.scene(), p.theme, "dark")
+        self.assertIn('aria-labelledby="t-dark-title" aria-describedby="t-dark-desc"', svg)
+        self.assertIn('<title id="t-dark-title">Writes</title>', svg)
+        self.assertIn('<desc id="t-dark-desc">A writes to B.</desc>', svg)
+        self.assertNotIn("aria-label=", svg.split(">", 1)[0])
+
     def test_steps_are_buttons(self):
         html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"))
         self.assertIn('<button type="button" aria-label="Step 1: go">go</button>', html)
