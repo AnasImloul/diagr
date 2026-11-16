@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from ..live import SCRIPT as LIVE
 from ..scenario import Compiled
 from ..theme import Theme, load_theme
+from .assets import script
 from .debug import TOGGLE as DEBUG_TOGGLE
 from .debug import overlay
 from .scene import num, serialise
@@ -38,25 +39,8 @@ CONTRAST = (
     'title="High contrast (C)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6"/>'
     '<path class="half" d="M8 2a6 6 0 0 1 0 12z"/></svg></button>'
 )
-THEME_BOOT = (
-    '<script>(function(){var t=null,c=null;try{t=localStorage.getItem("diagr-theme");'
-    'c=localStorage.getItem("diagr-contrast")}catch(e){}'
-    'if(t!=="light"&&t!=="dark")t=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches'
-    '?"dark":"light";var r=document.documentElement;r.setAttribute("data-theme",t);'
-    'if(c==="on")r.setAttribute("data-contrast","on")})();</script>'
-)
-# The contrast button switches to the built-in contrast theme's colours and line widths, live; text sizes stay the
-# same, so the layout does not move. C does the same from the keyboard.
-CONTRAST_TOGGLE = (
-    '<script>(function(){var b=document.getElementById("contrast"),r=document.documentElement;if(!b)return;'
-    'function sync(){b.setAttribute("aria-pressed",r.getAttribute("data-contrast")==="on"?"true":"false")}'
-    'function flip(){var on=r.getAttribute("data-contrast")!=="on";if(on)r.setAttribute("data-contrast","on");'
-    'else r.removeAttribute("data-contrast");try{localStorage.setItem("diagr-contrast",on?"on":"off")}catch(e){}'
-    'sync()}b.addEventListener("click",flip);document.addEventListener("keydown",function(e){'
-    'var g=(e.target&&e.target.tagName)||"";if(g==="INPUT"||g==="SELECT"||g==="TEXTAREA"||e.metaKey||e.ctrlKey'
-    '||e.altKey||!(e.target.closest&&e.target.closest(".wrap")))return;if(e.key==="c"||e.key==="C")flip()});'
-    "sync()})();</script>"
-)
+THEME_BOOT = script("theme-boot.js")
+CONTRAST_TOGGLE = script("contrast.js")
 ZOOM_ICONS = {
     "in": '<path d="M7 3v10M2 8h10"/>',
     "out": '<path d="M2 8h10"/>',
@@ -75,11 +59,7 @@ ZOOM_BUTTONS = "".join(
     )
 )
 
-THEME_TOGGLE = (
-    '<script>document.getElementById("toggle").addEventListener("click",function(){var r=document.'
-    'documentElement,n=r.getAttribute("data-theme")==="dark"?"light":"dark";r.setAttribute("data-theme",n);'
-    'try{localStorage.setItem("diagr-theme",n)}catch(e){}});</script>'
-)
+THEME_TOGGLE = script("theme.js")
 
 
 def _contrast(t: Theme, base: Path) -> str:

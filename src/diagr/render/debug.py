@@ -6,6 +6,7 @@ import math
 from html import escape
 from typing import TYPE_CHECKING
 
+from .assets import script
 from .scene import num
 
 if TYPE_CHECKING:
@@ -57,10 +58,4 @@ def overlay(p: Prepared) -> str:
     return "".join(out)
 
 
-TOGGLE = (
-    "<script>document.addEventListener('keydown',function(e){var t=(e.target&&e.target.tagName)||'';"
-    "if(e.key!=='g'||e.metaKey||e.ctrlKey||e.altKey||t==='INPUT'||t==='SELECT'||t==='TEXTAREA'"
-    "||!(e.target.closest&&e.target.closest('.wrap')))return;"
-    "document.querySelectorAll('.dg-debug').forEach(function(o){o.style.display=o.style.display==='none'?'':'none'})"
-    "});</script>"
-)
+TOGGLE = script("debug.js")
