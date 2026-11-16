@@ -40,6 +40,19 @@ class Format(Case):
         yml = BASE + "groups:\n  g: {title: G, at: [0, 0], span: [-1, 1]}\n"
         self.assertReports(problems(yml), "must be at least 1")
 
+    def test_ids_do_not_end_in_a_dash(self):
+        node = "nodes:\n      x: {at: [0, 0], icon: api}\n"
+        cases = {
+            "component": f"id: t\ncomponents:\n  box-:\n    {node}instances:\n  i: {{component: box-}}\n",
+            "instance": f"id: t\ncomponents:\n  box:\n    {node}instances:\n  east-: {{component: box}}\n",
+            "node in a component": "id: t\ncomponents:\n  box:\n    nodes:\n      x-: {at: [0, 0], icon: api}\n"
+            "instances:\n  i: {component: box}\n",
+            "scenario": BASE + "scenarios:\n  go-: {steps: [{title: s, do: [done a]}]}\n",
+        }
+        for what, yml in cases.items():
+            with self.subTest(what):
+                self.assertReports(problems(yml), "is not an id: letters, digits, _ and - (not last)")
+
     def test_quoted_repeat_count(self):
         yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"
         self.assertReports(problems(yml), "'repeat' needs a whole number")

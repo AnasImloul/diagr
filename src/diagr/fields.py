@@ -13,6 +13,10 @@ from typing import Any
 from .model import Loc
 from .source import Problem, Y, YMap, YScalar, YSeq
 
+# An id in the format: of a component, an instance, a group, a node, a scenario. It does not end in '-', which would
+# run into an arrow: 'a-->b' could be 'a-' to 'b' or a dashed edge.
+ID = r"[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?"
+
 
 class Invalid(Exception):
     pass
@@ -309,8 +313,8 @@ class Obj(T):
 @dataclass
 class MapOf(T):
     value: T
-    key_pattern: str = r"[A-Za-z_][A-Za-z0-9_-]*"
-    key_description: str = "an id: letters, digits, _ and -"
+    key_pattern: str = ID
+    key_description: str = "an id: letters, digits, _ and - (not last)"
     description: str = ""
     min_items: int = 0
 

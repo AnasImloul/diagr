@@ -304,7 +304,7 @@
     "components": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
       },
       "additionalProperties": {
         "type": "object",
@@ -339,7 +339,7 @@
           "groups": {
             "type": "object",
             "propertyNames": {
-              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+              "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
             },
             "additionalProperties": {
               "$ref": "#/$defs/group"
@@ -348,7 +348,7 @@
           "nodes": {
             "type": "object",
             "propertyNames": {
-              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+              "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
             },
             "additionalProperties": {
               "type": "object",
@@ -593,7 +593,7 @@
           "actions": {
             "type": "object",
             "propertyNames": {
-              "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+              "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
             },
             "additionalProperties": {
               "$ref": "#/$defs/effects"
@@ -608,7 +608,7 @@
     "instances": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
       },
       "additionalProperties": {
         "type": "object",
@@ -652,7 +652,7 @@
     "actions": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
       },
       "additionalProperties": {
         "$ref": "#/$defs/effects"
@@ -662,7 +662,7 @@
     "scenarios": {
       "type": "object",
       "propertyNames": {
-        "pattern": "^(?:[A-Za-z_][A-Za-z0-9_-]*)$"
+        "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
       },
       "additionalProperties": {
         "type": "object",

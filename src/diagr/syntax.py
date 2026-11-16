@@ -13,7 +13,7 @@ from .migrations import VERSION
 from .model import Flow, Move
 from .source import YMap, YScalar, YSeq
 
-ID = r"[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?"
+ID = f.ID
 REF = rf"{ID}(?:/{ID})?"
 PARAM_NAME = r"[A-Za-z_][A-Za-z0-9_]*"
 IDS = "an id: letters, digits, _ and - (not last), optionally 'instance/id' as `diagr expand` writes"

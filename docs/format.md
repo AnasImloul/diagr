@@ -17,6 +17,10 @@ align: true                  # line up the edges of neighbouring boxes that near
 step_list: true              # numbered badges and the step list in static output
 ```
 
+Every id (of the diagram, a group, a node, a component, an instance, a scenario or a view) is letters, digits, `_`
+and `-`, starting with a letter or `_` and not ending in `-`, which would run into an arrow: `a-->b` could be `a-` to
+`b` or a dashed edge.
+
 ## Groups
 
 ```yaml
