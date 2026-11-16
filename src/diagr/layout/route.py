@@ -415,7 +415,8 @@ class _Router:
             p1 = b.port("top" if down else "left", e.dst.offset + self.shift.get(k, 0.0))
             side = self.outside[way] + (-12 if way == "before" else 12) * count[way]
             count[way] += 1
-            lo, hi = _gap(d, self.groups, ga, gb, p1[main] - self.cell, p1[main], *sorted((side, p1[cross])))
+            # It comes back from outside, so only the boxes it enters bound its turn, not those its source is in.
+            lo, hi = _gap(d, self.groups, ga & gb, gb, p1[main] - self.cell, p1[main], *sorted((side, p1[cross])))
             turn = (lo + hi) / 2
             if down:
                 out[k] = [p0, (side, p0[1]), (side, turn), (p1[0], turn), p1]

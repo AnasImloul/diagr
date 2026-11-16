@@ -152,6 +152,11 @@ class Placement(Case):
                 nodes = prepared(yml).diagram.nodes
                 self.assertLessEqual(max((n.at or (0, 0))[0] for n in nodes.values()), last)
 
+    def test_backward_edge_turns_before_the_groups_it_enters(self):
+        self.assertClean(problems(BOTH_WAYS))
+        lay = prepared(BOTH_WAYS).layout
+        self.assertLess(lay.edges["c1->a2"].points[-2][0], lay.groups["g"].x)
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))
