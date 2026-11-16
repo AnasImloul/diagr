@@ -70,6 +70,38 @@ edges:
   b -> q: {}
 """
 
+# Edges between three sibling groups in both directions: g before h before k, and edges from k and h back into g.
+BOTH_WAYS = """
+id: t
+groups:
+  g: {title: G, nodes: {a1: {icon: server, title: A1}, a2: {icon: server, title: A2}}}
+  h: {title: H, nodes: {b1: {icon: server, title: B1}, b2: {icon: server, title: B2}}}
+  k: {title: K, nodes: {c1: {icon: server, title: C1}, c2: {icon: server, title: C2}}}
+edges:
+  a1 -> b1: {}
+  b1 -> c1: {}
+  c1 -> a2: {}
+  b2 -> a2: {}
+  c2 -> b2: {}
+"""
+
+# x goes before y, and a path from y back into x runs through a node of their parent.
+THROUGH_PARENT = """
+id: t
+groups:
+  p:
+    title: P
+    nodes:
+      u: {icon: server, title: U}
+    groups:
+      x: {title: X, nodes: {x1: {icon: server, title: X1}, x2: {icon: server, title: X2}}}
+      y: {title: Y, nodes: {y1: {icon: server, title: Y1}, y2: {icon: server, title: Y2}}}
+edges:
+  x1 -> y1: {}
+  y2 -> u: {}
+  u -> x2: {}
+"""
+
 
 class Placement(Case):
     def test_layers_follow_edges(self):
@@ -113,6 +145,12 @@ class Placement(Case):
         nodes = "".join(f"  n{i}: {{icon: server, title: N{i}}}\n" for i in range(n))
         edges = "".join(f"  n{i} -> n{i + 1}: {{}}\n" for i in range(n - 1))
         self.assertClean(problems(f"id: t\nnodes:\n{nodes}edges:\n{edges}"))
+
+    def test_edges_against_the_group_order_do_not_push_groups_apart(self):
+        for yml, last in ((BOTH_WAYS, 6), (THROUGH_PARENT, 3)):
+            with self.subTest(last=last):
+                nodes = prepared(yml).diagram.nodes
+                self.assertLessEqual(max((n.at or (0, 0))[0] for n in nodes.values()), last)
 
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout

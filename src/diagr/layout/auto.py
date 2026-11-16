@@ -65,6 +65,23 @@ def _acyclic(order: list[str], edges: list[tuple[str, str]]) -> list[tuple[str, 
     return [e for e in edges if e not in back]
 
 
+# A node, or the point just before or after a box, in the order of the layers.
+_Step = str | tuple[str, str]
+
+
+def _reaches(ahead: dict[_Step, set[_Step]], start: _Step, goal: _Step) -> bool:
+    seen, todo = {start}, [start]
+    while todo:
+        v = todo.pop()
+        if v == goal:
+            return True
+        for w in ahead.get(v, ()):
+            if w not in seen:
+                seen.add(w)
+                todo.append(w)
+    return False
+
+
 def _topological(order: list[str], edges: list[tuple[str, str]]) -> list[str]:
     indeg = {v: 0 for v in order}
     out = defaultdict(list)
@@ -91,6 +108,7 @@ def place(d: Diagram) -> None:
     for k in free:
         d.nodes[k].auto = True
     p = _Placer(d, free)
+    p.box_order()
     p.assign_layers()
     p.order_boxes()
     p.bands()
@@ -133,6 +151,8 @@ class _Placer:
         self.dashed = {(e.src.node, e.dst.node) for e in placing if e.dashed}
         self.topo = _topological(self.order, self.dag)
         self.layer: dict[str, float] = {}
+        # Edges that run against the order of the boxes they join; see box_order.
+        self.against: set[tuple[str, str]] = set()
 
         # Bands on the cross axis: one per group, children stacked after the group's own nodes.
         self.children: dict[str | None, list[str]] = defaultdict(list)
@@ -154,7 +174,11 @@ class _Placer:
 
     def _after(self, k: str) -> float:
         layer = self.layer
-        counted = [p for p in self.preds[k] if p in layer and not ((p, k) in self.dashed and self._source(p))]
+        counted = [
+            p
+            for p in self.preds[k]
+            if p in layer and (p, k) not in self.against and not ((p, k) in self.dashed and self._source(p))
+        ]
         return max((layer[p] + 1 for p in counted), default=0)
 
     def assign_layers(self) -> None:
@@ -168,7 +192,8 @@ class _Placer:
         # Then, from the end back, a free node with room before its successors moves up to them; a node with nothing
         # before it goes just before its solid successors.
         for k in reversed(self.topo):
-            ahead = [s for s in self.succs[k] if (k, s) not in self.dashed] or self.succs[k]
+            succs = [s for s in self.succs[k] if (k, s) not in self.against]
+            ahead = [s for s in succs if (k, s) not in self.dashed] or succs
             if d.nodes[k].at is None and ahead:
                 target = min(layer[s] for s in ahead) - 1
                 layer[k] = target if self._source(k) else max(layer[k], target)
@@ -176,26 +201,44 @@ class _Placer:
     def chain(self, k: str) -> list[str]:
         return boxes_around(self.d, self.d.nodes[k].group)[::-1]
 
-    def order_boxes(self) -> None:
+    def box_order(self) -> None:
         """Sibling boxes joined by a solid edge go one after the other, so they sit side by side rather than one below
-        the other: the box an edge goes into starts after the box it comes from. Boxes with a pinned node keep their
-        layers."""
-        d, layer = self.d, self.layer
+        the other: the box an edge goes into starts after the box it comes from, unless that closes a cycle. Boxes with
+        a pinned node keep their layers. An edge that would close a cycle with this order, directly or by way of other
+        edges, does not push its target along: the boxes would otherwise push each other further on every round."""
+        d = self.d
         pairs: list[tuple[str, str]] = []
         for a, b in self.dag:
             ca, cb = self.chain(a), self.chain(b)
             i = next((i for i, (x, y) in enumerate(zip(ca, cb, strict=False)) if x != y), min(len(ca), len(cb)))
             if (a, b) not in self.dashed and i < len(ca) and i < len(cb):
                 pairs.append((ca[i], cb[i]))
-        within: dict[str, list[str]] = defaultdict(list)
+        self.within: dict[str, list[str]] = defaultdict(list)
         for k in self.order:
             for g in self.chain(k):
-                within[g].append(k)
-        boxes = [
+                self.within[g].append(k)
+        self.boxes = [
             (x, y)
             for x, y in _acyclic(list(d.groups), list(dict.fromkeys(pairs)))
-            if all(d.nodes[k].at is None for k in within[x] + within[y])
+            if all(d.nodes[k].at is None for k in self.within[x] + self.within[y])
         ]
+        # The order as edges: every node of a box leads to the point after it, which leads to every node of the next.
+        ahead: dict[_Step, set[_Step]] = defaultdict(set)
+        for x, y in self.boxes:
+            for k in self.within[x]:
+                ahead[k].add(("after", x))
+            ahead[("after", x)].add(("before", y))
+            for k in self.within[y]:
+                ahead[("before", y)].add(k)
+        for a, b in self.dag:
+            if _reaches(ahead, b, a):
+                self.against.add((a, b))
+            else:
+                ahead[a].add(b)
+
+    def order_boxes(self) -> None:
+        """The boxes box_order puts one after the other move along until they are."""
+        d, layer, within, boxes = self.d, self.layer, self.within, self.boxes
         for _ in boxes:
             moved = False
             for x, y in boxes:
