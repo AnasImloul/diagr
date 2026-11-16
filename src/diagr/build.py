@@ -66,20 +66,28 @@ def _in_view(vid: str, p: Problem) -> Problem:
 
 
 def build_files(
-    path: str | Path, out: str | Path, theme: str | None = None, debug: bool = False, live: bool = False
+    path: str | Path,
+    out: str | Path,
+    theme: str | None = None,
+    debug: bool = False,
+    live: bool = False,
+    transparent: bool = False,
 ) -> tuple[list[Path], list[Problem]]:
     ps = prepare_all(load_file(path), theme)
-    return [f for p in ps for f in write_files(p, out, debug, live)], [w for p in ps for w in p.warnings]
+    return [f for p in ps for f in write_files(p, out, debug, live, transparent)], [w for p in ps for w in p.warnings]
 
 
-def write_files(p: Prepared, out: str | Path, debug: bool = False, live: bool = False) -> list[Path]:
-    """The two static SVGs and the HTML page; debug adds the authoring overlay, live the reload script."""
+def write_files(
+    p: Prepared, out: str | Path, debug: bool = False, live: bool = False, transparent: bool = False
+) -> list[Path]:
+    """The two static SVGs and the HTML page; debug adds the authoring overlay, live the reload script, and
+    transparent leaves the background out of the SVGs."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     written = []
     for scheme in SCHEMES:
         f = out / f"{p.diagram.id}-{scheme}.svg"
-        f.write_text(render_static(p.scene(), p.theme, scheme), encoding="utf-8")
+        f.write_text(render_static(p.scene(), p.theme, scheme, transparent), encoding="utf-8")
         written.append(f)
     f = out / f"{p.diagram.id}.html"
     f.write_text(render_html(p, debug, live), encoding="utf-8")

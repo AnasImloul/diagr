@@ -6,7 +6,7 @@ from html import escape
 from ..layout.text import text_width
 from ..scenario import Compiled
 from ..theme import Theme
-from .scene import El, SceneBuilder, num, serialise
+from .scene import El, SceneBuilder, num, safe_id, serialise
 
 STEP_TITLE = 14
 STEP_TEXT = 12.5
@@ -76,7 +76,36 @@ def step_list(comp: Compiled, x0: float, y0: float, width: float) -> tuple[list[
     return out, bottom - y0
 
 
-def render_static(sb: SceneBuilder, t: Theme, scheme: str) -> str:
+def _uncover_labels(el: El, edges: list[El], holes: list[dict[str, object]]) -> None:
+    """Take out the pills that hide the edges under labels outside any group, keeping where they were."""
+    for child in el.children:
+        if not isinstance(child, El):
+            continue
+        kind = child.attrs.get("class")
+        if kind == "edge":
+            edges.append(child)
+        elif kind == "elab":
+            pills = [c for c in child.children if isinstance(c, El) and c.tag == "rect" and c.paint.get("fill") == "bg"]
+            if not child.attrs.get("data-hidden"):
+                holes.extend(p.attrs for p in pills)
+            child.children = [c for c in child.children if c not in pills]
+        else:
+            _uncover_labels(child, edges, holes)
+
+
+def label_mask(mask_id: str, x: float, y: float, w: float, h: float, holes: list[dict[str, object]]) -> str:
+    """A mask that cuts the edges where a label sits, as the label's pill does on a background of its own."""
+    cut = "".join(
+        f'<rect x="{a["x"]}" y="{a["y"]}" width="{a["width"]}" height="{a["height"]}" rx="{a.get("rx", 0)}" '
+        'fill="black"/>'
+        for a in holes
+    )
+    box = f'x="{num(x)}" y="{num(y)}" width="{num(w)}" height="{num(h)}"'
+    return f'<defs><mask id="{mask_id}" maskUnits="userSpaceOnUse" {box}><rect {box} fill="white"/>{cut}</mask></defs>'
+
+
+def render_static(sb: SceneBuilder, t: Theme, scheme: str, transparent: bool = False) -> str:
+    """The diagram as an SVG with its colours baked in. transparent leaves out the background, for any page colour."""
     body, b = sb.build()
     extra: list[El] = []
     height = b.h
@@ -84,8 +113,21 @@ def render_static(sb: SceneBuilder, t: Theme, scheme: str) -> str:
         items, h = step_list(sb.comp, b.x, b.y1, b.w)
         extra, height = items, b.h + h
     defs = sb.defs()
+    mask = ""
+    if transparent:
+        edges: list[El] = []
+        holes: list[dict[str, object]] = []
+        _uncover_labels(body, edges, holes)
+        if holes:
+            mask_id = f"{safe_id(sb.d.id)}-labels"
+            mask = label_mask(mask_id, b.x, b.y, b.w, height, holes)
+            for e in edges:
+                e.attrs["mask"] = f"url(#{mask_id})"
 
     def resolve(prop: str, token: str) -> str:
+        # Without a background the page colour is whatever the SVG sits on, so nothing is painted with it.
+        if transparent and token == "bg":
+            return "none"
         return t.hex(scheme, token)
 
     label = escape(sb.d.description or sb.d.title or sb.d.id, quote=True)
@@ -98,9 +140,11 @@ def render_static(sb: SceneBuilder, t: Theme, scheme: str) -> str:
     if sb.d.title:
         parts.append(f"<title>{escape(sb.d.title)}</title>")
     parts.append(serialise(defs, "static", resolve))
-    parts.append(
-        f'<rect x="{num(b.x)}" y="{num(b.y)}" width="{num(b.w)}" height="{num(height)}" fill="{t.hex(scheme, "bg")}"/>'
-    )
+    if mask:
+        parts.append(mask)
+    if not transparent:
+        box = f'x="{num(b.x)}" y="{num(b.y)}" width="{num(b.w)}" height="{num(height)}"'
+        parts.append(f'<rect {box} fill="{t.hex(scheme, "bg")}"/>')
     parts.append(serialise(body, "static", resolve))
     parts.extend(serialise(e, "static", resolve) for e in extra)
     parts.append("</svg>")

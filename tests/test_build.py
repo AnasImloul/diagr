@@ -80,6 +80,57 @@ class Render(Case):
         self.assertNotIn('data-id="a->b"', svg)
 
 
+GROUPED = """
+id: t
+groups:
+  g:
+    title: G
+    nodes:
+      a: {at: [0, 0], icon: server, title: A}
+      b: {at: [1, 0], icon: database, title: B}
+edges:
+  a -> b: writes
+"""
+
+
+class Transparent(Case):
+    def test_default_has_the_theme_background(self):
+        p = prepared(BASE)
+        svg = render_static(p.scene(), p.theme, "dark")
+        self.assertIn(f'fill="{p.theme.hex("dark", "bg")}"', svg)
+        self.assertNotIn("<mask", svg)
+
+    def test_leaves_out_the_background_and_cuts_the_edge_under_a_label(self):
+        p = prepared(BASE)
+        svg = render_static(p.scene(), p.theme, "dark", transparent=True)
+        self.assertNotIn(f'fill="{p.theme.hex("dark", "bg")}"', svg)
+        self.assertIn('<mask id="t-labels" maskUnits="userSpaceOnUse"', svg)
+        self.assertIn('fill="black"', svg)
+        self.assertRegex(svg, r'<g class="edge"[^>]* mask="url\(#t-labels\)"')
+        self.assertIn(">writes</text>", svg)
+
+    def test_label_in_a_group_keeps_its_pill(self):
+        p = prepared(GROUPED)
+        svg = render_static(p.scene(), p.theme, "dark", transparent=True)
+        self.assertNotIn("<mask", svg)
+        self.assertIn(f'rx="4" fill="{p.theme.hex("dark", "tone-neutral-fill")}"', svg)
+
+    def test_row_of_cells_shows_what_is_behind_it(self):
+        p = prepared(BASE.replace("title: A}", "title: A, cells: [x, y]}"))
+        bg = p.theme.hex("dark", "bg")
+        self.assertRegex(render_static(p.scene(), p.theme, "dark"), rf'<rect class="cellbox"[^>]* fill="{bg}"')
+        svg = render_static(p.scene(), p.theme, "dark", transparent=True)
+        self.assertRegex(svg, r'<rect class="cellbox"[^>]* fill="none"')
+        self.assertNotIn(f'fill="{bg}"', svg)
+
+    def test_cli_flag(self):
+        out = self.tmp()
+        code, _, _ = cli("build", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out), "--transparent")
+        self.assertEqual(code, 0)
+        self.assertIn("<mask", (out / "order-flow-dark.svg").read_text(encoding="utf-8"))
+        self.assertNotIn("<mask", (out / "order-flow.html").read_text(encoding="utf-8"))
+
+
 class Watch(Case):
     def test_watches_the_whole_extends_chain(self):
         base = self.tmp()

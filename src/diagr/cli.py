@@ -40,7 +40,7 @@ def cmd_build(args) -> int:
                 )
             built[d.id] = f
             ps = prepare_all(d, args.theme)
-            written = [w for p in ps for w in write_files(p, args.out, args.debug)]
+            written = [w for p in ps for w in write_files(p, args.out, args.debug, transparent=args.transparent)]
         except DiagramError as e:
             _report(e.problems)
             status = 1
@@ -203,7 +203,9 @@ def cmd_watch(args) -> int:
                 if stamps.get(f) != s:
                     stamps[f] = s
                     try:
-                        written, warnings = build_files(f, args.out, args.theme, args.debug, live=bool(server))
+                        written, warnings = build_files(
+                            f, args.out, args.theme, args.debug, live=bool(server), transparent=args.transparent
+                        )
                         _report(warnings)
                         print(f"{time.strftime('%H:%M:%S')} built {', '.join(w.name for w in written)}")
                         if server:
@@ -230,6 +232,9 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--out", "-o", default="dist")
     b.add_argument("--theme", help="override the diagram's theme")
     b.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
+    b.add_argument(
+        "--transparent", action="store_true", help="leave the background out of the SVGs, for a page of any colour"
+    )
     b.set_defaults(fn=cmd_build)
 
     w = sub.add_parser("watch", help="rebuild when the file, its icons or its theme change")
@@ -237,6 +242,9 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--out", "-o", default="dist")
     w.add_argument("--theme")
     w.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
+    w.add_argument(
+        "--transparent", action="store_true", help="leave the background out of the SVGs, for a page of any colour"
+    )
     w.add_argument("--serve", action="store_true", help="serve the output on localhost; open pages reload on rebuild")
     w.add_argument("--port", type=int, default=8001, help="port for --serve (default 8001)")
     w.add_argument("--interval", type=float, default=0.5)
