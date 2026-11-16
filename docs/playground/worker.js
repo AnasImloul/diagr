@@ -1,6 +1,7 @@
 // Runs diagr itself in the browser: Pyodide (CPython on WebAssembly) with PyYAML, and the diagr package the docs
-// build zips next to this file. One request at a time; the page only sends the latest edit.
-const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
+// build zips next to this file. One request at a time; the page only sends the latest edit. The page names the
+// Pyodide release to load (?pyodide=), as it also fetches it ahead of time from the other docs pages.
+const PYODIDE = new URL(import.meta.url).searchParams.get("pyodide");
 
 async function start() {
   const { loadPyodide } = await import(PYODIDE + "pyodide.mjs");

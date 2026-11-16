@@ -2,6 +2,7 @@
   // The playground page: a YAML editor, diagr running in a web worker (see playground/worker.js), and the player or
   // the static image of the last good build. The source lives in the URL, so a link reopens the same diagram.
   var CM = "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.21/";
+  var PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
   var STORE = "diagr-playground";
   var SPLIT = "diagr-playground-split";
   var WAIT = 300;
@@ -185,7 +186,9 @@
 
     function startWorker() {
       if (worker) return;
-      worker = new Worker(new URL(root.dataset.worker, location.href), { type: "module" });
+      var url = new URL(root.dataset.worker, location.href);
+      url.searchParams.set("pyodide", PYODIDE);
+      worker = new Worker(url, { type: "module" });
       workerState = "starting";
     }
 
@@ -624,6 +627,40 @@
       document.documentElement.style.setProperty("--dg-header-height", header.offsetHeight + "px");
     }).observe(header);
   }
+
+  // Any other docs page fetches Python for the playground once the browser is idle, so the playground starts from the
+  // browser's cache. jsDelivr lets browsers keep these files for a year: once they are cached these requests are
+  // answered from disk without reaching the network, and if the cache was cleared they download them again. A visitor
+  // saving data or on a slow connection is left alone.
+  function warm() {
+    if (document.getElementById("dg-play")) return;
+    var net = navigator.connection;
+    if (net && (net.saveData || /2g/.test(net.effectiveType || ""))) return;
+    var get = function (name) {
+      return fetch(PYODIDE + name, { priority: "low" }).then(function (r) {
+        if (!r.ok) throw new Error(name + ": " + r.status);
+        return r;
+      });
+    };
+    get("pyodide-lock.json")
+      .then(function (r) { return r.json(); })
+      .then(function (lock) {
+        var files = ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip"];
+        files.push(lock.packages.pyyaml.file_name);
+        return Promise.all(files.map(function (name) {
+          return get(name).then(function (r) { return r.arrayBuffer(); });
+        }));
+      })
+      .catch(function () {});
+  }
+
+  function whenIdle() {
+    if (window.requestIdleCallback) requestIdleCallback(warm, { timeout: 5000 });
+    else setTimeout(warm, 2000);
+  }
+
+  if (document.readyState === "complete") whenIdle();
+  else window.addEventListener("load", whenIdle, { once: true });
 
   init();
   if (window.document$ && typeof window.document$.subscribe === "function") window.document$.subscribe(init);
