@@ -5,8 +5,8 @@ for dark mode, for READMEs, docs and slides, and a single HTML page where the di
 edges draw as a request moves along them, nodes turn active, done or failed, and text changes as the story goes.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="tests/golden/order-flow-dark.svg">
-  <img alt="A web app posts an order to the API, which queues it for workers that write it to the orders database." src="tests/golden/order-flow-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/AnasImloul/diagr/main/tests/golden/order-flow-dark.svg">
+  <img alt="A web app posts an order to the API, which queues it for workers that write it to the orders database." src="https://raw.githubusercontent.com/AnasImloul/diagr/main/tests/golden/order-flow-light.svg">
 </picture>
 
 - **Static first.** The SVGs are laid out on a grid, automatically or with the cells you pin, with rounded
@@ -23,12 +23,12 @@ edges draw as a request moves along them, nodes turn active, done or failed, and
 
 ## Install
 
-diagr needs Python 3.12 or later. It is not on PyPI yet, so install it from GitHub:
+diagr needs Python 3.12 or later.
 
 ```sh
-uv tool install git+https://github.com/AnasImloul/diagr
+uv tool install diagr
 # or
-pip install git+https://github.com/AnasImloul/diagr
+pip install diagr
 ```
 
 ## Quick start
@@ -108,13 +108,13 @@ To show a diagram in a README, use both SVGs so the image follows the reader's t
 
 ## Documentation
 
-- [Diagram format](docs/format.md): everything a diagram file can say, with examples
-- [Themes and icons](docs/themes-and-icons.md)
-- [Docs and CI](docs/integrations.md): ```` ```diagr ```` blocks in MkDocs, and a GitHub Actions workflow that keeps
+- [Diagram format](https://anasimloul.github.io/diagr/format/): everything a diagram file can say, with examples
+- [Themes and icons](https://anasimloul.github.io/diagr/themes-and-icons/)
+- [Docs and CI](https://anasimloul.github.io/diagr/integrations/): ```` ```diagr ```` blocks in MkDocs, and a GitHub Actions workflow that keeps
   committed SVGs in step with their diagrams
-- [How diagr compares](docs/comparison.md) with D2, Mermaid, Structurizr, LikeC4, Ilograph and IcePanel, and when
+- [How diagr compares](https://anasimloul.github.io/diagr/comparison/) with D2, Mermaid, Structurizr, LikeC4, Ilograph and IcePanel, and when
   another tool fits better
-- [Examples](examples/):
+- [Examples](https://anasimloul.github.io/diagr/examples/), with their source in [`examples/`](https://github.com/AnasImloul/diagr/tree/main/examples):
   - `order-flow`: the example above, looping, with a dead-letter queue
   - `cloud-architecture`: pull-based workers, retries, and a captions path running alongside the job
   - `multi-region`: nested groups, a component used twice and three scenarios
@@ -138,7 +138,7 @@ To show a diagram in a README, use both SVGs so the image follows the reader's t
 folder.
 
 For autocomplete in editors that support it, put `# yaml-language-server: $schema=<path>/diagr.schema.json` at the
-top of a diagram, pointing at [`schema/diagr.schema.json`](schema/diagr.schema.json) or at the file
+top of a diagram, pointing at [`schema/diagr.schema.json`](https://github.com/AnasImloul/diagr/blob/main/schema/diagr.schema.json) or at the file
 `diagr schema -o` writes.
 
 ## Player keys
@@ -196,4 +196,4 @@ public.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/AnasImloul/diagr/blob/main/LICENSE).

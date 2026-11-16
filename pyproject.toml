@@ -5,6 +5,7 @@ description = "Declarative diagrams in YAML: static SVG in light and dark, and a
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
+authors = [{ name = "AnasImloul", email = "anas.imloul27@gmail.com" }]
 requires-python = ">=3.12"
 dependencies = ["pyyaml>=6.0"]
 keywords = ["diagram", "svg", "yaml", "architecture", "documentation"]
@@ -19,6 +20,12 @@ classifiers = [
     "Topic :: Multimedia :: Graphics",
     "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://anasimloul.github.io/diagr/"
+Documentation = "https://anasimloul.github.io/diagr/"
+Repository = "https://github.com/AnasImloul/diagr"
+Issues = "https://github.com/AnasImloul/diagr/issues"
 
 [project.scripts]
 diagr = "diagr.cli:main"

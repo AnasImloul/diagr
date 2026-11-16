@@ -1,5 +1,8 @@
 site_name: diagr
 site_description: Declarative diagrams in YAML. Static SVG in light and dark, and a self-contained interactive HTML page.
+site_url: https://anasimloul.github.io/diagr/
+repo_url: https://github.com/AnasImloul/diagr
+repo_name: AnasImloul/diagr
 
 theme:
   name: material
