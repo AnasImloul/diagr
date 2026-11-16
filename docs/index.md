@@ -1,15 +1,14 @@
 <div class="dg-hero" markdown>
 
-# diagr
+# Clean diagrams from a YAML file
 
-Clean diagrams from a YAML file. One file in; out come a static SVG for light mode, one for dark mode, and a
-self-contained HTML page where the diagram can play a scenario step by step.
+One file in; out come a static SVG for light mode, one for dark mode, and a self-contained HTML page where the
+diagram can play a scenario step by step.
 { .dg-lead }
 
 <div class="dg-actions" markdown>
 [Quick start](#quick-start){ .md-button .md-button--primary }
 [Examples](examples/index.md){ .md-button }
-[Playground](playground.md){ .md-button }
 </div>
 
 <figure markdown>
@@ -52,13 +51,13 @@ See the [examples](examples/index.md) for rendered diagrams with their source, a
 
 | Command | What it does |
 |---|---|
-| `diagr init [FILE] [--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
-| `diagr build FILE... [--light] [--dark] [--svg] [--html] [-o DIR] [--theme T] [--debug] [--transparent]` | Write the files you ask for, at least one, for each diagram and each of its views: `--light` and `--dark` the static SVGs, `--svg` both, `--html` the page with the player; `--debug` adds the grid and route overlay to the page (G toggles it); `--transparent` leaves the background out of the SVGs |
-| `diagr watch FILE... [--light] [--dark] [--svg] [--html] [-o DIR] [--theme T] [--interval S] [--debug] [--transparent] [--serve] [--port P]` | Rebuild the files you ask for, as `build` does, when the diagram, its icon folders or its theme file change; `--serve` also serves the output at `http://127.0.0.1:8001/`, and open pages reload on each rebuild, keeping the scenario, step and scroll position |
-| `diagr expand FILE [-o OUT]` | Print the diagram with its components expanded into plain groups, nodes and edges; the output is a valid diagram that builds to the same files |
-| `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout |
-| `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |
-| `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |
+| `diagr init` `[FILE]` `[--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
+| `diagr build FILE...` `[--light]` `[--dark]` `[--svg]` `[--html]` `[-o DIR]` `[--theme T]` `[--debug]` `[--transparent]` | Write the files you ask for, at least one, for each diagram and each of its views: `--light` and `--dark` the static SVGs, `--svg` both, `--html` the page with the player; `--debug` adds the grid and route overlay to the page (G toggles it); `--transparent` leaves the background out of the SVGs |
+| `diagr watch FILE...` `[--light]` `[--dark]` `[--svg]` `[--html]` `[-o DIR]` `[--theme T]` `[--interval S]` `[--debug]` `[--transparent]` `[--serve]` `[--port P]` | Rebuild the files you ask for, as `build` does, when the diagram, its icon folders or its theme file change; `--serve` also serves the output at `http://127.0.0.1:8001/`, and open pages reload on each rebuild, keeping the scenario, step and scroll position |
+| `diagr expand FILE` `[-o OUT]` | Print the diagram with its components expanded into plain groups, nodes and edges; the output is a valid diagram that builds to the same files |
+| `diagr check FILE...` `[--theme T]` `[--strict]` `[--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout |
+| `diagr icons` `[FILE]` | List the core icons, plus the icon folders of `FILE` if given |
+| `diagr schema` `[-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |
 | `diagr --version` | Print the installed version |
 
 `--theme` on the command line is resolved against the current folder; `theme:` in a diagram against the diagram's

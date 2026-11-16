@@ -1,8 +1,25 @@
-/* Docs theme: the same neutrals, accent and font stack as the diagrams diagr renders. */
+/* Docs theme: the same neutrals and accent as the diagrams diagr renders, set in Geist and Geist Mono (self-hosted,
+   SIL Open Font License, see assets/fonts/OFL.txt). */
+
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/geist.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/geist-mono.woff2") format("woff2");
+}
 
 :root {
-  --md-text-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  --md-code-font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --md-text-font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --md-code-font-family: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --dg-radius: 12px;
 }
 
@@ -12,9 +29,13 @@ body[data-md-color-scheme="default"] {
   --dg-muted: #656d76;
   --dg-rule: #d0d7de;
   --dg-hover: #f6f8fa;
+  --dg-surface: #f5f6f8;
+  --dg-surface-strong: #eceef1;
+  --dg-tint: rgb(31 35 40 / 5.5%);
+  --dg-hairline: #e3e6ea;
+  --dg-chrome: rgb(255 255 255 / 72%);
   --dg-link: #0f7b6c;
   --dg-link-hover: #0b5f55;
-  --dg-shadow: 0 1px 2px rgb(31 35 40 / 6%), 0 12px 28px -16px rgb(31 35 40 / 22%);
 
   --md-primary-bg-color: #ffffff;
   --md-accent-bg-color: #ffffff;
@@ -26,9 +47,13 @@ body[data-md-color-scheme="slate"] {
   --dg-muted: #8d96a0;
   --dg-rule: #30363d;
   --dg-hover: #151b23;
+  --dg-surface: #141920;
+  --dg-surface-strong: #1c232c;
+  --dg-tint: rgb(230 237 243 / 8%);
+  --dg-hairline: #252c35;
+  --dg-chrome: rgb(13 17 23 / 72%);
   --dg-link: #2bb59a;
   --dg-link-hover: #5fd4b9;
-  --dg-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 28px -16px rgb(0 0 0 / 70%);
 
   --md-primary-bg-color: #0d1117;
   --md-accent-bg-color: #0d1117;
@@ -47,9 +72,9 @@ body[data-md-color-scheme] {
   --md-accent-fg-color--transparent: color-mix(in srgb, var(--dg-link) 12%, transparent);
   --md-typeset-color: var(--dg-text);
   --md-typeset-a-color: var(--dg-link);
-  --md-typeset-table-color: var(--dg-rule);
-  --md-typeset-table-color--light: var(--dg-hover);
-  --md-code-bg-color: var(--dg-hover);
+  --md-typeset-table-color: var(--dg-hairline);
+  --md-typeset-table-color--light: var(--dg-tint);
+  --md-code-bg-color: var(--dg-surface);
   --md-code-fg-color: var(--dg-text);
   --md-footer-bg-color: var(--dg-bg);
   --md-footer-bg-color--dark: var(--dg-bg);
@@ -71,43 +96,149 @@ html {
   outline-color: var(--dg-link);
 }
 
-/* Header: page-coloured with a hairline, like the diagram canvas, instead of a coloured bar. */
+/* Header: a translucent layer the page scrolls under. Without tabs Material always sets md-header--shadow, so
+   where the browser can, the hairline follows the scroll position and appears only once content is beneath it. */
 
 .md-header,
 .md-header--shadow {
   color: var(--dg-text);
-  background-color: var(--dg-bg);
-  box-shadow: inset 0 -1px 0 var(--dg-rule);
+  background-color: var(--dg-chrome);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 1px 0 var(--dg-hairline);
+}
+
+@supports (animation-timeline: scroll()) {
+  .md-header {
+    animation: dg-header-edge linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 2rem;
+  }
+}
+
+@keyframes dg-header-edge {
+  from {
+    box-shadow: 0 1px 0 transparent;
+  }
+
+  to {
+    box-shadow: 0 1px 0 var(--dg-hairline);
+  }
 }
 
 .md-header__button.md-logo img {
-  height: 1.5rem;
+  height: 1.4rem;
   border-radius: 6px;
+}
+
+/* Lines the logo up with the sidebar's left edge. */
+[dir] .md-header__button.md-logo {
+  margin-left: 0.4rem;
+  margin-right: 0;
+}
+
+[dir] .md-header__title {
+  margin-left: 0.2rem;
 }
 
 .md-header__topic:first-child {
   font-weight: 650;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+}
+
+/* The playground is a tool rather than a page to read, so on wide screens it is a header link instead of a
+   sidebar entry. Narrower screens have no room in the header and keep it in the drawer. */
+
+.dg-header-link {
+  display: none;
+}
+
+@media screen and (min-width: 76.25em) {
+  .dg-header-link {
+    display: inline-flex;
+    gap: 0.3rem;
+    align-items: center;
+    height: 1.7rem;
+    margin: 0 0.5rem;
+    padding: 0 0.8rem 0 0.6rem;
+    border-radius: 999px;
+    background-color: color-mix(in srgb, var(--dg-link) 13%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dg-link) 22%, transparent);
+    color: var(--dg-link);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    transition: background-color 150ms ease-out, transform 100ms ease-out;
+  }
+
+  .dg-header-link__icon {
+    display: inline-flex;
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .dg-header-link__icon svg {
+    width: 100%;
+    height: 100%;
+    fill: currentcolor;
+  }
+
+  .dg-header-link:focus-visible {
+    background-color: color-mix(in srgb, var(--dg-link) 20%, transparent);
+  }
+
+  .dg-header-link:active {
+    transform: scale(0.97);
+  }
+
+  .md-nav--primary > .md-nav__list > .md-nav__item:has(> a.md-nav__link[href$="playground/"]) {
+    display: none;
+  }
+}
+
+@media (hover: hover) {
+  .dg-header-link:hover {
+    background-color: color-mix(in srgb, var(--dg-link) 20%, transparent);
+    color: var(--dg-link);
+  }
 }
 
 @media screen and (min-width: 60em) {
   .md-search__form {
-    background-color: var(--dg-hover);
-    border-radius: 8px;
-    box-shadow: inset 0 0 0 1px var(--dg-rule);
+    background-color: var(--dg-tint);
+    border-radius: 10px;
+    transition: background-color 150ms ease-out;
   }
 
   .md-search__form:hover {
-    background-color: var(--dg-hover);
-    box-shadow: inset 0 0 0 1px var(--dg-muted);
+    background-color: var(--dg-surface-strong);
   }
 
   [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
-    border-radius: 8px 8px 0 0;
+    border-radius: 10px 10px 0 0;
+    background-color: var(--dg-bg);
   }
 
   .md-search__output {
-    border-radius: 0 0 8px 8px;
+    border-radius: 0 0 10px 10px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .md-header {
+    background-color: var(--dg-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .md-header {
+    background-color: var(--dg-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 1px 0 var(--dg-rule);
+    animation: none;
   }
 }
 
@@ -120,16 +251,78 @@ html {
   background-color: var(--dg-link);
 }
 
+/* The repository link: just the name, close to the other header controls. The star and fork counts stay out
+   until they say something. */
+
+.md-source__facts {
+  display: none;
+}
+
+@media screen and (min-width: 60em) {
+  [dir] .md-header__source {
+    width: auto;
+    margin-left: 0.6rem;
+  }
+
+  .md-source__repository {
+    max-width: none;
+  }
+}
+
 /* Navigation */
 
-.md-nav__title,
-.md-nav__item--section > .md-nav__link {
+.md-nav__title {
   color: var(--dg-text);
   font-weight: 650;
 }
 
+/* The header already names the site; on wide screens the sidebar starts with the pages. */
+@media screen and (min-width: 76.25em) {
+  .md-nav--primary > .md-nav__title {
+    display: none;
+  }
+}
+
 .md-nav__link {
+  color: var(--dg-text);
+}
+
+[dir] .md-nav__item--section > .md-nav__link {
+  margin-top: 1.4em;
   color: var(--dg-muted);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.md-nav__item--section > .md-nav__container > a.md-nav__link {
+  color: inherit;
+}
+
+/* On wide screens the sidebar is a tree: a section's pages hang off a guide under its label, and the open page's
+   own sections hang off a guide under the page, so each level shows where it starts and ends. */
+@media screen and (min-width: 76.25em) {
+  [dir] .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link {
+    margin-top: 1.8em;
+  }
+
+  [dir] .md-nav--primary .md-nav__item--section > .md-nav {
+    margin: 0.35rem 0 0;
+    border-left: 1px solid var(--dg-hairline);
+  }
+
+  [dir] .md-nav--primary .md-nav__item--section > .md-nav > .md-nav__list {
+    padding-left: 0;
+  }
+
+  [dir] .md-nav--primary .md-nav__item--section > .md-nav > .md-nav__list > .md-nav__item {
+    padding: 0 0 0 0.75rem;
+  }
+
+  [dir] .md-nav--primary .md-nav__item--section > .md-nav > .md-nav__list > .md-nav__item:first-child > .md-nav__link {
+    margin-top: 0.3em;
+  }
 }
 
 .md-nav__link:is(:hover, :focus-visible),
@@ -141,17 +334,12 @@ html {
   font-weight: 600;
 }
 
-/* Page sections, listed under the active page: a hairline rail with a marker on the section in view. */
+/* Page sections, listed under the active page as a tree: each level is smaller, lighter and further in, and
+   subsections hang off their own rail. The section in view carries the marker. */
 
 [dir] .md-nav--integrated > .md-nav__list > .md-nav__item--active .md-nav--secondary {
-  margin: 0.3rem 0 0.9rem;
-  border-left: 1px solid var(--dg-rule);
-}
-
-.md-nav--primary .md-nav--secondary .md-nav__link {
-  margin: 0 0 0 -1px;
-  padding: 0.28rem 0 0.28rem 0.7rem;
-  font-size: 0.68rem;
+  margin: 0.35rem 0 0.9rem;
+  border-left: 1px solid var(--dg-hairline);
 }
 
 [dir] .md-nav--primary .md-nav--secondary :is(.md-nav, .md-nav__list, .md-nav__item) {
@@ -159,44 +347,86 @@ html {
   padding-left: 0;
 }
 
-[dir] .md-nav--primary .md-nav--secondary .md-nav .md-nav__link {
-  padding-left: 1.4rem;
+.md-nav--primary .md-nav--secondary .md-nav__link {
+  margin: 0 0 0 -1px;
+  padding: 0.3rem 0 0.3rem 0.75rem;
+  color: color-mix(in srgb, var(--dg-text) 78%, var(--dg-muted));
+  font-size: 0.68rem;
 }
 
-.md-nav--primary .md-nav--secondary .md-nav__link--active {
+[dir] .md-nav--primary .md-nav--secondary .md-nav {
+  margin: 0 0 0.3rem 0.75rem;
+  border-left: 1px solid var(--dg-hairline);
+}
+
+.md-nav--primary .md-nav--secondary .md-nav .md-nav__link {
+  padding: 0.2rem 0 0.2rem 0.65rem;
+  color: var(--dg-muted);
+  font-size: 0.64rem;
+}
+
+.md-nav--primary .md-nav--secondary .md-nav__link--active,
+.md-nav--primary .md-nav--secondary .md-nav .md-nav__link--active {
   box-shadow: inset 2px 0 0 var(--dg-link);
   color: var(--dg-text);
   font-weight: 500;
 }
 
 .md-footer {
-  box-shadow: inset 0 1px 0 var(--dg-rule);
+  box-shadow: inset 0 1px 0 var(--dg-hairline);
 }
 
 .md-footer-meta {
-  box-shadow: inset 0 1px 0 var(--dg-rule);
+  box-shadow: inset 0 1px 0 var(--dg-hairline);
 }
 
-/* Type */
+/* Type: one scale, with tracking and leading tightening as the size grows. */
+
+.md-typeset {
+  line-height: 1.65;
+}
 
 .md-typeset h1 {
   margin-bottom: 0.6em;
   color: var(--dg-text);
+  font-size: 2.1em;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  line-height: 1.12;
+  letter-spacing: -0.022em;
   text-wrap: balance;
 }
 
 .md-typeset h2 {
-  margin-top: 2.2em;
+  margin-top: 2.4em;
+  font-size: 1.5em;
   font-weight: 650;
-  letter-spacing: -0.02em;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
 .md-typeset h3 {
+  margin-top: 1.8em;
+  font-size: 1.2em;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  line-height: 1.3;
+  letter-spacing: -0.008em;
+}
+
+.md-typeset h4 {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+/* The page uses the whole window: the sidebar sits at the left edge and the content fills the rest. */
+.md-grid {
+  max-width: none;
+}
+
+@media screen and (min-width: 60em) {
+  .md-grid {
+    padding: 0 1rem;
+  }
 }
 
 .md-typeset a {
@@ -226,78 +456,188 @@ html {
 
 /* Code */
 
+/* Code and tables are tinted surfaces without outlines; hairlines are kept for structure. */
+
 .md-typeset code {
   border-radius: 6px;
 }
 
 .md-typeset pre > code {
   border-radius: var(--dg-radius);
-  box-shadow: inset 0 0 0 1px var(--dg-rule);
 }
 
 .md-typeset :not(pre) > code {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dg-rule) 70%, transparent);
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background-color: var(--dg-tint);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
-/* Tables */
-
 .md-typeset table:not([class]) {
-  border: 1px solid var(--dg-rule);
+  border: 0;
   border-radius: var(--dg-radius);
+  background-color: var(--dg-surface);
   box-shadow: none;
   font-size: 0.72rem;
 }
 
 .md-typeset table:not([class]) th {
-  background-color: var(--dg-hover);
+  border-bottom: 1px solid var(--dg-hairline);
+  background-color: transparent;
+  color: var(--dg-text);
   font-weight: 600;
 }
 
+.md-typeset table:not([class]) tr:first-child td {
+  border-top: 0;
+}
+
+/* The first column holds keys and commands: plain monospace on the table's surface, each code span kept whole, so
+   a command wraps only between its flags. */
 .md-typeset table:not([class]) td:first-child > code {
+  padding: 0;
+  background-color: transparent;
   white-space: nowrap;
 }
 
-/* Buttons */
-
-.md-typeset .md-button {
-  padding: 0.55em 1.15em;
-  border: 1px solid var(--dg-rule);
-  border-radius: 8px;
-  color: var(--dg-text);
-  font-weight: 600;
-  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
+.md-typeset table:not([class]) td:first-child {
+  min-width: 12em;
 }
 
-.md-typeset .md-button:is(:hover, :focus-visible) {
-  border-color: var(--dg-muted);
-  background-color: var(--dg-hover);
+.md-typeset table:not([class]) :not(pre) > code {
+  background-color: var(--dg-tint);
+}
+
+@media (prefers-contrast: more) {
+  .md-typeset pre > code,
+  .md-typeset table:not([class]) {
+    box-shadow: inset 0 0 0 1px var(--dg-rule);
+  }
+}
+
+/* Content tabs (light, dark and contrast images on example pages): a segmented control, a tinted track with the
+   chosen segment raised to the page colour. */
+
+.md-typeset .tabbed-set {
+  margin: 1.2em 0;
+}
+
+.md-typeset .tabbed-labels {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 1em;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--dg-tint);
+  box-shadow: none;
+}
+
+.md-typeset .tabbed-labels::before {
+  display: none;
+}
+
+.md-typeset .tabbed-labels > label {
+  padding: 0.35em 1em;
+  border: 0;
+  border-radius: 7px;
+  color: var(--dg-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+
+.md-typeset .tabbed-labels > label:hover {
+  color: var(--dg-text);
+}
+
+.md-typeset .tabbed-set > input:nth-child(1):checked ~ .tabbed-labels > :nth-child(1),
+.md-typeset .tabbed-set > input:nth-child(2):checked ~ .tabbed-labels > :nth-child(2),
+.md-typeset .tabbed-set > input:nth-child(3):checked ~ .tabbed-labels > :nth-child(3),
+.md-typeset .tabbed-set > input:nth-child(4):checked ~ .tabbed-labels > :nth-child(4),
+.md-typeset .tabbed-set > input:nth-child(5):checked ~ .tabbed-labels > :nth-child(5),
+.md-typeset .tabbed-set > input:nth-child(6):checked ~ .tabbed-labels > :nth-child(6) {
+  background-color: var(--dg-bg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%), 0 0 0 1px var(--dg-hairline);
+  color: var(--dg-text);
+}
+
+/* Buttons: capsules that give on press. The primary one is the only filled control on a page. */
+
+.md-typeset .md-button {
+  padding: 0.6em 1.25em;
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--dg-tint);
+  color: var(--dg-text);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  transition: background-color 150ms ease-out, transform 100ms ease-out;
+}
+
+.md-typeset .md-button:focus-visible {
+  background-color: var(--dg-surface-strong);
   color: var(--dg-text);
   text-decoration: none;
 }
 
-.md-typeset .md-button--primary {
-  border-color: var(--dg-link);
+.md-typeset .md-button--primary,
+.md-typeset .md-button--primary:focus-visible {
   background-color: var(--dg-link);
   color: var(--md-primary-bg-color);
 }
 
-.md-typeset .md-button--primary:is(:hover, :focus-visible) {
-  border-color: var(--dg-link-hover);
-  background-color: var(--dg-link-hover);
-  color: var(--md-primary-bg-color);
+@media (hover: hover) {
+  .md-typeset .md-button:hover {
+    background-color: var(--dg-surface-strong);
+    color: var(--dg-text);
+    text-decoration: none;
+  }
+
+  .md-typeset .md-button--primary:hover {
+    background-color: var(--dg-link-hover);
+    color: var(--md-primary-bg-color);
+  }
 }
 
-/* Diagrams: a framed canvas wherever a rendered diagram appears. */
+.md-typeset .md-button:active {
+  transform: scale(0.97);
+}
+
+/* Diagrams: every rendered diagram sits on the same canvas, a hairline ring at the page colour. The ring is a
+   shadow so that the player iframe's inline border: 0 keeps it. */
 
 .md-typeset .dg-frame,
 .md-typeset img.dg-shot,
+.md-typeset p.diagr,
 iframe.diagr-embed {
   display: block;
   width: 100%;
-  border: 1px solid var(--dg-rule);
+  border: 0;
   border-radius: var(--dg-radius);
   background-color: var(--dg-bg);
-  box-shadow: var(--dg-shadow);
+  box-shadow: 0 0 0 1px var(--dg-hairline);
+}
+
+.md-typeset p.diagr {
+  overflow: hidden;
+  line-height: 0;
+  text-align: center;
+}
+
+.md-typeset p.diagr img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (prefers-contrast: more) {
+  .md-typeset .dg-frame,
+  .md-typeset img.dg-shot,
+  .md-typeset p.diagr,
+  iframe.diagr-embed {
+    box-shadow: 0 0 0 1px var(--dg-rule);
+  }
 }
 
 /* The core icon gallery on the themes and icons page. */
@@ -314,9 +654,8 @@ iframe.diagr-embed {
   margin: 0;
   padding: 0.9em 0.4em 0.8em;
   text-align: center;
-  border: 1px solid var(--dg-rule);
   border-radius: var(--dg-radius);
-  background-color: var(--dg-bg);
+  background-color: var(--dg-surface);
 }
 
 .md-typeset .dg-icon img {
@@ -370,10 +709,9 @@ iframe.diagr-embed {
 }
 
 .md-typeset .dg-lead {
-  max-width: 40em;
   color: var(--dg-muted);
-  font-size: 1.15em;
-  line-height: 1.55;
+  font-size: 1.05em;
+  line-height: 1.6;
   text-wrap: pretty;
 }
 
@@ -384,24 +722,33 @@ iframe.diagr-embed {
 }
 
 .md-typeset .dg-hero h1 {
-  margin: 0.15em 0 0.3em;
-  font-size: clamp(2.4rem, 5vw, 3.2rem);
-  line-height: 1.05;
-  letter-spacing: -0.04em;
+  margin: 0.4em 0 0.4em;
+  font-size: clamp(1.8rem, 3vw, 2.2rem);
+  line-height: 1.1;
+  letter-spacing: -0.024em;
 }
 
 .md-typeset .dg-hero .dg-lead {
-  margin: 0 0 1.4em;
+  margin: 0 0 1.6em;
 }
 
 .md-typeset .dg-actions {
+  margin: 0 0 2.8em;
+}
+
+.md-typeset .dg-actions > p {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6em;
-  margin: 0 0 2.2em;
+  gap: 0.75em;
+  margin: 0;
+}
+
+.md-typeset .dg-actions .md-button {
+  margin: 0;
 }
 
 .md-typeset .dg-hero figure {
+  width: 100%;
   margin: 0;
   max-width: none;
 }
@@ -413,6 +760,10 @@ iframe.diagr-embed {
   font-size: 0.85em;
   font-style: normal;
   text-align: left;
+}
+
+.md-typeset .dg-points {
+  container-type: inline-size;
 }
 
 .md-typeset .dg-points ul {
@@ -427,8 +778,8 @@ iframe.diagr-embed {
 .md-typeset .dg-points ul > li {
   margin: 0;
   padding-top: 1em;
-  border-top: 1px solid var(--dg-rule);
-  color: var(--dg-muted);
+  border-top: 1px solid var(--dg-hairline);
+  color: var(--dg-text);
 }
 
 .md-typeset .dg-points ul > li strong {
@@ -436,9 +787,16 @@ iframe.diagr-embed {
   margin-bottom: 0.3em;
   color: var(--dg-text);
   font-size: 1.05em;
+  letter-spacing: -0.01em;
 }
 
-@media screen and (max-width: 44.9375em) {
+@container (min-width: 52rem) {
+  .md-typeset .dg-points ul {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 30rem) {
   .md-typeset .dg-points ul {
     grid-template-columns: minmax(0, 1fr);
     gap: 1.2em;
@@ -453,7 +811,7 @@ iframe.diagr-embed {
   gap: 1.8em;
   align-items: center;
   padding: 2em 0;
-  border-top: 1px solid var(--dg-rule);
+  border-top: 1px solid var(--dg-hairline);
 }
 
 .md-typeset .dg-example > :first-child {
@@ -461,12 +819,23 @@ iframe.diagr-embed {
 }
 
 .md-typeset .dg-example a.dg-frame {
-  transition: border-color 150ms ease-out, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 150ms ease-out, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.md-typeset .dg-example a.dg-frame:is(:hover, :focus-visible) {
-  border-color: var(--dg-link);
-  transform: translateY(-2px);
+.md-typeset .dg-example a.dg-frame:focus-visible {
+  box-shadow: 0 0 0 2px var(--dg-link);
+}
+
+@media (hover: hover) {
+  .md-typeset .dg-example a.dg-frame:hover {
+    box-shadow: 0 0 0 1px var(--dg-rule);
+    transform: translateY(-2px);
+  }
+}
+
+.md-typeset .dg-example a.dg-frame:active {
+  transform: scale(0.985);
+  transition-duration: 100ms;
 }
 
 .md-typeset .dg-example h2 {
@@ -486,11 +855,14 @@ iframe.diagr-embed {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .md-typeset .dg-example a.dg-frame {
-    transition: none;
+  .md-typeset .dg-example a.dg-frame,
+  .md-typeset .md-button {
+    transition: background-color 150ms ease-out, box-shadow 150ms ease-out;
   }
 
-  .md-typeset .dg-example a.dg-frame:is(:hover, :focus-visible) {
+  .md-typeset .dg-example a.dg-frame:is(:hover, :active),
+  .md-typeset .md-button:active,
+  .dg-header-link:active {
     transform: none;
   }
 }
@@ -500,6 +872,7 @@ iframe.diagr-embed {
 .md-main:has(.dg-play) .md-main__inner {
   max-width: none;
   margin: 0;
+  padding: 0;
 }
 
 .md-main:has(.dg-play) .md-content__inner {
