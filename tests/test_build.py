@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from diagr import DiagramError, prepare
-from diagr.cli import STARTER, _claim, _watched, main
+from diagr.cli import _claim, _watched, main
 from diagr.parse import loads
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
@@ -428,10 +428,13 @@ class Cli(Case):
         self.assertEqual(path.read_text(encoding="utf-8"), "mine")
 
     def test_readme_shows_the_starter(self):
+        """The README's first YAML block is what its quick start's `diagr init my-flow.yml` writes."""
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         block = re.search(r"```yaml\n(.*?)```", readme, re.S)
         assert block
-        self.assertEqual(block.group(1), STARTER.read_text(encoding="utf-8"))
+        path = self.tmp() / "my-flow.yml"
+        self.assertEqual(cli("init", str(path))[0], 0)
+        self.assertEqual(block.group(1), path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

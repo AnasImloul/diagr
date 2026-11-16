@@ -1,37 +1,52 @@
 # diagr
 
-Clean diagrams from a YAML file. One file in; out come a static SVG for light mode, one for dark mode, and a
-self-contained HTML page where the diagram can play a scenario step by step.
-
-- **Static first.** The SVGs are laid out on a grid, automatically or with the cells you pin, with rounded
-  orthogonal edges, label pills and tinted groups. Icons are inlined and colours are baked in, so they work in READMEs, docs and slides.
-- **Interactive on top.** The HTML page has a scenario player: Run, play and pause, step forward and back, scrub,
-  speed, keyboard shortcuts. A diagram can have several scenarios, each with its own trigger button. The state at
-  each step is computed from the step number, so stepping back and scrubbing show exactly what playing would.
-- **One HTML file.** Inline SVG, CSS and JavaScript. No CDN, no framework, nothing to load at runtime.
-- **Domain-neutral.** Nothing in the format assumes pipelines or a vendor. Vendor icons go in an icon folder next to
-  the diagram.
-
-## Quick start
-
-```sh
-uv sync
-uv run diagr build examples/order-flow/diagram.yml -o dist
-```
-
-This writes `dist/order-flow-light.svg`, `dist/order-flow-dark.svg` and `dist/order-flow.html`:
+Diagrams from a YAML file that you can read and also play. One file gives you a static SVG for light mode and one
+for dark mode, for READMEs, docs and slides, and a single HTML page where the diagram plays a scenario step by step:
+edges draw as a request moves along them, nodes turn active, done or failed, and text changes as the story goes.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="tests/golden/order-flow-dark.svg">
   <img alt="A web app posts an order to the API, which queues it for workers that write it to the orders database." src="tests/golden/order-flow-light.svg">
 </picture>
 
-To start your own, `uv run diagr init my-flow.yml` writes this starter diagram (a shorter order flow than the
-example above):
+- **Static first.** The SVGs are laid out on a grid, automatically or with the cells you pin, with rounded
+  orthogonal edges, label pills and tinted groups. Icons are inlined and colours are baked in, so the files work
+  anywhere an image does.
+- **Interactive on top.** The HTML page has a scenario player: run, play and pause, step forward and back, scrub,
+  change the speed. A diagram can have several scenarios, each with its own trigger button. Each frame's state is
+  worked out from the frame number, so stepping back or scrubbing shows exactly what playing would.
+- **One HTML file.** Inline SVG, CSS and JavaScript. No CDN, no framework, nothing to load at runtime.
+- **Checks that point at the line.** `diagr check` reports problems as `file:line:col`, suggests the id you probably
+  meant, and warns about what you would otherwise only spot in the picture, such as an edge running through a node.
+- **Domain-neutral.** Nothing in the format assumes pipelines or a vendor. Vendor icons go in a folder next to the
+  diagram.
+
+## Install
+
+diagr needs Python 3.12 or later. It is not on PyPI yet, so install it from GitHub:
+
+```sh
+uv tool install git+https://github.com/AnasImloul/diagr
+# or
+pip install git+https://github.com/AnasImloul/diagr
+```
+
+## Quick start
+
+```sh
+diagr init my-flow.yml           # writes a starter diagram, and never overwrites a file
+diagr build my-flow.yml -o dist  # dist/my-flow-light.svg, dist/my-flow-dark.svg, dist/my-flow.html
+```
+
+Open `dist/my-flow.html` and press **Place order** to play the scenario. While you edit,
+`diagr watch my-flow.yml -o dist --serve` rebuilds on every save and serves the output at `http://127.0.0.1:8001/`,
+where open pages reload and keep their place in the scenario.
+
+The starter is a short order flow:
 
 ```yaml
 version: 1
-id: order-flow
+id: my-flow
 title: Order processing
 grid: {col: 200, row: 170}
 
@@ -62,14 +77,49 @@ scenarios:
       - {title: Store, at: db, do: [flow queue -> db 300ms done]}
 ```
 
-In a README, use both static files so the image follows the reader's theme:
+Groups hold nodes, each edge key can make several edges (`web -> api -> queue -> db` makes three, one label each),
+and each step of a scenario says what happens: `flow web -> api` makes `web` active, draws its edge to `api`, then
+marks `web` done.
+
+To show a diagram in a README, use both SVGs so the image follows the reader's theme:
 
 ```html
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="order-flow-dark.svg">
-  <img alt="Order processing" src="order-flow-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="my-flow-dark.svg">
+  <img alt="Order processing" src="my-flow-light.svg">
 </picture>
 ```
+
+## What a diagram can hold
+
+- **Groups and nodes**, nested as deep as you like, with titles, sub lines, icons, tooltips, progress cells and
+  stacked copies. Pin any of them to grid cells, or leave out `at` and diagr places them for you.
+- **Edges**, written as chains (`a -> b -> c`), fans (`(a b) -> c`), dashed links (`a --> b`) and pairs that run
+  both ways (`a <-> b`), with labels, ports and routes of your own when you want them.
+- **Rows and columns** that arrange a box's contents like CSS flexbox, as an alternative to grid cells.
+- **Components**: a block of groups, nodes and edges defined once and used as named instances, with text
+  parameters.
+- **Scenarios**: steps whose effects activate, finish or fail nodes, draw edges, fill cells, change text, show and
+  hide parts, and run side by side or on repeat.
+- **Views**: parts of one diagram built as their own images and page, including dynamic views that number a
+  scenario's edges by step.
+- **Themes and icons**: a default and a high-contrast theme, brand themes that change only what they need, 40 core
+  icons, and folders of your own.
+
+## Documentation
+
+- [Diagram format](docs/format.md): everything a diagram file can say, with examples
+- [Themes and icons](docs/themes-and-icons.md)
+- [Docs and CI](docs/integrations.md): ```` ```diagr ```` blocks in MkDocs, and a GitHub Actions workflow that keeps
+  committed SVGs in step with their diagrams
+- [How diagr compares](docs/comparison.md) with D2, Mermaid, Structurizr, LikeC4, Ilograph and IcePanel, and when
+  another tool fits better
+- [Examples](examples/):
+  - `order-flow`: the example above, looping, with a dead-letter queue
+  - `cloud-architecture`: pull-based workers, retries, and a captions path running alongside the job
+  - `multi-region`: nested groups, a component used twice and three scenarios
+  - `data-platform`: a three-instance component, three levels of nesting, a merge junction and four scenarios
+  - `event-driven`: no positions at all, so every node is placed automatically
 
 ## CLI
 
@@ -77,34 +127,37 @@ In a README, use both static files so the image follows the reader's theme:
 |---|---|
 | `diagr init [FILE] [--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
 | `diagr build FILE... [-o DIR] [--theme T] [--debug] [--transparent]` | Write the two SVGs and the HTML page for each file; `--debug` adds the grid and route overlay to the page (G toggles it); `--transparent` leaves the background out of the SVGs |
-| `diagr watch FILE... [-o DIR] [--theme T] [--interval S] [--debug] [--transparent] [--serve] [--port P]` | Rebuild when the file, its icon folders or its theme file change; `--serve` also serves the output at `http://127.0.0.1:8001/`, and open pages reload on each rebuild, keeping the scenario, step and scroll position |
-| `diagr expand FILE [-o OUT]` | Print the diagram with its components expanded into plain groups, nodes and edges; the output is a valid diagram that builds to the same files |
-| `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout |
+| `diagr watch FILE... [-o DIR] [--theme T] [--interval S] [--debug] [--transparent] [--serve] [--port P]` | Rebuild when the file, its icon folders or its theme file change; `--serve` also serves the output, and open pages reload on each rebuild |
+| `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout; `--strict` fails on warnings too |
+| `diagr expand FILE [-o OUT]` | Print the diagram with its components written out as plain groups, nodes and edges and every position pinned; the output builds to the same files |
 | `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |
-| `diagr schema [-o FILE]` | Print the JSON Schema (`schema/diagr.schema.json`) |
+| `diagr schema [-o FILE]` | Print the JSON Schema |
 | `diagr --version` | Print the installed version |
 
 `--theme` on the command line is resolved against the current folder; `theme:` in a diagram against the diagram's
 folder.
 
-Add `# yaml-language-server: $schema=<path>/diagr.schema.json` at the top of a diagram for autocomplete in
-editors that support it.
+For autocomplete in editors that support it, put `# yaml-language-server: $schema=<path>/diagr.schema.json` at the
+top of a diagram, pointing at [`schema/diagr.schema.json`](schema/diagr.schema.json) or at the file
+`diagr schema -o` writes.
 
 ## Player keys
 
-The keys work once the diagram or the player has focus: click the diagram, or Tab to it. The rest of the page
-keeps its keys, so Space and the arrows still scroll it.
+The keys work once the diagram or the player has focus: click the diagram, or Tab to it. The rest of the page keeps
+its keys, so Space and the arrows still scroll it.
 
-Space plays or pauses. Left and Right go to the previous or next step; with Shift they move one frame. Home resets,
-End jumps to the end. Clicking a step in the list jumps to it. With several scenarios, the buttons above the progress
-bar switch between them. A scenario with `loop: true` plays on its own and replays until you pause it.
+| Key | Does |
+|---|---|
+| Space | Play or pause |
+| Left, Right | Previous or next step; with Shift, one frame |
+| Home, End | Back to the start, or to the end |
+| `+`, `-`, `0` | Zoom in, zoom out, fit the whole diagram |
+| `F` | Full screen |
+| `C` | High contrast, remembered like the light or dark choice |
 
-Ctrl or ⌘ with the scroll wheel, or a pinch, zooms the diagram around the pointer; drag to pan once zoomed in. `+` and
-`-` zoom, `0` fits it back, `F` shows the diagram and its controls full screen, and the buttons under the
-diagram do the same.
-
-`C` or the half-filled circle in the toolbar under the diagram switches to high contrast: the colours and line widths
-of the `contrast` theme, in light or dark. The page remembers the choice, like the light or dark one.
+Ctrl or ⌘ with the scroll wheel, or a pinch, zooms around the pointer, and you can drag to pan once zoomed in.
+Clicking a step in the list jumps to it, and with several scenarios the buttons above the progress bar switch between
+them. A scenario with `loop: true` plays on its own and replays until you pause it.
 
 ## Development
 
@@ -118,30 +171,20 @@ uv run python -m unittest discover -s tests -t .
 
 `tests/golden/` holds the expected output of every example. After a change that is meant to alter the output, run
 `DIAGR_UPDATE_GOLDEN=1 uv run python -m unittest tests.test_examples` and review the diff. After changing the format,
-regenerate the schema with `uv run diagr schema -o schema/diagr.schema.json`; a test fails if it is out of date.
+regenerate the schema with `uv run diagr schema -o schema/diagr.schema.json`; a test fails if it is out of date. One
+test runs the player's state code with Node and is skipped when `node` is not installed.
 `.github/workflows/ci.yml` runs all of this on every push and pull request.
 
-## Docs
-
-The docs site is built with MkDocs Material and deployed to GitHub Pages by `.github/workflows/docs.yml`. The
-examples are built from `examples/` each time the site is built.
+The docs site is built with MkDocs Material, with the examples built from `examples/` each time:
 
 ```sh
 uv sync --group docs
-uv run mkdocs serve          # live preview
-uv run mkdocs build --strict # writes site/
+uv run mkdocs serve           # live preview
+uv run mkdocs build --strict  # writes site/
 ```
 
-- [Diagram format and effects](docs/format.md)
-- [Themes and icons](docs/themes-and-icons.md)
-- [Docs and CI](docs/integrations.md): ```` ```diagr ```` blocks in MkDocs, and a GitHub Actions workflow that rebuilds the SVGs
-- [How diagr compares](docs/comparison.md) with D2, Mermaid, Structurizr, LikeC4, Ilograph and IcePanel
-- [Examples](examples/): `order-flow`, `cloud-architecture` (pull-based workers, dead-letter queue, retries, a
-  parallel captions path), `multi-region` (nested groups, a component used twice, three scenarios), `data-platform`
-  (a three-instance component, three-level nesting, a merge junction, four scenarios), `event-driven` (no
-  positions at all: every node is placed automatically)
-
-## Layout of this repo
+`.github/workflows/docs.yml` builds it on every push to `main`, and deploys it to GitHub Pages once the repository is
+public.
 
 | Path | What |
 |---|---|
