@@ -142,12 +142,7 @@
   function load(id) {
     sc = byId[id] || scenarios[0];
     frames = sc.frames; steps = sc.steps; N = frames.length - 1;
-    states = [{}];
-    for (var i = 1; i <= N; i++) {
-      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-      states.push(s);
-    }
+    states = diagrStates(frames);
     lists.forEach(function (ol) {
       var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;

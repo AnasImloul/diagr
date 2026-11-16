@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import json
+import shutil
+import subprocess
 import unittest
 
-from diagr.scenario import fold
+from diagr import load_file, prepare
+from diagr.scenario import Frame, fold
+from tests.support import ROOT
 from tests.test_build import BASE, prepared
+
+FOLD_JS = ROOT / "src/diagr/render/assets/fold.js"
 
 
 class Compile(unittest.TestCase):
@@ -104,6 +111,30 @@ class Compile(unittest.TestCase):
         c = self.compiled("    - title: one\n      do:\n        - parallel: [activate a, 'draw a->b 300ms']\n")
         self.assertEqual(len(c.frames), 3)
         self.assertEqual(c.frames[1].dur, 300)
+
+
+@unittest.skipUnless(shutil.which("node"), "needs node")
+class PlayerStates(unittest.TestCase):
+    def test_the_player_folds_frames_as_python_does(self):
+        """The page computes each frame's state with fold.js; it must be the state Python folds for that frame."""
+        scenarios = {}
+        for example in sorted((ROOT / "examples").glob("*/diagram.yml")):
+            for k, c in prepare(load_file(example)).scenarios.items():
+                scenarios[f"{example.parent.name}/{k}"] = [f.to_json() for f in c.frames]
+        script = (
+            f"const states = require({json.dumps(str(FOLD_JS))});"
+            "const all = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
+            "process.stdout.write(JSON.stringify(Object.fromEntries("
+            "Object.entries(all).map(([k, frames]) => [k, states(frames)]))));"
+        )
+        run = subprocess.run(["node", "-e", script], input=json.dumps(scenarios), capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        js = json.loads(run.stdout)
+        for k, frames in scenarios.items():
+            with self.subTest(scenario=k):
+                frames_py = [Frame(set=f["set"]) for f in frames]
+                py = [json.loads(json.dumps(fold(frames_py[1 : i + 1]))) for i in range(len(frames))]
+                self.assertEqual(js[k], py)
 
 
 if __name__ == "__main__":

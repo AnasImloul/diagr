@@ -291,6 +291,18 @@ svg.diagr[data-scenario="order"] [data-badges]:not([data-badges="order"]) { disp
 </script>
 <script type="application/json" id="diagr-data">{"scenarios":[{"id":"order","loop":true,"ready":"One order, from checkout to confirmation.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 4: Submit...","running":1,"n:web":"active"},"dur":600,"step":1},{"set":{"e:web->api":"drawn"},"dur":1400,"step":1,"edges":{"web->api":1400}},{"set":{"n:web":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 4: Validate and queue...","n:api":"active"},"dur":800,"step":2},{"set":{"t:api:sub:0":"order is valid"},"dur":0,"step":2},{"set":{"e:api->queue":"drawn"},"dur":1400,"step":2,"edges":{"api->queue":1400}},{"set":{"n:api":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 4: Process...","n:queue":"active"},"dur":0,"step":3},{"set":{"e:queue->worker":"drawn"},"dur":1400,"step":3,"edges":{"queue->worker":1400}},{"set":{"n:queue":"done"},"dur":0,"step":3},{"set":{"n:worker":"active"},"dur":1200,"step":3},{"set":{"e:worker->db":"drawn"},"dur":1400,"step":3,"edges":{"worker->db":1400}},{"set":{"n:worker":"done"},"dur":0,"step":3},{"set":{"n:db":"active"},"dur":600,"step":3},{"set":{"n:db":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Step 4 of 4: Confirm...","focus":["worker","mail","worker->mail"]},"dur":0,"step":4},{"set":{"e:worker->mail":"drawn","v:worker->mail":"shown","v:mail":"shown"},"dur":1400,"step":4,"edges":{"worker->mail":1400}},{"set":{"n:mail":"active"},"dur":1000,"step":4},{"set":{"n:mail":"done"},"dur":0,"step":4},{"set":{"focus":null},"dur":0,"step":4},{"set":{"step":5,"status":"Order stored and confirmed."},"dur":0,"step":4}],"steps":[{"first":1,"last":3},{"first":4,"last":7},{"first":8,"last":15},{"first":16,"last":21}]}]}</script>
 <script>
+// The state after each frame of a scenario, from its frames alone: what every part of the diagram shows at each
+// frame, so stepping back or scrubbing shows exactly what playing would. Node loads it too, for the tests.
+function diagrStates(frames) {
+  var states = [{}];
+  for (var i = 1; i < frames.length; i++) {
+    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+    states.push(s);
+  }
+  return states;
+}
+if (typeof module !== "undefined") module.exports = diagrStates;
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
@@ -435,12 +447,7 @@ svg.diagr[data-scenario="order"] [data-badges]:not([data-badges="order"]) { disp
   function load(id) {
     sc = byId[id] || scenarios[0];
     frames = sc.frames; steps = sc.steps; N = frames.length - 1;
-    states = [{}];
-    for (var i = 1; i <= N; i++) {
-      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-      states.push(s);
-    }
+    states = diagrStates(frames);
     lists.forEach(function (ol) {
       var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;

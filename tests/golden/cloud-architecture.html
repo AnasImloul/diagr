@@ -281,6 +281,18 @@ svg.diagr[data-scenario="job"] [data-badges]:not([data-badges="job"]) { display:
 </script>
 <script type="application/json" id="diagr-data">{"scenarios":[{"id":"job","loop":false,"ready":"Follow one job from admission to a dead-letter queue and back.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 4: Admit...","running":1,"n:api":"active"},"dur":600,"step":1},{"set":{"e:api->backlog":"drawn","e:api->cq":"drawn"},"dur":1400,"step":1,"edges":{"api->backlog":1400,"api->cq":1400}},{"set":{"n:api":"done"},"dur":0,"step":1},{"set":{"n:cq":"active"},"dur":0,"step":1},{"set":{"e:cq->captions":"drawn"},"dur":1400,"step":1,"edges":{"cq->captions":1400}},{"set":{"n:cq":"done"},"dur":0,"step":1},{"set":{"n:captions":"active"},"dur":0,"step":1},{"set":{"e:captions->llm":"drawn"},"dur":1400,"step":1,"edges":{"captions->llm":1400}},{"set":{"n:captions":"done"},"dur":0,"step":1},{"set":{"n:llm":"done"},"dur":0,"step":1},{"set":{"n:backlog":"active"},"dur":600,"step":1},{"set":{"step":2,"status":"Step 2 of 4: Dispatch...","e:backlog->dispatcher":"drawn"},"dur":1400,"step":2,"edges":{"backlog->dispatcher":1400}},{"set":{"n:backlog":"done"},"dur":0,"step":2},{"set":{"n:dispatcher":"active"},"dur":600,"step":2},{"set":{"e:dispatcher->jobs":"drawn"},"dur":1400,"step":2,"edges":{"dispatcher->jobs":1400}},{"set":{"n:dispatcher":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 4: Fail three times...","n:jobs":"active"},"dur":0,"step":3},{"set":{"e:jobs->transcode":"drawn"},"dur":800,"step":3,"edges":{"jobs->transcode":800}},{"set":{"n:transcode":"active"},"dur":1000,"step":3},{"set":{"n:transcode":"failed"},"dur":0,"step":3},{"set":{"t:transcode:sub:0":"attempt 1 of 3 failed"},"dur":800,"step":3},{"set":{"n:transcode":"active"},"dur":1000,"step":3},{"set":{"n:transcode":"failed"},"dur":0,"step":3},{"set":{"t:transcode:sub:0":"attempt 2 of 3 failed"},"dur":800,"step":3},{"set":{"n:transcode":"active"},"dur":1000,"step":3},{"set":{"n:transcode":"failed"},"dur":0,"step":3},{"set":{"t:transcode:sub:0":"attempt 3 of 3 failed"},"dur":800,"step":3},{"set":{"e:jobs->dlq":"drawn"},"dur":1400,"step":3,"edges":{"jobs->dlq":1400}},{"set":{"n:dlq":"active"},"dur":800,"step":3},{"set":{"n:jobs":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Step 4 of 4: Redrive...","e:redrive":"drawn"},"dur":1800,"step":4,"edges":{"redrive":1800}},{"set":{"n:dlq":"done"},"dur":0,"step":4},{"set":{"status":"An operator redrove the job."},"dur":0,"step":4},{"set":{},"dur":1200,"step":4},{"set":{"step":5,"status":"The job is back on the queue."},"dur":0,"step":4}],"steps":[{"first":1,"last":11},{"first":12,"last":16},{"first":17,"last":30},{"first":31,"last":35}]}]}</script>
 <script>
+// The state after each frame of a scenario, from its frames alone: what every part of the diagram shows at each
+// frame, so stepping back or scrubbing shows exactly what playing would. Node loads it too, for the tests.
+function diagrStates(frames) {
+  var states = [{}];
+  for (var i = 1; i < frames.length; i++) {
+    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+    states.push(s);
+  }
+  return states;
+}
+if (typeof module !== "undefined") module.exports = diagrStates;
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
@@ -425,12 +437,7 @@ svg.diagr[data-scenario="job"] [data-badges]:not([data-badges="job"]) { display:
   function load(id) {
     sc = byId[id] || scenarios[0];
     frames = sc.frames; steps = sc.steps; N = frames.length - 1;
-    states = [{}];
-    for (var i = 1; i <= N; i++) {
-      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-      states.push(s);
-    }
+    states = diagrStates(frames);
     lists.forEach(function (ol) {
       var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;

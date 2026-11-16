@@ -291,6 +291,18 @@ svg.diagr[data-scenario="query"] [data-badges]:not([data-badges="query"]) { disp
 </script>
 <script type="application/json" id="diagr-data">{"scenarios":[{"id":"query","loop":false,"ready":"Press Run a query to follow one question.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 3: Open a dashboard...","running":1,"n:analyst":"active"},"dur":0,"step":1},{"set":{"e:analyst->dashboards":"drawn"},"dur":1400,"step":1,"edges":{"analyst->dashboards":1400}},{"set":{"n:analyst":"done"},"dur":0,"step":1},{"set":{"n:dashboards":"active"},"dur":0,"step":1},{"set":{"e:dashboards->warehouse":"drawn"},"dur":1400,"step":1,"edges":{"dashboards->warehouse":1400}},{"set":{"n:dashboards":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 3: Check access...","focus":["warehouse","access","access->warehouse"]},"dur":0,"step":2},{"set":{"e:access->warehouse":"drawn"},"dur":1400,"step":2,"edges":{"access->warehouse":1400}},{"set":{},"dur":1000,"step":2},{"set":{"focus":null},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 3: Answer...","n:warehouse":"active"},"dur":1200,"step":3},{"set":{"e:warehouse->dashboards":"drawn"},"dur":1400,"step":3,"edges":{"warehouse->dashboards":1400}},{"set":{"n:warehouse":"done","n:dashboards":"done"},"dur":0,"step":3},{"set":{"t:analyst:sub:0":"answer in 1.2 s"},"dur":0,"step":3},{"set":{"step":4,"status":"Answer on screen."},"dur":0,"step":3}],"steps":[{"first":1,"last":6},{"first":7,"last":10},{"first":11,"last":15}]}]}</script>
 <script>
+// The state after each frame of a scenario, from its frames alone: what every part of the diagram shows at each
+// frame, so stepping back or scrubbing shows exactly what playing would. Node loads it too, for the tests.
+function diagrStates(frames) {
+  var states = [{}];
+  for (var i = 1; i < frames.length; i++) {
+    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+    states.push(s);
+  }
+  return states;
+}
+if (typeof module !== "undefined") module.exports = diagrStates;
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
@@ -435,12 +447,7 @@ svg.diagr[data-scenario="query"] [data-badges]:not([data-badges="query"]) { disp
   function load(id) {
     sc = byId[id] || scenarios[0];
     frames = sc.frames; steps = sc.steps; N = frames.length - 1;
-    states = [{}];
-    for (var i = 1; i <= N; i++) {
-      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-      states.push(s);
-    }
+    states = diagrStates(frames);
     lists.forEach(function (ol) {
       var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;

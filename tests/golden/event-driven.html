@@ -294,6 +294,18 @@ svg.diagr[data-scenario="order"] [data-badges]:not([data-badges="order"]) { disp
 </script>
 <script type="application/json" id="diagr-data">{"scenarios":[{"id":"order","loop":false,"ready":"Press Place order to follow one order.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 4: Call the gateway...","running":1,"n:mobile":"active"},"dur":0,"step":1},{"set":{"e:mobile->gateway":"drawn"},"dur":1400,"step":1,"edges":{"mobile->gateway":1400}},{"set":{"n:mobile":"done"},"dur":0,"step":1},{"set":{"n:gateway":"active"},"dur":600,"step":1},{"set":{"n:gateway":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 4: Store the order...","n:gateway":"active"},"dur":0,"step":2},{"set":{"e:gateway->orders":"drawn"},"dur":1400,"step":2,"edges":{"gateway->orders":1400}},{"set":{"n:gateway":"done"},"dur":0,"step":2},{"set":{"n:orders":"active"},"dur":0,"step":2},{"set":{"e:orders->cache":"drawn","e:orders->db":"drawn"},"dur":1400,"step":2,"edges":{"orders->cache":1400,"orders->db":1400}},{"set":{"n:orders":"done"},"dur":0,"step":2},{"set":{"n:cache":"done","n:db":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 4: Publish...","n:orders":"active"},"dur":0,"step":3},{"set":{"e:orders->bus":"drawn"},"dur":1400,"step":3,"edges":{"orders->bus":1400}},{"set":{"n:orders":"done"},"dur":0,"step":3},{"set":{"n:bus":"active"},"dur":600,"step":3},{"set":{"step":4,"status":"Step 4 of 4: React...","e:bus->stock":"drawn","e:bus->search":"drawn","e:bus->notify":"drawn"},"dur":1400,"step":4,"edges":{"bus->stock":1400,"bus->search":1400,"bus->notify":1400}},{"set":{"n:bus":"done"},"dur":0,"step":4},{"set":{"n:stock":"done","n:search":"done","n:notify":"done"},"dur":0,"step":4},{"set":{"step":5,"status":"Stock, search and the customer all heard about the order."},"dur":0,"step":4}],"steps":[{"first":1,"last":5},{"first":6,"last":12},{"first":13,"last":16},{"first":17,"last":20}]}]}</script>
 <script>
+// The state after each frame of a scenario, from its frames alone: what every part of the diagram shows at each
+// frame, so stepping back or scrubbing shows exactly what playing would. Node loads it too, for the tests.
+function diagrStates(frames) {
+  var states = [{}];
+  for (var i = 1; i < frames.length; i++) {
+    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+    states.push(s);
+  }
+  return states;
+}
+if (typeof module !== "undefined") module.exports = diagrStates;
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
@@ -438,12 +450,7 @@ svg.diagr[data-scenario="order"] [data-badges]:not([data-badges="order"]) { disp
   function load(id) {
     sc = byId[id] || scenarios[0];
     frames = sc.frames; steps = sc.steps; N = frames.length - 1;
-    states = [{}];
-    for (var i = 1; i <= N; i++) {
-      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-      states.push(s);
-    }
+    states = diagrStates(frames);
     lists.forEach(function (ol) {
       var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;

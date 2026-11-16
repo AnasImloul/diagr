@@ -166,7 +166,7 @@ def _player(comps: list[Compiled]) -> tuple[str, str, str]:
     }
     script = (
         f'<script type="application/json" id="diagr-data">{_json(payload)}</script>\n'
-        f"<script>\n{(ASSETS / 'player.js').read_text(encoding='utf-8')}</script>"
+        f"<script>\n{''.join((ASSETS / f).read_text(encoding='utf-8') for f in ('fold.js', 'player.js'))}</script>"
     )
     badges = "\n".join(
         f'svg.diagr[data-scenario="{c.id}"] [data-badges]:not([data-badges="{c.id}"]) {{ display: none; }}'

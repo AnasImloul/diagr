@@ -313,6 +313,18 @@ svg.diagr[data-scenario="deploy"] [data-badges]:not([data-badges="deploy"]) { di
 </script>
 <script type="application/json" id="diagr-data">{"scenarios":[{"id":"checkout","loop":false,"ready":"Press Place order to follow one request.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 5: Request...","running":1,"n:user":"active"},"dur":0,"step":1},{"set":{"e:user->lb":"drawn"},"dur":1400,"step":1,"edges":{"user->lb":1400}},{"set":{"n:user":"done"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 5: Route to region A...","n:lb":"active"},"dur":600,"step":2},{"set":{"e:lb->a/api":"drawn"},"dur":1400,"step":2,"edges":{"lb->a/api":1400}},{"set":{"n:lb":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 5: Price and accept...","n:a/api":"active"},"dur":0,"step":3},{"set":{"e:a/api->a/prices":"drawn","n:a/prices":"active"},"dur":1400,"step":3,"edges":{"a/api->a/prices":1400}},{"set":{"n:a/prices":"done"},"dur":0,"step":3},{"set":{"e:a/api->a/worker":"drawn"},"dur":1400,"step":3,"edges":{"a/api->a/worker":1400}},{"set":{"n:a/api":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Step 4 of 5: Persist...","n:a/worker":"active"},"dur":800,"step":4},{"set":{"e:a/worker->a/db":"drawn"},"dur":1400,"step":4,"edges":{"a/worker->a/db":1400}},{"set":{"n:a/worker":"done"},"dur":0,"step":4},{"set":{"n:a/db":"active"},"dur":600,"step":4},{"set":{"n:a/db":"done"},"dur":0,"step":4},{"set":{"step":5,"status":"Step 5 of 5: Replicate...","e:a/db->b/db":"drawn"},"dur":1400,"step":5,"edges":{"a/db->b/db":1400}},{"set":{"t:b/db:sub:0":"replica, in sync"},"dur":0,"step":5},{"set":{"n:b/db":"done"},"dur":0,"step":5},{"set":{"step":6,"status":"Order stored in region A and replicated to B."},"dur":0,"step":5}],"steps":[{"first":1,"last":3},{"first":4,"last":6},{"first":7,"last":11},{"first":12,"last":16},{"first":17,"last":20}]},{"id":"failover","loop":false,"ready":"Press Fail region A to see the standby region take over.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 4: Probe fails...","running":1,"n:health":"active"},"dur":0,"step":1},{"set":{"e:health->a/api":"drawn"},"dur":1400,"step":1,"edges":{"health->a/api":1400}},{"set":{"n:a/api":"failed","n:a/worker":"failed"},"dur":0,"step":1},{"set":{"t:health:sub:0":"region A down"},"dur":0,"step":1},{"set":{"step":2,"status":"Step 2 of 4: Drain region A...","focus":["lb","a/api","a/worker","lb->a/api","a/api->a/worker"]},"dur":0,"step":2},{"set":{"v:lb->a/api":"hidden"},"dur":0,"step":2},{"set":{"t:lb:sub:0":"draining A"},"dur":0,"step":2},{"set":{},"dur":1200,"step":2},{"set":{"focus":null},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 4: Promote the replica...","n:b/db":"active"},"dur":1200,"step":3},{"set":{"t:b/db:sub:0":"primary"},"dur":0,"step":3},{"set":{"n:b/db":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Step 4 of 4: Reroute...","e:lb->b/api":"drawn"},"dur":1400,"step":4,"edges":{"lb->b/api":1400}},{"set":{"t:lb->b/api:label":"all traffic","t:lb:sub:0":"anycast, to B"},"dur":0,"step":4},{"set":{"n:b/api":"active"},"dur":0,"step":4},{"set":{"e:b/api->b/worker":"drawn"},"dur":1400,"step":4,"edges":{"b/api->b/worker":1400}},{"set":{"e:b/worker->b/db":"drawn"},"dur":1400,"step":4,"edges":{"b/worker->b/db":1400}},{"set":{"n:b/api":"done","n:b/worker":"done","n:health":"done"},"dur":0,"step":4},{"set":{"step":5,"status":"Region B serves all traffic."},"dur":0,"step":4}],"steps":[{"first":1,"last":4},{"first":5,"last":9},{"first":10,"last":12},{"first":13,"last":19}]},{"id":"deploy","loop":false,"ready":"Press Deploy to roll a new version out, region B first.","frames":[{"set":{},"dur":0,"step":0},{"set":{"step":1,"status":"Step 1 of 3: Build and test...","running":1,"n:ci":"active"},"dur":0,"step":1},{"set":{"c:ci:0":"act","cap:ci":"build"},"dur":1040,"step":1},{"set":{"c:ci:1":"act","c:ci:0":"ok","cap:ci":"test"},"dur":1040,"step":1},{"set":{"step":2,"status":"Step 2 of 3: Canary in region B...","e:ci->b/worker":"drawn","v:ci->b/worker":"shown"},"dur":1400,"step":2,"edges":{"ci->b/worker":1400}},{"set":{"c:ci:2":"act","c:ci:1":"ok","cap:ci":"canary"},"dur":1040,"step":2},{"set":{"n:b/worker":"active"},"dur":1000,"step":2},{"set":{"t:b/worker:sub:0":"v2 canary"},"dur":0,"step":2},{"set":{"n:b/worker":"done"},"dur":0,"step":2},{"set":{"step":3,"status":"Step 3 of 3: Roll out to region A...","e:ci->a/worker":"drawn","v:ci->a/worker":"shown"},"dur":1400,"step":3,"edges":{"ci->a/worker":1400}},{"set":{"c:ci:3":"act","c:ci:2":"ok","cap:ci":"rollout"},"dur":1040,"step":3},{"set":{"c:ci:3":"ok","cap:ci":null},"dur":0,"step":3},{"set":{"n:a/worker":"active"},"dur":0,"step":3},{"set":{"t:a/worker:sub:0":"replica 1 of 2 on v2"},"dur":0,"step":3},{"set":{},"dur":1000,"step":3},{"set":{"t:a/worker:sub:0":"replica 2 of 2 on v2"},"dur":0,"step":3},{"set":{},"dur":1000,"step":3},{"set":{"t:a/worker:sub:0":"v2","t:b/worker:sub:0":"v2"},"dur":0,"step":3},{"set":{"n:a/worker":"done","n:ci":"done"},"dur":0,"step":3},{"set":{"step":4,"status":"Both regions run v2."},"dur":0,"step":3}],"steps":[{"first":1,"last":3},{"first":4,"last":8},{"first":9,"last":19}]}]}</script>
 <script>
+// The state after each frame of a scenario, from its frames alone: what every part of the diagram shows at each
+// frame, so stepping back or scrubbing shows exactly what playing would. Node loads it too, for the tests.
+function diagrStates(frames) {
+  var states = [{}];
+  for (var i = 1; i < frames.length; i++) {
+    var s = Object.assign({}, states[i - 1]), set = frames[i].set;
+    for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
+    states.push(s);
+  }
+  return states;
+}
+if (typeof module !== "undefined") module.exports = diagrStates;
 (function () {
   "use strict";
   var data = JSON.parse(document.getElementById("diagr-data").textContent);
@@ -457,12 +469,7 @@ svg.diagr[data-scenario="deploy"] [data-badges]:not([data-badges="deploy"]) { di
   function load(id) {
     sc = byId[id] || scenarios[0];
     frames = sc.frames; steps = sc.steps; N = frames.length - 1;
-    states = [{}];
-    for (var i = 1; i <= N; i++) {
-      var s = Object.assign({}, states[i - 1]), set = frames[i].set;
-      for (var key in set) { if (set[key] === null) delete s[key]; else s[key] = set[key]; }
-      states.push(s);
-    }
+    states = diagrStates(frames);
     lists.forEach(function (ol) {
       var on = ol.getAttribute("data-scenario") === sc.id;
       ol.hidden = !on;
