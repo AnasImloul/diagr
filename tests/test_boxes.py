@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from diagr.layout.text import text_width
 from tests.support import Case, problems
 from tests.test_build import prepared
 
@@ -311,6 +312,15 @@ edges:
   prod -> ws: prod workspace
   up -> ws-dev: {route: [right, down]}
 """
+
+
+class TextWidth(Case):
+    def test_wide_characters_take_a_square_each(self):
+        self.assertEqual(text_width("顧客管理", 14, 600), 4 * 14)
+        self.assertEqual(text_width("🚀", 10), 10)
+
+    def test_combining_marks_take_no_room(self):
+        self.assertEqual(text_width("e\u0301", 14), text_width("e", 14))
 
 
 class Stacked(Case):
