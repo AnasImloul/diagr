@@ -6,9 +6,10 @@ import json
 import re
 import textwrap
 import unittest
+from pathlib import Path
 
-from diagr import prepare
-from diagr.cli import STARTER, _watched, main
+from diagr import DiagramError, prepare
+from diagr.cli import STARTER, _claim, _watched, main
 from diagr.parse import loads
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
@@ -285,8 +286,49 @@ class Cli(Case):
             (base / name).write_text(textwrap.dedent(BASE), encoding="utf-8")
         code, out, err = cli("build", str(base / "one.yml"), str(base / "two.yml"), "-o", str(base / "out"))
         self.assertEqual(code, 1)
-        self.assertIn("diagram id 't' is also used by", err)
+        self.assertIn("diagram 't' writes t.html and its SVGs, which diagram 't' in", err)
         self.assertEqual(sorted(p.name for p in (base / "out").iterdir()), ["t-dark.svg", "t-light.svg", "t.html"])
+
+    def write(self, base, name: str, did: str, views: str = "") -> str:
+        text = textwrap.dedent(BASE).replace("id: t", f"id: {did}") + (f"views:\n{views}" if views else "")
+        (base / name).write_text(text, encoding="utf-8")
+        return str(base / name)
+
+    def test_build_refuses_a_view_that_writes_another_diagrams_files(self):
+        base = self.tmp()
+        first = self.write(base, "a.yml", "shop-front")
+        second = self.write(base, "b.yml", "shop", "  front: {include: [a]}\n")
+        code, _, err = cli("build", first, second, "-o", str(base / "out"))
+        self.assertEqual(code, 1)
+        self.assertIn(
+            "b.yml: view 'front' of 'shop' writes shop-front.html and its SVGs, which diagram 'shop-front' in", err
+        )
+        self.assertEqual(
+            sorted(p.name for p in (base / "out").iterdir()),
+            ["shop-front-dark.svg", "shop-front-light.svg", "shop-front.html"],
+        )
+
+    def test_build_refuses_two_views_with_one_name(self):
+        base = self.tmp()
+        first = self.write(base, "a.yml", "a", "  b-c: {include: [a]}\n")
+        second = self.write(base, "ab.yml", "a-b", "  c: {include: [a]}\n")
+        code, _, err = cli("build", first, second, "-o", str(base / "out"))
+        self.assertEqual(code, 1)
+        self.assertIn("view 'c' of 'a-b' writes a-b-c.html and its SVGs, which view 'b-c' of 'a' in", err)
+
+    def test_watch_claims_names_again_on_each_rebuild(self):
+        base = self.tmp()
+        names: dict[str, tuple[str, str]] = {}
+        shop = self.write(base, "shop.yml", "shop", "  front: {include: [a]}\n")
+        _claim(names, "shop.yml", loads(Path(shop).read_text(encoding="utf-8"), shop, base))
+        other = self.write(base, "other.yml", "shop-front")
+        with self.assertRaises(DiagramError):
+            _claim(names, "other.yml", loads(Path(other).read_text(encoding="utf-8"), other, base))
+        # shop.yml drops its view: the name is free again.
+        shop = self.write(base, "shop.yml", "shop")
+        _claim(names, "shop.yml", loads(Path(shop).read_text(encoding="utf-8"), shop, base))
+        _claim(names, "other.yml", loads(Path(other).read_text(encoding="utf-8"), other, base))
+        self.assertEqual(names["shop-front"][0], "other.yml")
 
     def test_build_writes_three_files(self):
         out = self.tmp()

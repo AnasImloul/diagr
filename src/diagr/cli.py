@@ -8,9 +8,10 @@ import time
 from pathlib import Path
 
 from . import __version__
-from .build import build_files, prepare_all, write_files
+from .build import prepare_all, write_files
 from .icons import CORE, Icons
 from .migrations import upgrade
+from .model import Diagram
 from .parse import load_file
 from .source import DiagramError, Problem, data, load
 from .syntax import ID, json_schema
@@ -22,23 +23,33 @@ def _report(problems: list[Problem]) -> None:
         print(p, file=sys.stderr)
 
 
+def _outputs(d: Diagram) -> dict[str, str]:
+    """The name each of the diagram's pages is written under, with its SVGs, and what writes it."""
+    return {d.id: f"diagram '{d.id}'"} | {f"{d.id}-{v}": f"view '{v}' of '{d.id}'" for v in d.views}
+
+
+def _claim(names: dict[str, tuple[str, str]], f: str, d: Diagram) -> None:
+    """Claims d's output names for file f, giving up those f wrote before; raises if another file writes one of them.
+    names maps each output name to the file that writes it and what in that file does."""
+    mine = _outputs(d)
+    for name, what in mine.items():
+        if name in names and names[name][0] != f:
+            other, theirs = names[name]
+            raise DiagramError(
+                [Problem(None, f"{f}: {what} writes {name}.html and its SVGs, which {theirs} in {other} also writes")]
+            )
+    for name in [n for n, (g, _) in names.items() if g == f]:
+        del names[name]
+    names.update({name: (f, what) for name, what in mine.items()})
+
+
 def cmd_build(args) -> int:
     status = 0
-    built: dict[str, str] = {}
+    names: dict[str, tuple[str, str]] = {}
     for f in args.files:
         try:
             d = load_file(f)
-            if d.id in built:
-                raise DiagramError(
-                    [
-                        Problem(
-                            None,
-                            f"{f}: diagram id '{d.id}' is also used by {built[d.id]}; "
-                            "their output files would overwrite each other",
-                        )
-                    ]
-                )
-            built[d.id] = f
+            _claim(names, f, d)
             ps = prepare_all(d, args.theme)
             written = [w for p in ps for w in write_files(p, args.out, args.debug, transparent=args.transparent)]
         except DiagramError as e:
@@ -185,6 +196,7 @@ def _stamp(paths: list[Path]) -> tuple:
 def cmd_watch(args) -> int:
     files = [Path(f) for f in args.files]
     stamps: dict[Path, tuple] = {}
+    names: dict[str, tuple[str, str]] = {}
     server = None
     if args.serve:
         from .live import LiveServer
@@ -203,10 +215,13 @@ def cmd_watch(args) -> int:
                 if stamps.get(f) != s:
                     stamps[f] = s
                     try:
-                        written, warnings = build_files(
-                            f, args.out, args.theme, args.debug, live=bool(server), transparent=args.transparent
-                        )
-                        _report(warnings)
+                        d = load_file(f)
+                        _claim(names, str(f), d)
+                        ps = prepare_all(d, args.theme)
+                        written = [
+                            w for p in ps for w in write_files(p, args.out, args.debug, bool(server), args.transparent)
+                        ]
+                        _report([w for p in ps for w in p.warnings])
                         print(f"{time.strftime('%H:%M:%S')} built {', '.join(w.name for w in written)}")
                         if server:
                             server.bump()
