@@ -94,7 +94,8 @@ def _expand_calls(rest: dict[str, Any], d: Diagram) -> None:
         for step in sc.get("steps") or []:
             # A step is a mapping with 'do', or 'Title: [effects]'.
             for k in ["do"] if "title" in step else list(step):
-                step[k] = _calls(step.get(k), d, names)
+                if k in step:
+                    step[k] = _calls(step[k], d, names)
 
 
 def _flow(v: Any) -> str:

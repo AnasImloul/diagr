@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import unittest
 
+import yaml
+
+from diagr.parse import loads
 from diagr.scenario import fold
-from tests.support import Case, problems
+from diagr.unparse import to_yaml
+from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
 BASE = """
@@ -88,6 +92,18 @@ class Expansion(Case):
         self.assertEqual(s["t:b/db:sub:0"], "busy")
         self.assertEqual(s["t:lb->a/api:label"], "idle")
         self.assertEqual(s["n:b/api"], "done")
+
+    def test_expand_keeps_a_step_without_effects(self):
+        action = "    actions:\n      go: [activate api]\n    edges:\n      api -> db:"
+        yml = (
+            BASE.replace("    edges:\n      api -> db:", action)
+            + "scenarios:\n  s:\n    steps:\n    - {title: Intro, text: Nothing yet}\n    - Go: [go a]\n"
+        )
+        out = to_yaml(loads(yml, "t.yml", ROOT), yaml.safe_load(yml))
+        self.assertClean(problems(out))
+        steps = yaml.safe_load(out)["scenarios"]["s"]["steps"]
+        self.assertEqual(steps[0], {"title": "Intro", "text": "Nothing yet"})
+        self.assertEqual(steps[1], {"Go": ["activate a/api"]})
 
 
 class Errors(Case):
