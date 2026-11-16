@@ -152,6 +152,24 @@ class Themes(Case):
         found = self.theme("extends: default\nlight:\n  tones:\n    pink: {fill: '#fee', stroke: '#f99'}\n")
         self.assertReports(found, "'tones.pink' is in light but not dark")
 
+    def test_values_that_could_leave_the_css_are_refused(self):
+        found = self.theme(
+            "extends: default\n"
+            "font: 'x; } </style><script>alert(1)</script>'\n"
+            "light:\n  bg: '#fff; } body { display: none'\n  tones:\n    'x}': {fill: '#fff', stroke: '#000'}\n"
+            "dark:\n  tones:\n    'x}': {fill: '#fff', stroke: '#000'}\n"
+        )
+        self.assertReports(found, "'font' may only hold font names")
+        self.assertReports(found, "'light.bg' must be a colour")
+        self.assertReports(found, "'light.tones.x}': a name may only hold")
+
+    def test_modern_colours_and_quoted_fonts_are_allowed(self):
+        found = self.theme(
+            "extends: default\nfont: \"Inter, 'Noto Sans JP', sans-serif\"\n"
+            "light: {accent: 'oklch(62% 0.2 145 / 0.9)'}\ndark: {accent: 'rgb(10, 20, 30)'}\n"
+        )
+        self.assertClean(found)
+
     def test_extends_loop(self):
         self.assertReports(self.theme("extends: ./theme.yml\n"), "'extends' loops back")
 
@@ -218,6 +236,16 @@ class IconFolders(Case):
             "foreign object": '<svg viewBox="0 0 10 10"><foreignObject/></svg>',
             "cdata": '<svg viewBox="0 0 10 10"><text><![CDATA[x]]></text></svg>',
             "not xml": '<svg viewBox="0 0 10 10"><rect></svg>',
+            "event handler on the root": '<svg viewBox="0 0 10 10" onload="alert(1)"><rect/></svg>',
+            "style": '<svg viewBox="0 0 10 10"><style>rect{fill:red}</style><rect/></svg>',
+            "external image": '<svg viewBox="0 0 10 10"><image href="https://example.com/x.png"/></svg>',
+            "external use": (
+                '<svg xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 10 10">'
+                '<use xlink:href="https://example.com/s.svg#a"/></svg>'
+            ),
+            "external url()": '<svg viewBox="0 0 10 10"><rect fill="url(https://example.com/x)"/></svg>',
+            "external url() in style": """<svg viewBox="0 0 10 10"><rect style="fill: url( 'http://e/x' )"/></svg>""",
+            "animated link": '<svg viewBox="0 0 10 10"><a href="#r"><animate attributeName="href" to="x"/></a></svg>',
         }
         for why, svg in cases.items():
             with self.subTest(why):
@@ -230,6 +258,17 @@ class IconFolders(Case):
             '<defs><linearGradient id="g"/></defs><rect fill="url(#g)" xlink:href="#g"/></svg>'
         )
         self.assertClean(self.icons({"x.svg": svg}, "icon: x"))
+        ic = _import_svg("x", svg, None)
+        self.assertNotIn("inkscape", ic.body)
+        self.assertIn('<rect fill="url(#i-x-g)" href="#i-x-g"/>', ic.body)
+
+    def test_internal_references_data_images_and_links_are_kept(self):
+        body = (
+            '<image href="data:image/png;base64,AAAA"/><a href="https://example.com"><rect/></a>'
+            "<text>a &amp; b &lt; c</text>"
+        )
+        ic = _import_svg("x", f'<svg viewBox="0 0 10 10">{body}</svg>', None)
+        self.assertEqual(ic.body, body)
 
     def test_unsafe_tile_glyph_is_refused(self):
         found = self.icons(

@@ -116,7 +116,7 @@ def _steps(c: Compiled, hidden: bool) -> str:
 
 
 def _json(obj: object) -> str:
-    return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
 
 
 def _player(comps: list[Compiled]) -> tuple[str, str, str]:

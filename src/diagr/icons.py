@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
+from html import escape
 from pathlib import Path
 
 import yaml
@@ -25,21 +26,15 @@ PRESENTATION = (
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
 # Icon markup is inlined into the HTML page, so only drawing elements may pass. An allowlist, because the HTML parser
-# turns some tag names (p, img, div...) into HTML even inside <svg>.
+# turns some tag names (p, img, div...) into HTML even inside <svg>. No <style>: inlined, it would style the whole page.
 SVG_ELEMENTS = frozenset(
     """
     a animate animateMotion animateTransform circle clipPath defs desc ellipse feBlend feColorMatrix
     feComponentTransfer feComposite feConvolveMatrix feDiffuseLighting feDisplacementMap feDistantLight feDropShadow
     feFlood feFuncA feFuncB feFuncG feFuncR feGaussianBlur feImage feMerge feMergeNode feMorphology feOffset
     fePointLight feSpecularLighting feSpotLight feTile feTurbulence filter g image line linearGradient marker mask
-    metadata mpath path pattern polygon polyline radialGradient rect stop style svg switch symbol text textPath title
+    metadata mpath path pattern polygon polyline radialGradient rect stop svg switch symbol text textPath title
     tspan use view
-""".split()
-)
-HTML_ELEMENTS = frozenset(
-    """
-    b big blockquote body br center code dd div dl dt em embed font h1 h2 h3 h4 h5 h6 head hr i iframe img li listing
-    menu meta nobr object ol p pre ruby s script small span strike strong sub sup table tt u ul var
 """.split()
 )
 
@@ -69,28 +64,66 @@ def _symbol_id(name: str) -> str:
     return "i-" + re.sub(r"[^A-Za-z0-9_-]", "_", name)
 
 
-def _unsafe(markup: str) -> str | None:
-    """Why markup must not be inlined into the page, or None when it only draws."""
+def _clean(markup: str) -> str:
+    """The children of the <svg> root in markup, written back from the parsed tree, so comments, processing
+    instructions and other namespaces never reach the page. Raises ValueError when the markup does more than draw."""
     if "<![CDATA[" in markup:
-        return "contains a CDATA section"
+        raise ValueError("contains a CDATA section")
     try:
         root = ET.fromstring(markup)
     except ET.ParseError as e:
-        return f"is not well-formed XML ({e})"
-    for el in root.iter():
-        ns, _, tag = el.tag.rpartition("}")
-        ns = ns.lstrip("{")
-        if ns in ("", SVG_NS) and tag not in SVG_ELEMENTS:
-            return f"contains <{tag}>, which is not an SVG drawing element"
-        if ns not in ("", SVG_NS) and tag in HTML_ELEMENTS:
-            return f"contains <{tag}>"
-        for k, v in el.attrib.items():
-            local = k.rpartition("}")[2]
-            if local.lower().startswith("on"):
-                return f"has an event handler '{local}'"
-            if "javascript:" in re.sub(r"\s", "", v).lower():
-                return f"has a javascript: URL in '{local}'"
-    return None
+        raise ValueError(f"is not well-formed XML ({e})") from None
+    for key, value in root.attrib.items():
+        _attribute("svg", key, value)
+    return _children(root)
+
+
+def _children(el: ET.Element) -> str:
+    out = escape(el.text or "", quote=False)
+    for child in el:
+        out += _element(child) + escape(child.tail or "", quote=False)
+    return out
+
+
+def _element(el: ET.Element) -> str:
+    ns, _, tag = el.tag.rpartition("}")
+    if ns.lstrip("{") not in ("", SVG_NS):
+        return ""
+    if tag == "style":
+        raise ValueError("contains <style>, which would style the whole page; use presentation attributes instead")
+    if tag not in SVG_ELEMENTS:
+        raise ValueError(f"contains <{tag}>, which is not an SVG drawing element")
+    if tag.startswith("animate") and el.get("attributeName", "").endswith("href"):
+        raise ValueError(f"has an <{tag}> that changes a link")
+    attrs = ""
+    for key, value in el.attrib.items():
+        name = _attribute(tag, key, value)
+        if name:
+            attrs += f' {name}="{escape(value, quote=True)}"'
+    inner = _children(el)
+    return f"<{tag}{attrs}>{inner}</{tag}>" if inner else f"<{tag}{attrs}/>"
+
+
+def _internal(ref: str) -> bool:
+    return ref.startswith(("#", "data:image/"))
+
+
+def _attribute(tag: str, key: str, value: str) -> str | None:
+    """The name to write an attribute under, or None to leave it out."""
+    ns, _, local = key.rpartition("}")
+    ns = ns.lstrip("{")
+    if local.lower().startswith("on"):
+        raise ValueError(f"has an event handler '{local}'")
+    flat = re.sub(r"\s", "", value).lower()
+    if "javascript:" in flat:
+        raise ValueError(f"has a javascript: URL in '{local}'")
+    if any(not _internal(ref.strip("'\"")) for ref in re.findall(r"url\(([^)]*)\)", flat)):
+        raise ValueError(f"loads an external resource in '{local}'")
+    if local == "href" and ns in ("", XLINK_NS):
+        if not (_internal(flat) or (tag == "a" and flat.startswith(("http:", "https:", "mailto:")))):
+            raise ValueError(f"loads an external resource in '{local}'")
+        return "href"
+    return local if ns == "" else None
 
 
 def _attrs(tag: str) -> dict[str, str]:
@@ -109,9 +142,10 @@ def _import_svg(name: str, text: str, recolour: str | None) -> SvgIcon:
     body = text[root.end() : end]
     body = re.sub(r"<title>.*?</title>|<desc>.*?</desc>", "", body, flags=re.S).strip()
     head = root.group(0) if "xmlns:xlink" in root.group(0) else f'<svg xmlns:xlink="{XLINK_NS}"' + root.group(0)[4:]
-    why = _unsafe(head + body + "</svg>")
-    if why:
-        raise ValueError(f"icon '{name}' {why}")
+    try:
+        body = _clean(head + body + "</svg>")
+    except ValueError as e:
+        raise ValueError(f"icon '{name}' {e}") from None
     w, h = attrs.get("width", "64").removesuffix("px"), attrs.get("height", "64").removesuffix("px")
     view_box = attrs.get("viewBox") or f"0 0 {w} {h}"
     sid = _symbol_id(name)
@@ -163,11 +197,12 @@ def _read_source(folder: Path, problems: list[Problem]) -> IconSource:
         if not (isinstance(t, dict) and isinstance(t.get("tone"), str) and isinstance(t.get("glyph"), str)):
             problems.append(Problem(where, f"tile '{name}' needs 'tone' and 'glyph' (SVG markup)"))
             continue
-        why = _unsafe(f'<svg xmlns="{SVG_NS}" xmlns:xlink="{XLINK_NS}">{t["glyph"]}</svg>')
-        if why:
-            problems.append(Problem(where, f"tile '{name}': glyph {why}"))
+        try:
+            glyph = _clean(f'<svg xmlns="{SVG_NS}" xmlns:xlink="{XLINK_NS}">{t["glyph"]}</svg>')
+        except ValueError as e:
+            problems.append(Problem(where, f"tile '{name}': glyph {e}"))
             continue
-        tiles[str(name)] = Tile(str(name), t["tone"], t["glyph"], bool(t.get("spins", False)))
+        tiles[str(name)] = Tile(str(name), t["tone"], glyph, bool(t.get("spins", False)))
     raw_recolour = data.get("recolour") or {}
     if isinstance(raw_recolour, dict) and all(isinstance(v, str) for v in raw_recolour.values()):
         recolour = {str(k): v for k, v in raw_recolour.items()}

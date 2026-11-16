@@ -37,6 +37,10 @@ Tokens: `bg`, `text`, `muted`, `line`, `rule`, `hover`, `accent`, `on-accent`, `
 `on-button`, `badge`, `on-badge`, `tones.<tone>.fill|stroke` for groups, and `tiles.<tone>: [from, to]` for the
 gradient of generated icon tiles.
 
+Every value ends up in the page's CSS, so a colour may only use letters, digits, spaces and `# ( ) , . % / -`
+(hex, named colours, `rgb()`, `hsl()`, `oklch()`, `var()`), the font only names, commas and quotes, and tone and token
+names only letters, digits, `-` and `_`.
+
 ## Icons
 
 Icons are looked up by name: first in the diagram's `icons:` folders, in order, then in the core set
@@ -60,6 +64,12 @@ tiles:
 recolour:
   logo: text        # a monochrome logo.svg in this folder follows the theme's text colour
 ```
+
+For both kinds, the markup is parsed and written back out, keeping only SVG drawing elements: comments, editor metadata
+(such as Inkscape's) and attributes in other namespaces are dropped. An icon is refused if it has scripts, event
+handlers or `<style>` (inlined, it would style the whole page; use presentation attributes such as `fill` instead), or
+if it loads anything from outside the file: a `href` or `url()` may point at an id in the icon (`#grad`) or a
+`data:image/` URI, and only a link (`<a>`) may go to an `http`, `https` or `mailto` address.
 
 Vendor marks (cloud providers, products) belong in an icon folder next to the diagram, or in a separate kit, never
 in the core set. Check the vendor's terms before you redistribute their icons. Microsoft's Azure and Fabric icon

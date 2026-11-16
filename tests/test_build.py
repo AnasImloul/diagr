@@ -151,6 +151,43 @@ class Authoring(Case):
             self.assertEqual(r.read(), b"hi")
 
 
+class Escaping(Case):
+    def with_icon(self, name: str, text: str, icon: str) -> str:
+        base = self.tmp()
+        (base / "icons").mkdir()
+        (base / "icons" / name).write_text(text, encoding="utf-8")
+        yml = f"id: t\nicons: [./icons]\nnodes:\n  a: {{at: [0, 0], icon: {icon}, title: A}}\n"
+        return render_html(prepared(yml, base=base))
+
+    def test_comment_in_a_tile_glyph_is_dropped(self):
+        # HTML ends this comment at '<!-->', where XML does not, so inlining it as written would run the <img>.
+        glyph = '<path d="M0 0"/><!--><img src=x onerror="alert(1)">-->'
+        html = self.with_icon("icons.yml", f"tiles:\n  x: {{tone: blue, glyph: '{glyph}'}}\n", "x")
+        self.assertIn('<path d="M0 0"/>', html)
+        self.assertNotIn("onerror", html)
+
+    def test_processing_instruction_in_an_svg_icon_is_dropped(self):
+        # HTML ends a processing instruction at the first '>', so the <img> inside it would run.
+        svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+            '<?x > <img src=x onerror="alert(1)"> ?><rect width="64" height="64"/></svg>'
+        )
+        html = self.with_icon("x.svg", svg, "x")
+        self.assertIn('<rect width="64" height="64"/>', html)
+        self.assertNotIn("onerror", html)
+
+    def test_text_cannot_end_the_player_data(self):
+        # '<!--' then '<script' inside a script element makes the HTML parser swallow the player script after it.
+        yml = BASE.replace("title: A", "title: '<!-- <script> A'") + (
+            "scenarios:\n  s:\n    steps:\n    - {title: '<!-- <script> go', text: '</script>', do: [done a]}\n"
+        )
+        html = render_html(prepared(yml))
+        data = re.search(r'<script type="application/json" id="diagr-data">(.*?)</script>', html, re.S)
+        assert data
+        self.assertNotIn("<", data.group(1))
+        self.assertIn("<!-- <script> go", json.dumps(json.loads(data.group(1)), ensure_ascii=False))
+
+
 class Accessibility(Case):
     def test_svg_with_triggers_is_a_group(self):
         html = render_html(prepared(triggered("Run")))

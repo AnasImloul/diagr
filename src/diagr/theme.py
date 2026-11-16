@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,6 +47,10 @@ TOKENS = (
     "badge",
     "on-badge",
 )
+# Theme values are written into the page's <style>, so each may only hold what a colour, a font list or a name needs.
+COLOUR = re.compile(r"[#\w\s(),.%/-]+")
+FONT = re.compile(r"[\w\s,.'\"-]+")
+NAME = re.compile(r"[A-Za-z0-9_-]+")
 
 
 @dataclass
@@ -145,28 +150,40 @@ def _is_num(v: object) -> bool:
     return isinstance(v, int | float) and not isinstance(v, bool)
 
 
+def _is_colour(v: object) -> bool:
+    return isinstance(v, str) and COLOUR.fullmatch(v) is not None
+
+
+def _bad_name(where: str) -> str:
+    return f"'{where}': a name may only hold letters, digits, '-' and '_'"
+
+
 def _check_scheme(name: str, s: object) -> list[str]:
     if not isinstance(s, dict):
         return [f"'{name}' must be a mapping of colour tokens"]
     out = [f"'{name}' is missing token '{k}'" for k in TOKENS if k not in s]
     for k, v in s.items():
-        if k == "tones":
+        if not NAME.fullmatch(str(k)):
+            out.append(_bad_name(f"{name}.{k}"))
+        elif k == "tones":
             if not isinstance(v, dict):
                 out.append(f"'{name}.tones' must be a mapping")
                 continue
             for tone, pair in v.items():
-                if not (
-                    isinstance(pair, dict) and isinstance(pair.get("fill"), str) and isinstance(pair.get("stroke"), str)
-                ):
+                if not NAME.fullmatch(str(tone)):
+                    out.append(_bad_name(f"{name}.tones.{tone}"))
+                elif not (isinstance(pair, dict) and _is_colour(pair.get("fill")) and _is_colour(pair.get("stroke"))):
                     out.append(f"'{name}.tones.{tone}' needs 'fill' and 'stroke' colours")
         elif k == "tiles":
             if not isinstance(v, dict):
                 out.append(f"'{name}.tiles' must be a mapping")
                 continue
             for tone, pair in v.items():
-                if not (isinstance(pair, list) and len(pair) == 2 and all(isinstance(c, str) for c in pair)):
+                if not NAME.fullmatch(str(tone)):
+                    out.append(_bad_name(f"{name}.tiles.{tone}"))
+                elif not (isinstance(pair, list) and len(pair) == 2 and all(_is_colour(c) for c in pair)):
                     out.append(f"'{name}.tiles.{tone}' must be a pair of colours")
-        elif not isinstance(v, str):
+        elif not _is_colour(v):
             out.append(f"'{name}.{k}' must be a colour")
     return out
 
@@ -175,6 +192,8 @@ def _check(data: dict) -> list[str]:
     out: list[str] = []
     if not isinstance(data.get("font"), str):
         out.append("needs 'font' (a CSS font-family list)")
+    elif not FONT.fullmatch(data["font"]):
+        out.append("'font' may only hold font names, commas and quotes")
     sizes = data.get("sizes")
     if not isinstance(sizes, dict):
         out.append("needs 'sizes'")
