@@ -184,6 +184,7 @@ class Authoring(Case):
         self.assertIn("/__diagr/version", render_html(p, live=True))
 
     def test_live_server(self):
+        import urllib.error
         import urllib.request
 
         from diagr.live import LiveServer
@@ -201,6 +202,13 @@ class Authoring(Case):
             self.assertEqual(r.read(), b"1")
         with urllib.request.urlopen(base + "/x.html") as r:
             self.assertEqual(r.read(), b"hi")
+        (folder / "sub").mkdir()
+        for path, headers, code in (("/x.html", {"Host": "evil.example"}, 403), ("/sub/", {}, 404)):
+            with self.subTest(path=path, headers=headers):
+                with self.assertRaises(urllib.error.HTTPError) as caught:
+                    urllib.request.urlopen(urllib.request.Request(base + path, headers=headers))
+                self.assertEqual(caught.exception.code, code)
+                caught.exception.close()
 
 
 class Escaping(Case):

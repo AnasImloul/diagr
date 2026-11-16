@@ -40,7 +40,22 @@ SCRIPT = """<script>(function () {
 class _Handler(SimpleHTTPRequestHandler):
     version_ref: list[int] = [0]
 
+    def _local(self) -> bool:
+        """Whether the request names this machine. A page elsewhere can point a name of its own at 127.0.0.1 (DNS
+        rebinding); its requests carry that name, and must not read the folder."""
+        host = (self.headers.get("Host") or "").rsplit(":", 1)[0].lower()
+        return host in ("127.0.0.1", "localhost")
+
+    def do_HEAD(self):
+        if not self._local():
+            self.send_error(403)
+            return
+        super().do_HEAD()
+
     def do_GET(self):
+        if not self._local():
+            self.send_error(403)
+            return
         if self.path.split("?")[0] == VERSION_PATH:
             body = str(self.version_ref[0]).encode()
             self.send_response(200)
@@ -50,6 +65,11 @@ class _Handler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return
         super().do_GET()
+
+    def list_directory(self, path):
+        # Only the pages and images are served, not a listing of the folder.
+        self.send_error(404)
+        return None
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
