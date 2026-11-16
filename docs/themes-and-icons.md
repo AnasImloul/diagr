@@ -9,7 +9,7 @@ built in, in `src/diagr/themes/`:
 - **`contrast`**, for projectors, printouts and readers who need more contrast: black or white text, darker lines and
   group borders and thicker edges. It changes colours and line widths only, so every player page can switch to it
   live with its contrast button (or ++c++), whatever theme the diagram uses. For static images, build with
-  `diagr build --theme contrast`; every [example](examples/index.md) shows them in its Contrast tab.
+  `diagr build --theme contrast --svg`; every [example](examples/index.md) shows them in its Contrast tab.
 
 Either way, the colours reach both outputs:
 
@@ -33,7 +33,7 @@ dark:
   accent: "#ff7a45"
 ```
 
-Use it with `theme: ./acme.yml` in the diagram, or `diagr build --theme ./acme.yml` to recolour without editing
+Use it with `theme: ./acme.yml` in the diagram, or `diagr build --theme ./acme.yml --svg --html` to recolour without editing
 the diagram.
 
 Tokens: `bg`, `text`, `muted`, `line`, `rule`, `hover`, `accent`, `on-accent`, `fail`, `new`, `changed`, `button`,

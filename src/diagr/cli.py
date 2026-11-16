@@ -8,14 +8,14 @@ import time
 from pathlib import Path
 
 from . import __version__
-from .build import prepare_all, write_files
+from .build import OUTPUTS, prepare_all, write_files
 from .icons import CORE, Icons
 from .migrations import upgrade
 from .model import Diagram
 from .parse import load_file
 from .source import DiagramError, Problem, data, load
 from .syntax import ID, json_schema
-from .theme import theme_files
+from .theme import SCHEMES, theme_files
 
 
 def _report(problems: list[Problem]) -> None:
@@ -43,7 +43,32 @@ def _claim(names: dict[str, tuple[str, str]], f: str, d: Diagram) -> None:
     names.update({name: (f, what) for name, what in mine.items()})
 
 
+def _wanted(args) -> list[str] | None:
+    """The files the command line asks for, warning about options that change none of them; None when it asks for
+    nothing, after saying so."""
+    outputs = [o for o in OUTPUTS if getattr(args, o) or (o in SCHEMES and args.svg)]
+    if not outputs:
+        print("error: say what to build: --light, --dark, --svg or --html", file=sys.stderr)
+        return None
+    if args.transparent and not set(outputs) & set(SCHEMES):
+        print("warning: --transparent only changes the SVGs, and none is being written", file=sys.stderr)
+    if args.debug and "html" not in outputs:
+        print("warning: --debug only changes the HTML page, which is not being written", file=sys.stderr)
+    return outputs
+
+
+def _output_options(p: argparse.ArgumentParser) -> None:
+    g = p.add_argument_group("what to write, at least one")
+    g.add_argument("--light", action="store_true", help="<id>-light.svg, the static image for light pages")
+    g.add_argument("--dark", action="store_true", help="<id>-dark.svg, the static image for dark pages")
+    g.add_argument("--svg", action="store_true", help="both SVGs: the same as --light --dark")
+    g.add_argument("--html", action="store_true", help="<id>.html, the page with the scenario player")
+
+
 def cmd_build(args) -> int:
+    outputs = _wanted(args)
+    if outputs is None:
+        return 2
     status = 0
     names: dict[str, tuple[str, str]] = {}
     for f in args.files:
@@ -51,7 +76,11 @@ def cmd_build(args) -> int:
             d = load_file(f)
             _claim(names, f, d)
             ps = prepare_all(d, args.theme)
-            written = [w for p in ps for w in write_files(p, args.out, debug=args.debug, transparent=args.transparent)]
+            written = [
+                w
+                for p in ps
+                for w in write_files(p, args.out, outputs=outputs, debug=args.debug, transparent=args.transparent)
+            ]
         except DiagramError as e:
             _report(e.problems)
             status = 1
@@ -155,7 +184,7 @@ def cmd_init(args) -> int:
         print(f"error: cannot write {path}: {e.strerror or e}", file=sys.stderr)
         return 1
     print(path)
-    print(f"next: diagr build {path}", file=sys.stderr)
+    print(f"next: diagr build {path} --svg --html", file=sys.stderr)
     return 0
 
 
@@ -194,6 +223,9 @@ def _stamp(paths: list[Path]) -> tuple:
 
 
 def cmd_watch(args) -> int:
+    outputs = _wanted(args)
+    if outputs is None:
+        return 2
     files = [Path(f) for f in args.files]
     stamps: dict[Path, tuple] = {}
     names: dict[str, tuple[str, str]] = {}
@@ -222,7 +254,12 @@ def cmd_watch(args) -> int:
                             w
                             for p in ps
                             for w in write_files(
-                                p, args.out, debug=args.debug, live=bool(server), transparent=args.transparent
+                                p,
+                                args.out,
+                                outputs=outputs,
+                                debug=args.debug,
+                                live=bool(server),
+                                transparent=args.transparent,
                             )
                         ]
                         _report([w for p in ps for w in p.warnings])
@@ -246,8 +283,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    b = sub.add_parser("build", help="write <id>-light.svg, <id>-dark.svg and <id>.html")
+    b = sub.add_parser(
+        "build", help="write the SVGs and the HTML page you ask for: <id>-light.svg, <id>-dark.svg, <id>.html"
+    )
     b.add_argument("files", nargs="+")
+    _output_options(b)
     b.add_argument("--out", "-o", default="dist")
     b.add_argument("--theme", help="override the diagram's theme")
     b.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
@@ -256,8 +296,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     b.set_defaults(fn=cmd_build)
 
-    w = sub.add_parser("watch", help="rebuild when the file, its icons or its theme change")
+    w = sub.add_parser("watch", help="rebuild the files you ask for when the diagram, its icons or its theme change")
     w.add_argument("files", nargs="+")
+    _output_options(w)
     w.add_argument("--out", "-o", default="dist")
     w.add_argument("--theme")
     w.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")

@@ -102,8 +102,8 @@ def on_files(files, config):
     for yml in sorted(EXAMPLES.glob("*/diagram.yml")):
         built = out / yml.parent.name
         with contextlib.redirect_stdout(io.StringIO()):
-            status = diagr(["build", str(yml), "-o", str(built)])
-            contrast = diagr(["build", str(yml), "-o", str(built / "contrast"), "--theme", "contrast"])
+            status = diagr(["build", str(yml), "-o", str(built), "--svg", "--html"])
+            contrast = diagr(["build", str(yml), "-o", str(built / "contrast"), "--theme", "contrast", "--svg"])
         if status != 0 or contrast != 0:
             raise RuntimeError(f"diagr build failed for {yml}")
         data = yaml.safe_load(yml.read_text())

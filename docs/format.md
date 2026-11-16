@@ -221,7 +221,7 @@ edges:
 - **Pinning everything.** `diagr expand FILE` writes every computed position as `at` and every computed path as a
   `route`, so the output draws the same picture with nothing left to place. Start from it to fine-tune by hand.
   Its [views](#views) become crops of the pinned diagram.
-- `diagr build --debug` labels each placed node with the cell it got (`[2, 1] auto`).
+- `diagr build --html --debug` labels each placed node with the cell it got (`[2, 1] auto`).
 
 The [event-driven example](examples/event-driven.md) is laid out this way from start to finish. The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
 does more than any amount of reordering.

@@ -112,7 +112,7 @@ jobs:
       # diagr is not on PyPI yet: install it from its repository.
       - run: pip install "diagr @ git+https://github.com/<owner>/diagr"
       - run: diagr check --strict diagrams/*.yml
-      - run: diagr build diagrams/*.yml -o diagrams/out
+      - run: diagr build diagrams/*.yml --svg -o diagrams/out
       - name: Commit the images if they changed
         run: |
           git config user.name "github-actions[bot]"
@@ -127,7 +127,7 @@ To keep `main` free of bot commits, check pull requests instead: build, then fai
 from what the diagrams produce.
 
 ```yaml
-      - run: diagr build diagrams/*.yml -o diagrams/out
+      - run: diagr build diagrams/*.yml --svg -o diagrams/out
       - run: git diff --exit-code -- diagrams/out
 ```
 

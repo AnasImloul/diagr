@@ -3,7 +3,7 @@ from __future__ import annotations
 import textwrap
 import unittest
 
-from diagr.build import build_files, prepare_all
+from diagr.build import OUTPUTS, build_files, prepare_all
 from diagr.parse import loads
 from tests.support import ROOT, Case, problems
 
@@ -87,7 +87,7 @@ class Views(Case):
     def test_files(self):
         path = self.tmp() / "t.yml"
         path.write_text(textwrap.dedent(BASE.replace("exclude: [data], scenarios: [go]", "exclude: [data]")))
-        names = sorted(f.name for f in build_files(path, self.tmp())[0])
+        names = sorted(f.name for f in build_files(path, self.tmp(), outputs=OUTPUTS)[0])
         self.assertIn("t-backend-light.svg", names)
         self.assertIn("t-front.html", names)
         self.assertEqual(len(names), 9)

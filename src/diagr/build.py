@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -65,33 +66,52 @@ def _in_view(vid: str, p: Problem) -> Problem:
     return Problem(p.loc, f"in view '{vid}': {p.message}", p.level)
 
 
+# What a build can write for a diagram and each of its views: the static SVG for each scheme, and the HTML page.
+OUTPUTS = (*SCHEMES, "html")
+
+
 def build_files(
     path: str | Path,
     out: str | Path,
     theme: str | None = None,
     *,
+    outputs: Collection[str],
     debug: bool = False,
     live: bool = False,
     transparent: bool = False,
 ) -> tuple[list[Path], list[Problem]]:
     ps = prepare_all(load_file(path), theme)
-    written = [f for p in ps for f in write_files(p, out, debug=debug, live=live, transparent=transparent)]
+    written = [
+        f for p in ps for f in write_files(p, out, outputs=outputs, debug=debug, live=live, transparent=transparent)
+    ]
     return written, [w for p in ps for w in p.warnings]
 
 
 def write_files(
-    p: Prepared, out: str | Path, *, debug: bool = False, live: bool = False, transparent: bool = False
+    p: Prepared,
+    out: str | Path,
+    *,
+    outputs: Collection[str],
+    debug: bool = False,
+    live: bool = False,
+    transparent: bool = False,
 ) -> list[Path]:
-    """The two static SVGs and the HTML page; debug adds the authoring overlay, live the reload script, and
-    transparent leaves the background out of the SVGs."""
+    """The files among OUTPUTS that outputs names: 'light' and 'dark' for the static SVGs, 'html' for the page.
+    debug adds the authoring overlay to the page, live the reload script, and transparent leaves the background out
+    of the SVGs."""
+    unknown = sorted(set(outputs) - set(OUTPUTS))
+    if unknown:
+        raise ValueError(f"unknown output {', '.join(unknown)}; outputs are {', '.join(OUTPUTS)}")
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     written = []
     for scheme in SCHEMES:
-        f = out / f"{p.diagram.id}-{scheme}.svg"
-        f.write_text(render_static(p.scene(), p.theme, scheme, transparent), encoding="utf-8")
+        if scheme in outputs:
+            f = out / f"{p.diagram.id}-{scheme}.svg"
+            f.write_text(render_static(p.scene(), p.theme, scheme, transparent), encoding="utf-8")
+            written.append(f)
+    if "html" in outputs:
+        f = out / f"{p.diagram.id}.html"
+        f.write_text(render_html(p, debug, live), encoding="utf-8")
         written.append(f)
-    f = out / f"{p.diagram.id}.html"
-    f.write_text(render_html(p, debug, live), encoding="utf-8")
-    written.append(f)
     return written

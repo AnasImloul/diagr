@@ -17,6 +17,7 @@ from typing import Any
 import yaml
 
 from diagr import build_files, json_schema, load_file
+from diagr.build import OUTPUTS
 from diagr.unparse import to_yaml
 from tests.support import ROOT, Case
 
@@ -33,7 +34,7 @@ class Examples(Case):
         for example in EXAMPLES:
             with self.subTest(example=example.parent.name):
                 out = self.tmp()
-                written, warnings = build_files(example, out)
+                written, warnings = build_files(example, out, outputs=OUTPUTS)
                 self.assertClean(warnings)
                 for f in written:
                     golden = GOLDEN / f.name
@@ -60,7 +61,11 @@ class Examples(Case):
         main = {f"{d.id}-light.svg", f"{d.id}-dark.svg", f"{d.id}.html"}
         expanded.write_text(to_yaml(d, source), encoding="utf-8")
         placed = any(n.auto for n in d.nodes.values())
-        for original, again in zip(build_files(path, self.tmp())[0], build_files(expanded, self.tmp())[0], strict=True):
+        for original, again in zip(
+            build_files(path, self.tmp(), outputs=OUTPUTS)[0],
+            build_files(expanded, self.tmp(), outputs=OUTPUTS)[0],
+            strict=True,
+        ):
             if placed and original.name not in main:
                 continue
             self.assertEqual(original.read_text(encoding="utf-8"), again.read_text(encoding="utf-8"), original.name)

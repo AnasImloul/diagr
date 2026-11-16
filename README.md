@@ -35,11 +35,11 @@ pip install git+https://github.com/AnasImloul/diagr
 
 ```sh
 diagr init my-flow.yml           # writes a starter diagram, and never overwrites a file
-diagr build my-flow.yml -o dist  # dist/my-flow-light.svg, dist/my-flow-dark.svg, dist/my-flow.html
+diagr build my-flow.yml --svg --html -o dist  # dist/my-flow-light.svg, dist/my-flow-dark.svg, dist/my-flow.html
 ```
 
 Open `dist/my-flow.html` and press **Place order** to play the scenario. While you edit,
-`diagr watch my-flow.yml -o dist --serve` rebuilds on every save and serves the output at `http://127.0.0.1:8001/`,
+`diagr watch my-flow.yml --html -o dist --serve` rebuilds on every save and serves the output at `http://127.0.0.1:8001/`,
 where open pages reload and keep their place in the scenario.
 
 The starter is a short order flow:
@@ -126,8 +126,8 @@ To show a diagram in a README, use both SVGs so the image follows the reader's t
 | Command | What it does |
 |---|---|
 | `diagr init [FILE] [--id ID]` | Write a starter diagram (default `diagram.yml`); never overwrites |
-| `diagr build FILE... [-o DIR] [--theme T] [--debug] [--transparent]` | Write the two SVGs and the HTML page for each file; `--debug` adds the grid and route overlay to the page (G toggles it); `--transparent` leaves the background out of the SVGs |
-| `diagr watch FILE... [-o DIR] [--theme T] [--interval S] [--debug] [--transparent] [--serve] [--port P]` | Rebuild when the file, its icon folders or its theme file change; `--serve` also serves the output, and open pages reload on each rebuild |
+| `diagr build FILE... [--light] [--dark] [--svg] [--html] [-o DIR] [--theme T] [--debug] [--transparent]` | Write the files you ask for, at least one, for each diagram and each of its views: `--light` and `--dark` the static SVGs, `--svg` both, `--html` the page with the player; `--debug` adds the grid and route overlay to the page (G toggles it); `--transparent` leaves the background out of the SVGs |
+| `diagr watch FILE... [--light] [--dark] [--svg] [--html] [-o DIR] [--theme T] [--interval S] [--debug] [--transparent] [--serve] [--port P]` | Rebuild the files you ask for, as `build` does, when the diagram, its icon folders or its theme file change; `--serve` also serves the output, and open pages reload on each rebuild |
 | `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout; `--strict` fails on warnings too |
 | `diagr expand FILE [-o OUT]` | Print the diagram with its components written out as plain groups, nodes and edges and every position pinned; the output builds to the same files |
 | `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |

@@ -320,7 +320,7 @@ class Placement(Case):
         for seed in ("1", "2", "3"):
             out = folder / seed
             subprocess.run(
-                [sys.executable, "-m", "diagr", "build", *files, "-o", str(out)],
+                [sys.executable, "-m", "diagr", "build", "--svg", *files, "-o", str(out)],
                 env={**os.environ, "PYTHONHASHSEED": seed},
                 check=True,
                 capture_output=True,

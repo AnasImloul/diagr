@@ -8,7 +8,7 @@ import textwrap
 import unittest
 from pathlib import Path
 
-from diagr import DiagramError, prepare
+from diagr import DiagramError, build_files, prepare
 from diagr.cli import _claim, _watched, main
 from diagr.parse import loads
 from diagr.render.html import render_html
@@ -126,7 +126,9 @@ class Transparent(Case):
 
     def test_cli_flag(self):
         out = self.tmp()
-        code, _, _ = cli("build", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out), "--transparent")
+        code, _, _ = cli(
+            "build", "--svg", "--html", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out), "--transparent"
+        )
         self.assertEqual(code, 0)
         self.assertIn("<mask", (out / "order-flow-dark.svg").read_text(encoding="utf-8"))
         self.assertNotIn("<mask", (out / "order-flow.html").read_text(encoding="utf-8"))
@@ -321,7 +323,9 @@ class Cli(Case):
         base = self.tmp()
         for name in ("one.yml", "two.yml"):
             (base / name).write_text(textwrap.dedent(BASE), encoding="utf-8")
-        code, out, err = cli("build", str(base / "one.yml"), str(base / "two.yml"), "-o", str(base / "out"))
+        code, out, err = cli(
+            "build", "--svg", "--html", str(base / "one.yml"), str(base / "two.yml"), "-o", str(base / "out")
+        )
         self.assertEqual(code, 1)
         self.assertIn("diagram 't' writes t.html and its SVGs, which diagram 't' in", err)
         self.assertEqual(sorted(p.name for p in (base / "out").iterdir()), ["t-dark.svg", "t-light.svg", "t.html"])
@@ -335,7 +339,7 @@ class Cli(Case):
         base = self.tmp()
         first = self.write(base, "a.yml", "shop-front")
         second = self.write(base, "b.yml", "shop", "  front: {include: [a]}\n")
-        code, _, err = cli("build", first, second, "-o", str(base / "out"))
+        code, _, err = cli("build", "--svg", "--html", first, second, "-o", str(base / "out"))
         self.assertEqual(code, 1)
         self.assertIn(
             "b.yml: view 'front' of 'shop' writes shop-front.html and its SVGs, which diagram 'shop-front' in", err
@@ -349,7 +353,7 @@ class Cli(Case):
         base = self.tmp()
         first = self.write(base, "a.yml", "a", "  b-c: {include: [a]}\n")
         second = self.write(base, "ab.yml", "a-b", "  c: {include: [a]}\n")
-        code, _, err = cli("build", first, second, "-o", str(base / "out"))
+        code, _, err = cli("build", "--svg", "--html", first, second, "-o", str(base / "out"))
         self.assertEqual(code, 1)
         self.assertIn("view 'c' of 'a-b' writes a-b-c.html and its SVGs, which view 'b-c' of 'a' in", err)
 
@@ -367,11 +371,49 @@ class Cli(Case):
         _claim(names, "other.yml", loads(Path(other).read_text(encoding="utf-8"), other, base))
         self.assertEqual(names["shop-front"][0], "other.yml")
 
-    def test_build_writes_three_files(self):
+    def test_build_writes_what_it_is_asked_for(self):
+        order = str(ROOT / "examples/order-flow/diagram.yml")
+        for switches, names in (
+            (["--light"], ["order-flow-light.svg"]),
+            (["--dark"], ["order-flow-dark.svg"]),
+            (["--svg"], ["order-flow-dark.svg", "order-flow-light.svg"]),
+            (["--html"], ["order-flow.html"]),
+            (["--light", "--html"], ["order-flow-light.svg", "order-flow.html"]),
+            (["--svg", "--html"], ["order-flow-dark.svg", "order-flow-light.svg", "order-flow.html"]),
+        ):
+            with self.subTest(switches=switches):
+                out = self.tmp()
+                code, stdout, _ = cli("build", *switches, order, "-o", str(out))
+                self.assertEqual(code, 0)
+                self.assertEqual(sorted(p.name for p in out.iterdir()), names)
+                self.assertEqual(len(stdout.splitlines()), len(names))
+
+    def test_views_follow_the_choice(self):
         out = self.tmp()
-        code, stdout, _ = cli("build", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out))
+        code, _, _ = cli("build", "--html", str(ROOT / "examples/data-platform/diagram.yml"), "-o", str(out))
         self.assertEqual(code, 0)
-        self.assertEqual(len(stdout.splitlines()), 3)
+        self.assertEqual(
+            sorted(p.name for p in out.iterdir()),
+            ["data-platform-ingestion.html", "data-platform-serving.html", "data-platform.html"],
+        )
+
+    def test_build_needs_to_be_told_what_to_write(self):
+        out = self.tmp()
+        code, _, err = cli("build", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out))
+        self.assertEqual(code, 2)
+        self.assertIn("say what to build: --light, --dark, --svg or --html", err)
+        self.assertFalse(out.exists() and any(out.iterdir()))
+
+    def test_options_for_files_not_being_written_warn(self):
+        order = str(ROOT / "examples/order-flow/diagram.yml")
+        _, _, err = cli("build", "--html", "--transparent", order, "-o", str(self.tmp()))
+        self.assertIn("--transparent only changes the SVGs", err)
+        _, _, err = cli("build", "--svg", "--debug", order, "-o", str(self.tmp()))
+        self.assertIn("--debug only changes the HTML page", err)
+
+    def test_unknown_output_in_python(self):
+        with self.assertRaisesRegex(ValueError, "unknown output png; outputs are light, dark, html"):
+            build_files(ROOT / "examples/order-flow/diagram.yml", self.tmp(), outputs=["png"])
 
     def test_check_json(self):
         base = self.tmp()
