@@ -14,7 +14,7 @@ from collections import defaultdict
 from ..model import Diagram, boxes_around
 from ..theme import Theme
 from .flow import laid_out
-from .geometry import node_box
+from .geometry import Rect, node_box
 
 # Room kept past a node with nothing below its title, and between neighbouring boxes, in px.
 NODE_AFTER = -14
@@ -120,7 +120,7 @@ class _Placer:
         y = ((-self.top, NODE_AFTER), (t.size("group_top"), t.size("group_bottom") + 6), (inset, self.band))
         x = ((-(half + 4), -(half + 4)), (-inset, -inset), (inset, inset))
         self.ext_cross, self.ext_main = (x, y) if down else (y, x)
-        self.depths: dict[str, float] = {}
+        self.measured: dict[str, Rect] = {}
         self.order = list(d.nodes)
         # An edge pinned to sides across the flow (bottom to top when it runs right) links nodes in one layer.
         across = ("left", "right") if down else ("top", "bottom")
@@ -259,18 +259,27 @@ class _Placer:
     def inside(self, g: str | None) -> list[str]:
         return self.own[g] + [k for c in self.children[g] if self.used(c) for k in self.inside(c)]
 
+    def box(self, k: str) -> Rect:
+        """A node's box, in px, around its centre at (0, 0)."""
+        if k not in self.measured:
+            n = self.d.nodes[k]
+            self.measured[k] = node_box(n, 0, 0, self.t, len(n.sub)).box
+        return self.measured[k]
+
     def below(self, k: str) -> float:
         """How far a node's box reaches below its centre, in px."""
-        if k not in self.depths:
-            n = self.d.nodes[k]
-            self.depths[k] = node_box(n, 0, 0, self.t, len(n.sub)).box.y1
-        return self.depths[k]
+        return self.box(k).y1
 
     def slot(self, k: str) -> float:
-        """Cross cells a node takes: one, or more on the y axis for a tall node (sub lines, cells, a trigger)."""
-        if self.down:
-            return 1.0
-        return max(1.0, -(-(self.below(k) + self.top + MARGIN) * 20 // self.cell) / 20)
+        """Cross cells a node takes: one, or more for a node too tall (sub lines, cells, a trigger) or, when the flow
+        runs down, too wide for one."""
+        px = self.box(k).w if self.down else self.below(k) + self.top
+        return max(1.0, -(-(px + MARGIN) * 20 // self.cell) / 20)
+
+    def lead(self, k: str) -> float:
+        """Where a node's centre sits in its slot, in cells from its start: a slot runs down from the centre, but a
+        wide one spreads both ways."""
+        return (self.slot(k) - 1) / 2 if self.down else 0.0
 
     def reach(self, item: str | None) -> tuple[float, float]:
         """How far an item (a group id, or None for a block of loose nodes) reaches past its cells."""
@@ -335,7 +344,8 @@ class _Placer:
 
     def spacing(self) -> None:
         """Main-axis spacing: where the groups present change from one layer to the next, room for the boxes that close
-        and those that open, and never less than LAYER_GAP."""
+        and those that open, and never less than LAYER_GAP; and wherever the nodes of one layer would reach those of the
+        next, room for them."""
         d, layer = self.d, self.layer
         self.layers = layers = sorted(set(layer.values()))
         self.at_layer = {v: [k for k in layer if layer[k] == v] for v in layers}
@@ -351,7 +361,18 @@ class _Placer:
             if u is not None and present[u] != present[v]:
                 px = self._edge(u, present[u] - present[v], 1) + self._edge(v, present[v] - present[u], 0) + MARGIN
                 shift += max(LAYER_GAP, -(-px * 20 // self.long) / 20)
+            if u is not None:
+                short = self._reach(u)[1] + self._reach(v)[0] + MARGIN - (v + shift - self.main[u]) * self.long
+                if short > 0:
+                    shift += -(-short * 20 // self.long) / 20
             self.main[v] = v + shift
+
+    def _reach(self, v: float) -> tuple[float, float]:
+        """How far the nodes of layer v reach before and after their centres along the flow, in px."""
+        boxes = [self.box(k) for k in self.at_layer[v]]
+        if self.down:
+            return max(-b.y for b in boxes), max(b.y1 for b in boxes)
+        return max(-b.x for b in boxes), max(b.x1 for b in boxes)
 
     def _edge(self, v: float, gs: set[str], after: int) -> float:
         """How far the boxes of layer v reach past its cells, before it (after=0) or past it (after=1)."""
@@ -377,7 +398,7 @@ class _Placer:
         start, size = self.start, self.size
         if any(m == self.main[v] and y < c + s and c < y + h for m, c, s in self.taken):
             return False
-        if any(abs(y - ln) < 0.5 for ln in self.lanes(v)):
+        if any(y - 0.5 < ln < y + h - 0.5 for ln in self.lanes(v)):
             return False
         for c in self.children[None] if bands else []:
             if c in size and self.span(c)[0] <= v <= self.span(c)[1]:
@@ -411,7 +432,7 @@ class _Placer:
                 for k in here:
                     while not self.clear(v, at, self.slot(k), False):
                         at += 1
-                    cross[k] = at
+                    cross[k] = at + self.lead(k)
                     self.taken.append((main[v], at, self.slot(k)))
                     at += self.slot(k)
 
@@ -420,10 +441,10 @@ class _Placer:
         layer, main, cross, taken = self.layer, self.main, self.cross, self.taken
         start, size, children = self.start, self.size, self.children
         for k in sorted(self.own[None], key=lambda k: (layer[k], self.order.index(k))):
-            v, h = layer[k], self.slot(k)
-            want = self.bary(self.preds[k] + self.succs[k])
-            want = 0.0 if want is None else want
-            options = {want, round(want)}
+            v, h, lead = layer[k], self.slot(k), self.lead(k)
+            near = self.bary(self.preds[k] + self.succs[k])
+            want = 0.0 if near is None else near
+            options = {want - lead, round(want) - lead}
             options |= {c - h for m, c, _ in taken if m == main[v]} | {c + s for m, c, s in taken if m == main[v]}
             options |= {ln + 0.5 for ln in self.lanes(v)} | {ln - h - 0.5 for ln in self.lanes(v)}
             for c in children[None]:
@@ -451,8 +472,8 @@ class _Placer:
             fits = [y for y in options if self.clear(v, y, h, True)]
             open_ = [y for y in fits if not any(lo < y < hi for lo, hi in between)]
             fits = open_ or fits
-            y = min(fits, key=lambda y: (abs(y - want), -y)) if fits else max(c + s for _, c, s in taken)
-            cross[k] = y
+            y = min(fits, key=lambda y: (abs(y + lead - want), -y)) if fits else max(c + s for _, c, s in taken)
+            cross[k] = y + lead
             taken.append((main[v], y, h))
 
     def write(self) -> None:

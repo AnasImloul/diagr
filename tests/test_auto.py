@@ -170,6 +170,32 @@ class Placement(Case):
         )
         self.assertClean(problems(yml, base))
 
+    def test_wide_nodes_side_by_side_when_the_flow_runs_down(self):
+        yml = """
+        id: t
+        direction: down
+        nodes:
+          s: {icon: server, title: Source}
+          a: {icon: server, title: Customer relationship management platform}
+          b: {icon: server, title: Enterprise resource planning integration hub}
+          c: {icon: server, title: Customer records}
+        edges:
+          s -> (a b c): {}
+        """
+        self.assertClean(problems(yml))
+
+    def test_wide_node_keeps_its_neighbours_along_the_flow_apart(self):
+        yml = """
+        id: t
+        nodes:
+          s: {icon: server, title: S}
+          a: {icon: server, title: A customer relationship management platform for every region}
+          t: {icon: server, title: T}
+        edges:
+          s -> a -> t: {}
+        """
+        self.assertClean(problems(yml))
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))
