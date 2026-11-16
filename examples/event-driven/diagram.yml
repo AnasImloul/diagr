@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
 # No node has `at`: diagr places every node, and routes every edge, on its own.
-version: 2
+version: 1
 id: event-driven
 title: Event-driven shop
 description: >-

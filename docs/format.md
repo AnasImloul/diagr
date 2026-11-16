@@ -5,7 +5,7 @@ Colours, fonts and sizes live in the theme, not here. To try any of it without i
 [playground](playground.md).
 
 ```yaml
-version: 2                   # format version; see Versions
+version: 1                   # format version; see Versions
 id: order-flow               # used for output file names
 title: Order processing
 description: One sentence, used as the accessible label.
@@ -538,20 +538,12 @@ The [multi-region example](examples/multi-region.md#views) has a dynamic view of
 
 ## Versions
 
-`version` says which version of the format a file is written in; a file without it is version 1. diagr reads older
-versions too: it upgrades the file as it reads it, and warns at each place it rewrote with what the current version
-writes there, so `diagr check` lists what to change. `diagr init` and `diagr expand` write the current version.
+`version` says which version of the format a file is written in; a file without it is version 1, the current one.
+`diagr init` and `diagr expand` write it.
 
-Version 2 changed:
-
-- A group or node goes inside the group that holds it; `in:` is only for instances.
-- A trigger button is written on its scenario, `trigger: {at: node, label: ...}`, not as `trigger` and `plays` on the
-  node.
-- `{repeat: 3, do: [...]}` is `repeat 3: [...]`.
-- Text changes are `node.sub 300ms: text` and `status: text`, not `set node.sub text` or `status text`.
-
-These last two apply wherever effects are written: in a step's `do`, in a `Title: [effects]` step and in actions,
-the diagram's and the components'.
+When a later version changes the format in a way that breaks older files, diagr will keep reading them: it upgrades
+each file as it reads it, and warns at each place it rewrote with what the new version writes there, so
+`diagr check` lists what to change.
 
 ## Validation
 

@@ -448,8 +448,7 @@ DIAGRAM = f.Obj(
                 integer=True,
                 minimum=1,
                 maximum=VERSION,
-                description=f"Format version the file is written in; default 1. The current one is {VERSION}; diagr "
-                "upgrades older ones as it reads them, with a warning for each change",
+                description=f"Format version the file is written in; default 1. The current one is {VERSION}",
             )
         ),
         "id": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),

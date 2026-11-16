@@ -6,8 +6,8 @@
     "version": {
       "type": "integer",
       "minimum": 1,
-      "maximum": 2,
-      "description": "Format version the file is written in; default 1. The current one is 2; diagr upgrades older ones as it reads them, with a warning for each change"
+      "maximum": 1,
+      "description": "Format version the file is written in; default 1. The current one is 1"
     },
     "id": {
       "type": "string",

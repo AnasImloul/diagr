@@ -2,8 +2,14 @@ from __future__ import annotations
 
 import unittest
 
+import yaml
+
 from diagr import json_schema
 from diagr.icons import _import_svg
+from diagr.migrations import VERSION, upgrade
+from diagr.parse import loads
+from diagr.source import data, load
+from diagr.unparse import to_yaml
 from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
@@ -67,6 +73,17 @@ class Format(Case):
         found = problems(BASE + "scenarios:\n  s:\n    steps:\n    - status: [done a]\n")
         self.assertReports(found, "'status' is a step's own field")
         self.assertReports(found, "write 'Status: [...]'")
+
+    def test_version(self):
+        self.assertClean(problems("version: 1\n" + BASE))
+        newer = problems(f"version: {VERSION + 1}\n" + BASE)
+        self.assertReports(newer, f"newer than this diagr, which reads up to version {VERSION}")
+        self.assertReports(problems("version: two\n" + BASE), "'version' is a whole number")
+
+    def test_expand_writes_the_current_version(self):
+        # As diagr expand reads the file: in the current version, which it writes back.
+        out = to_yaml(loads(BASE, "t.yml", ROOT), data(upgrade(load(BASE, "t.yml"))[0]))
+        self.assertEqual(yaml.safe_load(out)["version"], VERSION)
 
     def test_quoted_repeat_count(self):
         yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"

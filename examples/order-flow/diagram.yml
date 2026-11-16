@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
-version: 2
+version: 1
 id: order-flow
 title: Order processing
 description: A web app posts an order to the API, which queues it for workers that write it to the orders database.
