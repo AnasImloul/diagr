@@ -45,19 +45,23 @@ def _acyclic(order: list[str], edges: list[tuple[str, str]]) -> list[tuple[str, 
         out[a].append(b)
     state: dict[str, int] = {}
     back: set[tuple[str, str]] = set()
-
-    def walk(v: str) -> None:
-        state[v] = 1
-        for w in out[v]:
-            if state.get(w) == 1:
+    # With a stack of its own rather than recursion, so a long chain does not reach Python's recursion limit.
+    for root in order:
+        if root in state:
+            continue
+        state[root] = 1
+        stack = [(root, iter(out[root]))]
+        while stack:
+            v, ahead = stack[-1]
+            w = next(ahead, None)
+            if w is None:
+                state[v] = 2
+                stack.pop()
+            elif state.get(w) == 1:
                 back.add((v, w))
             elif w not in state:
-                walk(w)
-        state[v] = 2
-
-    for v in order:
-        if v not in state:
-            walk(v)
+                state[w] = 1
+                stack.append((w, iter(out[w])))
     return [e for e in edges if e not in back]
 
 

@@ -108,6 +108,12 @@ class Placement(Case):
         self.assertLess(row["a"], row["b"])
         self.assertLess(row["p"], row["q"])
 
+    def test_long_chain(self):
+        n = 1100
+        nodes = "".join(f"  n{i}: {{icon: server, title: N{i}}}\n" for i in range(n))
+        edges = "".join(f"  n{i} -> n{i + 1}: {{}}\n" for i in range(n - 1))
+        self.assertClean(problems(f"id: t\nnodes:\n{nodes}edges:\n{edges}"))
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))
