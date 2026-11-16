@@ -76,6 +76,14 @@ class Views(Case):
         self.assertReports(problems(BASE.replace("scenarios: [go]", "scenarios: [og]")), "unknown scenario 'og'")
         self.assertReports(problems(BASE.replace("include: [back]}", "include: [web], exclude: [web]}")), "no nodes")
 
+    def test_an_empty_view_is_reported_after_a_broken_one(self):
+        yml = BASE.replace("include: [back]}", "include: [bak]}").replace(
+            "include: [web, back], exclude: [data], scenarios: [go]", "include: [web], exclude: [web]"
+        )
+        found = problems(yml)
+        self.assertReports(found, "did you mean 'back'")
+        self.assertReports(found, "view 'front' leaves no nodes")
+
     def test_files(self):
         path = self.tmp() / "t.yml"
         path.write_text(textwrap.dedent(BASE.replace("exclude: [data], scenarios: [go]", "exclude: [data]")))

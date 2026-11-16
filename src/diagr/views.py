@@ -13,14 +13,17 @@ def check_views(d: Diagram) -> list[Problem]:
     problems = []
     ids = set(d.groups) | set(d.nodes)
     for vid, v in d.views.items():
+        found = []
         for x in (v.include or []) + v.exclude:
             if x not in ids:
-                problems.append(Problem(v.loc, f"view '{vid}': unknown group or node '{x}'{did_you_mean(x, ids)}"))
+                found.append(Problem(v.loc, f"view '{vid}': unknown group or node '{x}'{did_you_mean(x, ids)}"))
         for s in v.scenarios + ([v.scenario] if v.scenario else []):
             if s not in d.scenarios:
-                problems.append(Problem(v.loc, f"view '{vid}': unknown scenario '{s}'{did_you_mean(s, d.scenarios)}"))
-        if not problems and not _chosen(d, vid):
-            problems.append(Problem(v.loc, f"view '{vid}' leaves no nodes"))
+                found.append(Problem(v.loc, f"view '{vid}': unknown scenario '{s}'{did_you_mean(s, d.scenarios)}"))
+        # Whether it leaves anything can only be told once its own references are sound.
+        if not found and not _chosen(d, vid):
+            found.append(Problem(v.loc, f"view '{vid}' leaves no nodes"))
+        problems += found
     return problems
 
 
