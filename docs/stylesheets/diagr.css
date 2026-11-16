@@ -1213,11 +1213,33 @@ iframe.diagr-embed {
 }
 
 .md-typeset .dg-play__empty {
-  max-width: 28rem;
-  margin: 4rem auto;
-  padding: 0 1rem;
-  color: var(--dg-muted);
-  text-align: center;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Shown only if loading takes long enough to notice, so a quick start doesn't flash it. */
+.md-typeset .dg-play__spinner {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid var(--dg-rule);
+  border-top-color: var(--dg-muted);
+  border-radius: 50%;
+  opacity: 0;
+  animation: dg-play-appear 200ms ease-out 300ms forwards, dg-play-spin 800ms linear infinite;
+}
+
+@keyframes dg-play-appear {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dg-play-spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 body[data-md-color-scheme="default"] {
@@ -1268,6 +1290,10 @@ body[data-md-color-scheme="slate"] {
   .md-typeset .dg-play__stage,
   .md-typeset .dg-play__split::after {
     transition: none;
+  }
+
+  .md-typeset .dg-play__spinner {
+    animation: dg-play-appear 200ms ease-out 300ms forwards;
   }
 }
 

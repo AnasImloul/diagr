@@ -5,10 +5,55 @@
   var PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
   var STORE = "diagr-playground";
   var SPLIT = "diagr-playground-split";
+  var CACHE = "diagr-playground-python";
   var WAIT = 300;
+  var FAILED = "The preview couldn't load. Reload to try again.";
+
+  // Every docs page names where the playground lives and which build of its Python side this is (see the docs hook):
+  // the snapshot of Python saved for that build is kept under this key.
+  var meta = document.querySelector('meta[name="diagr-playground"]');
+  var HOME = meta ? new URL(meta.dataset.home, location.href) : null;
+  var SNAPSHOT = HOME && meta.content
+    ? new URL("snapshot?" + new URLSearchParams({ pyodide: PYODIDE, build: meta.content }), HOME).href
+    : "";
 
   var worker = null;
-  var workerState = "starting";
+  var workerState = "off";
+  var listener = null;
+  var job = null;
+  var waiting = false;
+
+  function workerURL(job) {
+    var url = new URL("worker.js", HOME);
+    url.searchParams.set("pyodide", PYODIDE);
+    url.searchParams.set("cache", CACHE);
+    if (SNAPSHOT) url.searchParams.set("snapshot", SNAPSHOT);
+    if (job) url.searchParams.set("job", job);
+    return url;
+  }
+
+  // One worker for the whole visit: started by the playground, or earlier when a link to it is hovered or focused,
+  // and kept across Material's instant navigation. While a background worker is still saving the snapshot, it waits
+  // for it and starts from the snapshot, rather than starting a second Python beside it.
+  function startWorker() {
+    if (worker || !HOME) return;
+    if (job) {
+      waiting = true;
+      return;
+    }
+    waiting = false;
+    worker = new Worker(workerURL(), { type: "module" });
+    workerState = "starting";
+    worker.onmessage = function (e) {
+      if (e.data.type === "ready") workerState = "ready";
+      if (e.data.type === "failed") workerState = "failed";
+      if (listener) listener(e);
+    };
+    worker.onerror = function () {
+      workerState = "failed";
+      if (listener) listener({ data: { type: "failed" } });
+    };
+  }
 
   function scheme() {
     return document.body.getAttribute("data-md-color-scheme") === "slate" ? "dark" : "light";
@@ -162,16 +207,14 @@
 
     function onMessage(e) {
       var m = e.data;
-      if (m.type === "status") return say(m.text);
       if (m.type === "ready") {
-        workerState = "ready";
         say("Ready");
         pump();
         return;
       }
       if (m.type === "failed") {
-        workerState = "failed";
-        return say("Python did not start: " + m.text, "error");
+        if (m.text) console.error(m.text);
+        return say(FAILED, "error");
       }
       busy = false;
       if (m.kind === "download") {
@@ -182,14 +225,6 @@
         show(m.result, m.want, m.ms);
       }
       pump();
-    }
-
-    function startWorker() {
-      if (worker) return;
-      var url = new URL(root.dataset.worker, location.href);
-      url.searchParams.set("pyodide", PYODIDE);
-      worker = new Worker(url, { type: "module" });
-      workerState = "starting";
     }
 
     function want() {
@@ -212,7 +247,19 @@
       store(STORE, text);
       link(text);
       if (workerState === "ready") say("Building");
+      else early(text);
       send({ kind: "build", source: text, want: want(), view: state.view, contrast: state.contrast });
+    }
+
+    // Until Python is ready, an unedited example shows what the docs build already made from it.
+    function early(text) {
+      var ex = examples.filter(function (x) { return x.source === text; })[0];
+      if (!ex || state.view) return;
+      var base = new URL(root.dataset.examples, location.href);
+      if (state.mode === "player") player(null, new URL(ex.html, base).href);
+      else if (!state.contrast) image(null, scheme(), new URL(ex[scheme()], base).href);
+      else return;
+      shown = { kind: want() };
     }
 
     function later() {
@@ -353,18 +400,18 @@
       if (pending) pending.remove();
       pending = el;
       stage.appendChild(el);
-      hideEmpty();
     }
 
     function settle(el) {
       if (pending !== el) return;
       pending = null;
+      hideEmpty();
       stage.querySelectorAll("iframe, img").forEach(function (other) {
         if (other !== el) other.remove();
       });
     }
 
-    function player(html) {
+    function player(html, src) {
       var frame = document.createElement("iframe");
       frame.className = "dg-play__frame is-loading";
       frame.title = "Diagram preview";
@@ -376,17 +423,18 @@
         frame.classList.remove("is-loading");
         settle(frame);
       }, { once: true });
-      frame.srcdoc = html;
+      if (src) frame.src = src;
+      else frame.srcdoc = html;
       swap(frame);
     }
 
-    function image(svg, which) {
+    function image(svg, which, src) {
       var img = document.createElement("img");
       img.className = "dg-play__image is-loading";
       img.alt = "Diagram preview, " + which;
-      var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      var url = src || URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       img.onload = img.onerror = function () {
-        URL.revokeObjectURL(url);
+        if (!src) URL.revokeObjectURL(url);
         img.classList.remove("is-loading");
         settle(img);
       };
@@ -490,13 +538,10 @@
       }
     }).observe(document.body, { attributes: true, attributeFilter: ["data-md-color-scheme"] });
 
+    listener = onMessage;
     startWorker();
-    worker.onmessage = onMessage;
-    worker.onerror = function () {
-      workerState = "failed";
-      say("Python did not start in this browser", "error");
-    };
     if (workerState === "ready") say("Ready");
+    if (workerState === "failed") say(FAILED, "error");
 
     var examplesReady = fetch(new URL(root.dataset.examples, location.href))
       .then(function (r) { return r.json(); })
@@ -628,36 +673,39 @@
     }).observe(header);
   }
 
-  // Any other docs page fetches Python for the playground once the browser is idle, so the playground starts from the
-  // browser's cache. jsDelivr lets browsers keep these files for a year: once they are cached these requests are
-  // answered from disk without reaching the network, and if the cache was cleared they download them again. A visitor
-  // saving data or on a slow connection is left alone.
-  function warm() {
-    if (document.getElementById("dg-play")) return;
+  // On any other docs page, once the browser is idle, Python for the playground is started once in the background
+  // and saved as a snapshot for the playground to start from. The snapshot in Cache Storage is the only record: a page
+  // that finds it does nothing more. A visitor saving data or on a slow connection is left alone.
+  function prepare() {
+    if (!SNAPSHOT || !window.caches || worker || document.getElementById("dg-play")) return;
     var net = navigator.connection;
     if (net && (net.saveData || /2g/.test(net.effectiveType || ""))) return;
-    var get = function (name) {
-      return fetch(PYODIDE + name, { priority: "low" }).then(function (r) {
-        if (!r.ok) throw new Error(name + ": " + r.status);
-        return r;
-      });
-    };
-    get("pyodide-lock.json")
-      .then(function (r) { return r.json(); })
-      .then(function (lock) {
-        var files = ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip"];
-        files.push(lock.packages.pyyaml.file_name);
-        return Promise.all(files.map(function (name) {
-          return get(name).then(function (r) { return r.arrayBuffer(); });
-        }));
+    caches.open(CACHE)
+      .then(function (cache) { return cache.match(SNAPSHOT); })
+      .then(function (hit) {
+        if (hit || worker) return;
+        job = new Worker(workerURL("snapshot"), { type: "module" });
+        job.onmessage = job.onerror = function () {
+          job = null;
+          if (waiting) startWorker();
+        };
       })
       .catch(function () {});
   }
 
   function whenIdle() {
-    if (window.requestIdleCallback) requestIdleCallback(warm, { timeout: 5000 });
-    else setTimeout(warm, 2000);
+    if (window.requestIdleCallback) requestIdleCallback(prepare, { timeout: 5000 });
+    else setTimeout(prepare, 2000);
   }
+
+  function intent(e) {
+    var a = e.target.closest && e.target.closest("a[href]");
+    if (a && HOME && a.href.split("#")[0] === HOME.href) startWorker();
+  }
+
+  ["pointerover", "focusin", "touchstart"].forEach(function (type) {
+    document.addEventListener(type, intent, { passive: true });
+  });
 
   if (document.readyState === "complete") whenIdle();
   else window.addEventListener("load", whenIdle, { once: true });

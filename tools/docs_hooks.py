@@ -2,6 +2,7 @@
 
 import base64
 import contextlib
+import hashlib
 import html
 import io
 import json
@@ -12,6 +13,7 @@ from pathlib import Path
 
 import yaml
 from mkdocs.structure.files import File
+from mkdocs.utils import get_relative_url
 
 import diagr as package
 from diagr.build import prepare
@@ -132,21 +134,48 @@ def on_files(files, config):
     return files
 
 
+# Names this build of the playground's Python side, so a browser can tell whether the Python it saved still matches.
+PLAYGROUND_BUILD = ""
+
+
 def _playground(files, config):
-    """The diagr package as a zip for the playground's worker to unpack, and the examples it offers."""
+    """The diagr package as a zip for the playground's worker to unpack, and the examples it offers, each with the
+    files the docs build already made from it, which the playground shows while Python starts."""
+    global PLAYGROUND_BUILD
     src = Path(package.__file__).resolve().parent
     buf = io.BytesIO()
+    # Fixed timestamps, so the same code zips to the same bytes and keeps the same build key.
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
         for f in sorted(src.rglob("*")):
             if f.is_file() and "__pycache__" not in f.parts:
-                z.write(f, Path("diagr") / f.relative_to(src))
+                info = zipfile.ZipInfo(str(Path("diagr") / f.relative_to(src)), date_time=(1980, 1, 1, 0, 0, 0))
+                z.writestr(info, f.read_bytes(), zipfile.ZIP_DEFLATED)
     files.append(File.generated(config, "playground/diagr.zip", content=buf.getvalue()))
+    bridge = (Path(config["docs_dir"]) / "playground" / "play.py").read_bytes()
+    PLAYGROUND_BUILD = hashlib.sha256(buf.getvalue() + bridge).hexdigest()[:16]
     examples = []
     # The playground opens on the first: the smallest example.
     for yml in sorted(EXAMPLES.glob("*/diagram.yml"), key=lambda y: (y.parent.name != "order-flow", y)):
         lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
-        examples.append({"title": yaml.safe_load(yml.read_text())["title"], "source": "\n".join(lines).strip() + "\n"})
+        data = yaml.safe_load(yml.read_text())
+        id_ = data["id"]
+        examples.append(
+            {
+                "title": data["title"],
+                "source": "\n".join(lines).strip() + "\n",
+                "html": f"../examples/{id_}/{id_}.html",
+                "light": f"../examples/{id_}/{id_}-light.svg",
+                "dark": f"../examples/{id_}/{id_}-dark.svg",
+            }
+        )
     files.append(File.generated(config, "playground/examples.json", content=json.dumps(examples)))
+
+
+def on_post_page(output, page, config):
+    """Every page says where the playground is and which build of it this is, so any page can prepare its Python."""
+    home = get_relative_url("playground/", page.url)
+    meta = f'<meta name="diagr-playground" content="{PLAYGROUND_BUILD}" data-home="{html.escape(home)}">'
+    return output.replace("</head>", meta + "</head>", 1)
 
 
 GALLERY = "<!-- icon-gallery -->"

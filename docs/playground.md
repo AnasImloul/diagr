@@ -4,11 +4,11 @@ description: Write a diagr diagram in the browser and see it render as you type.
 hide: [navigation, toc, footer]
 ---
 
-<div class="dg-play" id="dg-play" data-worker="worker.js" data-examples="examples.json">
+<div class="dg-play" id="dg-play" data-examples="examples.json">
 <div class="dg-play__bar">
 <h1>Playground</h1>
 <label class="dg-play__field">Start from <select id="dg-play-example"></select></label>
-<p class="dg-play__status" id="dg-play-status" role="status">Starting Python</p>
+<p class="dg-play__status" id="dg-play-status" role="status">Loading</p>
 <button class="dg-play__button" id="dg-play-share" type="button">Copy link</button>
 </div>
 <div class="dg-play__panes">
@@ -33,7 +33,7 @@ hide: [navigation, toc, footer]
 </span>
 </div>
 <div class="dg-play__stage" id="dg-play-stage">
-<p class="dg-play__empty" id="dg-play-empty">The first visit downloads Python for the browser (Pyodide, about 6 MB); after that it comes from the cache.</p>
+<div class="dg-play__empty" id="dg-play-empty" aria-hidden="true"><span class="dg-play__spinner"></span></div>
 </div>
 </section>
 </div>
