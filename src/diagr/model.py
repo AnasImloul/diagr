@@ -242,6 +242,11 @@ def held(groups: dict[str, Group], nodes: dict[str, Node], parent: str | None) -
     return sorted(parts, key=lambda p: _file_order(p[0]))
 
 
+def edge_id(src: str, dst: str) -> str:
+    """The id of the edge from src to dst when the file gives it no name of its own, and how effects refer to it."""
+    return f"{src}->{dst}"
+
+
 def boxes_around(d: Diagram, gid: str | None) -> list[str]:
     """The group and each group it sits in, innermost first, stopping at an unknown id or a group already seen."""
     out: list[str] = []

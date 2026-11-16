@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import fields, replace
 from typing import Any
 
-from .model import Component, Diagram, Edge, Instance, Loc
+from .model import Component, Diagram, Edge, Instance, Loc, edge_id
 from .source import Problem, Y, YMap, YScalar, YSeq, did_you_mean
 
 # {name} is a parameter; {{ and }} are literal braces.
@@ -86,11 +86,12 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
     def shift(at: tuple[float, float]) -> tuple[float, float]:
         return (at[0] + ox, at[1] + oy)
 
-    def edge_id(e: Edge) -> str:
-        return name(e.id) if e.id != f"{e.src.node}->{e.dst.node}" else f"{name(e.src.node)}->{name(e.dst.node)}"
+    def copy_id(e: Edge) -> str:
+        """The id the instance's copy of e gets."""
+        return name(e.id) if e.id != edge_id(e.src.node, e.dst.node) else edge_id(name(e.src.node), name(e.dst.node))
 
     taken = [name(k) for k in c.groups if name(k) in d.groups] + [name(k) for k in c.nodes if name(k) in d.nodes]
-    taken += [edge_id(e) for e in c.edges.values() if edge_id(e) in d.edges]
+    taken += [copy_id(e) for e in c.edges.values() if copy_id(e) in d.edges]
     if taken:
         problems.append(Problem(p.loc, f"instance '{p.id}': {', '.join(taken)} already defined elsewhere in the file"))
         return
@@ -117,8 +118,8 @@ def _instantiate(d: Diagram, c: Component, p: Instance, problems: list[Problem])
         d.nodes[name(n.id)] = replace(own(n), id=name(n.id), group=name(n.group) if n.group else p.parent)
     for e in c.edges.values():
         src, dst = replace(e.src, node=name(e.src.node)), replace(e.dst, node=name(e.dst.node))
-        eid = edge_id(e)
-        d.edges[eid] = replace(own(e), id=eid, src=src, dst=dst, twin=f"{dst.node}->{src.node}" if e.twin else None)
+        eid = copy_id(e)
+        d.edges[eid] = replace(own(e), id=eid, src=src, dst=dst, twin=edge_id(dst.node, src.node) if e.twin else None)
 
 
 def expand(

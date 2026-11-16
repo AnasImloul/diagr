@@ -3,7 +3,7 @@ from __future__ import annotations
 from .icons import Icons, SvgIcon, Tile
 from .layout.flow import laid_out
 from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box
-from .model import Diagram, Effect, Loc, Scenario, boxes_around, stack_owners
+from .model import Diagram, Effect, Loc, Scenario, boxes_around, edge_id, stack_owners
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem, did_you_mean
 from .theme import Theme
@@ -165,7 +165,7 @@ def _check_hidden(d: Diagram, p: list[Problem]) -> None:
     for e in (e for sc in d.scenarios.values() for e in walk_effects(sc)):
         if e.verb == "flow":
             shown.update(e.targets)
-            refs = [f"{a}->{b}" for a, b in e.links()]
+            refs = [edge_id(a, b) for a, b in e.links()]
         elif e.verb in ("show", "draw", "activate", "done", "fail", "run"):
             refs = e.targets
         else:
@@ -229,7 +229,7 @@ def _check_effect(d: Diagram, e: Effect, p: list[Problem]) -> None:
             if x not in ends:
                 p.append(Problem(e.loc, f"'flow': unknown node or group '{x}'{did_you_mean(x, ends)}"))
         for a, b in e.links():
-            if a in ends and b in ends and resolve_edge(d, f"{a}->{b}") is None:
+            if a in ends and b in ends and resolve_edge(d, edge_id(a, b)) is None:
                 pairs = _joining(d, a, b)
                 why = f"several edges go from '{a}' to '{b}'; use 'draw' with one of: {', '.join(pairs)}"
                 p.append(Problem(e.loc, f"'flow': {why if pairs else f'no edge from {a!r} to {b!r}'}"))

@@ -13,7 +13,7 @@ from .effects import effect_data
 from .layout.auto import place
 from .layout.flow import laid_out
 from .layout.route import ENTER, EXIT, as_route
-from .model import Diagram, Edge, Effect, Group, Node, Port, held
+from .model import Diagram, Edge, Effect, Group, Node, Port, edge_id, held
 from .syntax import EDGE, GROUP, NODE, PAIR_GAP, num
 from .theme import load_theme
 
@@ -37,7 +37,7 @@ def _port(p: Port) -> str:
 
 def _edge_key(e: Edge) -> str:
     key = f"{_port(e.src)} {'-->' if e.dashed else '->'} {_port(e.dst)}"
-    return key if e.id == f"{e.src.node}->{e.dst.node}" else f"{key} as {e.id}"
+    return key if e.id == edge_id(e.src.node, e.dst.node) else f"{key} as {e.id}"
 
 
 def _edge(e: Edge, arrow: bool = True) -> dict[str, Any] | str:

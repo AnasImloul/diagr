@@ -8,6 +8,10 @@ import yaml
 
 from .model import Loc
 
+# Built once: data() reads a plain YAML value for every scalar of a file.
+_RESOLVER = yaml.resolver.Resolver()
+_CONSTRUCTOR = yaml.constructor.SafeConstructor()
+
 
 @dataclass
 class Problem:
@@ -64,12 +68,9 @@ def data(y: Y) -> Any:
     if isinstance(y, YSeq):
         return [data(i) for i in y.items]
     assert isinstance(y, YScalar)
-    tag = (
-        "tag:yaml.org,2002:str"
-        if y.quoted
-        else yaml.resolver.Resolver().resolve(yaml.ScalarNode, y.value, (True, False))
-    )
-    return yaml.constructor.SafeConstructor().construct_object(yaml.ScalarNode(tag, y.value))
+    tag = "tag:yaml.org,2002:str" if y.quoted else _RESOLVER.resolve(yaml.ScalarNode, y.value, (True, False))
+    # The tag's own constructor, called directly: construct_object would keep every node it has seen.
+    return _CONSTRUCTOR.yaml_constructors[tag](_CONSTRUCTOR, yaml.ScalarNode(tag, y.value))
 
 
 def _loc(file: str, node: yaml.Node) -> Loc:

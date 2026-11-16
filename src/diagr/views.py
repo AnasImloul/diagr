@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 
-from .model import Diagram, Effect, boxes_around, stack_owners
+from .model import Diagram, Effect, boxes_around, edge_id, stack_owners
 from .scenario import resolve_edge
 from .source import Problem, did_you_mean
 
@@ -51,7 +51,7 @@ def story(d: Diagram, sid: str) -> tuple[set[str], set[str], dict[str, list[int]
             if e.verb == "flow":
                 nodes.update(e.targets)
                 for a, b in e.links():
-                    edge(f"{a}->{b}", step)
+                    edge(edge_id(a, b), step)
             else:
                 for t in e.targets:
                     head = t.split(".", 1)[0] if e.verb == "set" else t

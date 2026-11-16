@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .model import Effect, Hop
+from .model import Effect, Hop, edge_id
 from .source import Problem, Y, YMap, YScalar, YSeq, did_you_mean
 
 DURATION = re.compile(r"(\d+(?:\.\d+)?)(ms|s)")
@@ -98,7 +98,7 @@ class Ctx:
         """A node, group or edge reference ('a', 'a->b', a named edge) as the instance names it."""
         if "->" in ref:
             a, _, b = ref.partition("->")
-            return f"{self.rename(a)}->{self.rename(b)}"
+            return edge_id(self.rename(a), self.rename(b))
         return self.rename(ref)
 
     def fail(self, y: Y, message: str) -> None:

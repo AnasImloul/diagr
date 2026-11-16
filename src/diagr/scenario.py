@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from .model import Diagram, Effect, Scenario
+from .model import Diagram, Effect, Scenario, edge_id
 
 DRAW_MS = 1400
 CELL_MS = 1040
@@ -186,7 +186,7 @@ class _Compiler:
             for h, after in zip(e.hops, e.hops[1:], strict=False):
                 # A box on the path is passed through: it has no active or done state of its own.
                 nodes = [k for k in h.ids if k in d.nodes]
-                subs = [Effect("draw", [f"{a}->{b}" for a in h.ids for b in after.ids], loc=e.loc)]
+                subs = [Effect("draw", [edge_id(a, b) for a in h.ids for b in after.ids], loc=e.loc)]
                 if nodes:
                     subs = [*subs, Effect("done", nodes, loc=e.loc)]
                     # A stop that is already active, with no time to hold, just carries on.

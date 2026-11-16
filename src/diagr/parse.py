@@ -21,6 +21,7 @@ from .model import (
     Scenario,
     Step,
     View,
+    edge_id,
     held,
 )
 from .scenario import walk_effects
@@ -36,10 +37,13 @@ def _scenario(sid: str, sc: f.Rec, ctx: Ctx) -> Scenario:
         if s.get("focus"):
             loc = s.at("focus")
             effects = [Effect("focus", s.get("focus"), loc=loc), *effects, Effect("focus", ["none"], loc=loc)]
-        steps.append(Step(s.get("title"), s.get("text", ""), s.get("at"), s.get("status"), effects, s.loc))
-    return Scenario(
-        steps, sc.get("ready", ""), sc.get("end", ""), sc.loc, sid, sc.get("title", ""), sc.get("loop", False)
-    )
+        steps.append(Step(title=s.get("title"), effects=effects, loc=s.loc, **_given(s, "text", "at", "status")))
+    return Scenario(steps=steps, loc=sc.loc, id=sid, **_given(sc, "ready", "end", "title", "loop"))
+
+
+def _given(rec: f.Rec, *keys: str) -> dict:
+    """The keys among these that the file sets, for a model record whose own defaults fill in the rest."""
+    return {k: rec.values[k] for k in keys if k in rec.values}
 
 
 def _triggers(d: Diagram, scenarios: list[f.Entry], problems: list[Problem]) -> None:
@@ -160,7 +164,7 @@ def _edges(entries: list[f.Entry], out: dict[str, Edge], problems: list[Problem]
         if name and len(made) != 1:
             problems.append(Problem(e.loc, f"'as {name}' names one edge, and '{key}' makes {len(made)}"))
             continue
-        ids = [name or f"{src.node}->{dst.node}" for src, dst, _, _ in made]
+        ids = [name or edge_id(src.node, dst.node) for src, dst, _, _ in made]
         for eid, (src, dst, dashed, twin), val in zip(
             ids, made, v if isinstance(v, list) else [v] * len(made), strict=True
         ):
@@ -206,18 +210,11 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
 
     grid = rec.get("grid")
     d = Diagram(
-        id=rec.get("id"),
-        title=rec.get("title", ""),
-        description=rec.get("description", ""),
-        theme=rec.get("theme", "default"),
-        icons=rec.get("icons", []),
-        grid=Grid(grid.get("col", 215), grid.get("row", 160)) if grid else Grid(),
-        step_list=rec.get("step_list", True),
-        direction=rec.get("direction", "right"),
-        align=rec.get("align", True),
+        grid=Grid(**_given(grid, "col", "row")) if grid else Grid(),
         flow=layout_flow(rec.get("layout")),
         base=base,
         file=file,
+        **_given(rec, "id", "title", "description", "theme", "icons", "step_list", "direction", "align"),
     )
     _boxes(rec.get("groups", []), rec.get("nodes", []), None, d.groups, d.nodes, problems)
     _edges(rec.get("edges", []), d.edges, problems)
@@ -235,7 +232,9 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     for e in rec.get("instances", []):
         v = e.value
         values = {p.key: p.value for p in v.get("with", [])}
-        instances[e.key] = Instance(e.key, v.get("component"), v.get("at") or (0, 0), v.get("in"), values, e.loc)
+        instances[e.key] = Instance(
+            id=e.key, component=v.get("component"), parent=v.get("in"), values=values, loc=e.loc, **_given(v, "at")
+        )
     expand(d, components, instances, problems)
     _tree_order(d)
     if not d.nodes:
@@ -260,15 +259,7 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     _cell_names(d, problems)
     for e in rec.get("views") or []:
         v = e.value
-        d.views[e.key] = View(
-            e.key,
-            v.get("title", ""),
-            v.get("include"),
-            v.get("exclude", []),
-            v.get("scenarios", []),
-            v.get("scenario"),
-            e.loc,
-        )
+        d.views[e.key] = View(id=e.key, loc=e.loc, **_given(v, "title", "include", "exclude", "scenarios", "scenario"))
     problems += check_views(d)
 
     if problems:

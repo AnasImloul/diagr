@@ -19,7 +19,8 @@ PARAM_NAME = r"[A-Za-z_][A-Za-z0-9_]*"
 IDS = "an id: letters, digits, _ and - (not last), optionally 'instance/id' as `diagr expand` writes"
 SIDE = r"left|right|top|bottom"
 PORT = rf"({REF})(?:@({SIDE})([+-]\d+(?:\.\d+)?)?)?"
-_PORT = rf"{REF}(?:@(?:{SIDE})(?:[+-]\d+(?:\.\d+)?)?)?"
+# PORT with its groups made non-capturing, to sit inside the edge key pattern.
+_PORT = re.sub(r"\((?!\?)", "(?:", PORT)
 _END = rf"(?:{_PORT}|\(\s*{_PORT}(?:\s+{_PORT})*\s*\))"
 ARROW = r"<->|-->|->"
 EDGE_KEY = rf"{_END}(?:\s*(?:{ARROW})\s*{_END})+(?:\s+as\s+{REF})?"
