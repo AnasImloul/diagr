@@ -335,6 +335,11 @@ class Placement(Case):
     def test_lane_turns_before_a_pinned_neighbour_on_its_row(self):
         self.assertClean(problems(BESIDE_PINNED))
 
+    def test_px_round_up_to_a_twentieth_of_a_cell(self):
+        from diagr.layout.auto import _cells
+
+        self.assertEqual([_cells(px, 160) for px in (0, 1, 8, 160, 161)], [0, 0.05, 0.05, 1.0, 1.05])
+
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout
         self.assertFalse(lay.groups["front"].overlaps(lay.groups["back"]))

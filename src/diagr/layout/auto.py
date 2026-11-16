@@ -23,6 +23,13 @@ NODE_AFTER = -14
 MARGIN = 16
 # Extra main-axis room where a layer boundary also crosses a group boundary, in cells.
 LAYER_GAP = 0.3
+# Room in px kept between a loose node's row and the boxes its forward edges run past.
+CLEAR = 8
+
+
+def _cells(px: float, cell: float) -> float:
+    """px as cells of size cell, rounded up to the next twentieth of a cell."""
+    return -(-px * 20 // cell) / 20
 
 
 def _acyclic(order: list[str], edges: list[tuple[str, str]]) -> list[tuple[str, str]]:
@@ -167,6 +174,16 @@ class _Placer:
         self.rel: dict[str | None, float] = {}
         self.size: dict[str | None, float] = {}
         self.start: dict[str | None, float] = {None: 0.0}
+        # What the later phases work out, in order: box_order the boxes that go one after the other, spacing where
+        # each layer sits along the flow, place_grouped where each node lands across it.
+        self.within: dict[str, list[str]] = defaultdict(list)
+        self.boxes: list[tuple[str, str]] = []
+        self.layers: list[float] = []
+        self.at_layer: dict[float, list[str]] = {}
+        self.position: dict[float, float] = {}
+        self.passing: dict[float, list[str]] = defaultdict(list)
+        self.cross: dict[str, float] = {}
+        self.taken: list[tuple[float, float, float]] = []
 
     def _source(self, k: str) -> bool:
         return self.d.nodes[k].at is None and not self.preds[k]
@@ -213,7 +230,6 @@ class _Placer:
             i = next((i for i, (x, y) in enumerate(zip(ca, cb, strict=False)) if x != y), min(len(ca), len(cb)))
             if (a, b) not in self.dashed and i < len(ca) and i < len(cb):
                 pairs.append((ca[i], cb[i]))
-        self.within: dict[str, list[str]] = defaultdict(list)
         for k in self.order:
             for g in self.chain(k):
                 self.within[g].append(k)
@@ -289,7 +305,7 @@ class _Placer:
         """Cross cells a node takes: one, or more for a node too tall (sub lines, cells, a trigger) or, when the flow
         runs down, too wide for one."""
         px = self.box(k).w if self.down else self.below(k) + self.top
-        return max(1.0, -(-(px + MARGIN) * 20 // self.cell) / 20)
+        return max(1.0, _cells(px + MARGIN, self.cell))
 
     def lead(self, k: str) -> float:
         """Where a node's centre sits in its slot, in cells from its start: a slot runs down from the centre, but a
@@ -325,8 +341,7 @@ class _Placer:
         return before + per[0] * levels, after + per[1] * levels
 
     def gap(self, a: str | None, b: str | None) -> float:
-        px = max(0.0, self.reach(a)[1] + self.reach(b)[0] + MARGIN)
-        return -(-px * 20 // self.cell) / 20
+        return _cells(max(0.0, self.reach(a)[1] + self.reach(b)[0] + MARGIN), self.cell)
 
     def span(self, g: str | None) -> tuple[float, float]:
         """The first and last layer holding a free node of g, its child groups included."""
@@ -390,18 +405,17 @@ class _Placer:
             present[v] = set()
             for k in self.at_layer[v]:
                 present[v].update(boxes_around(d, d.nodes[k].group))
-        self.main: dict[float, float] = {}
         shift = 0.0
         for i, v in enumerate(layers):
             u = layers[i - 1] if i else None
             if u is not None and present[u] != present[v]:
                 px = self._edge(u, present[u] - present[v], 1) + self._edge(v, present[v] - present[u], 0) + MARGIN
-                shift += max(LAYER_GAP, -(-px * 20 // self.long) / 20)
+                shift += max(LAYER_GAP, _cells(px, self.long))
             if u is not None:
-                short = self._reach(u)[1] + self._reach(v)[0] + MARGIN - (v + shift - self.main[u]) * self.long
+                short = self._reach(u)[1] + self._reach(v)[0] + MARGIN - (v + shift - self.position[u]) * self.long
                 if short > 0:
-                    shift += -(-short * 20 // self.long) / 20
-            self.main[v] = v + shift
+                    shift += _cells(short, self.long)
+            self.position[v] = v + shift
 
     def _reach(self, v: float) -> tuple[float, float]:
         """How far the nodes of layer v reach before and after their centres along the flow, in px."""
@@ -432,7 +446,7 @@ class _Placer:
 
     def clear(self, v: float, y: float, h: float, bands: bool) -> bool:
         start, size = self.start, self.size
-        if any(m == self.main[v] and y < c + s and c < y + h for m, c, s in self.taken):
+        if any(m == self.position[v] and y < c + s and c < y + h for m, c, s in self.taken):
             return False
         if any(y - 0.5 < ln < y + h - 0.5 for ln in self.lanes(v)):
             return False
@@ -448,16 +462,15 @@ class _Placer:
 
     def place_grouped(self) -> None:
         """Grouped nodes, layer by layer: a band's nodes are ordered by their predecessors' average cross position."""
-        d, layer, main, order = self.d, self.layer, self.main, self.order
+        d, layer, position, order = self.d, self.layer, self.position, self.order
         # The sources of the edges that pass through each layer, for lanes().
-        self.passing: dict[float, list[str]] = defaultdict(list)
         for u, w in self.dag:
             for x in self.layers:
                 if layer[u] < x < layer[w]:
                     self.passing[x].append(u)
         # Pinned nodes hold their places first.
         self.cross = cross = {k: (n.at[0] if self.down else n.at[1]) for k, n in d.nodes.items() if n.at is not None}
-        self.taken: list[tuple[float, float, float]] = [(main.get(layer[k], layer[k]), cross[k], 1.0) for k in cross]
+        self.taken = [(position.get(layer[k], layer[k]), cross[k], 1.0) for k in cross]
 
         def key(k: str) -> tuple[float, int]:
             b = self.bary(self.preds[k])
@@ -475,55 +488,70 @@ class _Placer:
                     while not self.clear(v, at, self.slot(k), False):
                         at += 1
                     cross[k] = at + self.lead(k)
-                    self.taken.append((main[v], at, self.slot(k)))
+                    self.taken.append((position[v], at, self.slot(k)))
                     at += self.slot(k)
 
     def place_loose(self) -> None:
         """Loose nodes: as close as they can get to the average of their neighbours, outside every group's band."""
-        layer, main, cross, taken = self.layer, self.main, self.cross, self.taken
-        start, size, children = self.start, self.size, self.children
+        layer, position, cross, taken = self.layer, self.position, self.cross, self.taken
         for k in sorted(self.own[None], key=lambda k: (layer[k], self.order.index(k))):
             v, h, lead = layer[k], self.slot(k), self.lead(k)
             near = self.bary(self.preds[k] + self.succs[k])
             want = 0.0 if near is None else near
-            options = {want - lead, round(want) - lead}
-            options |= {c - h for m, c, _ in taken if m == main[v]} | {c + s for m, c, s in taken if m == main[v]}
-            options |= {ln + 0.5 for ln in self.lanes(v)} | {ln - h - 0.5 for ln in self.lanes(v)}
-            for c in children[None]:
-                if c in size:
-                    options |= {start[c] - self.gap(None, c) - h, start[c] + size[c] + self.gap(c, None)}
-            # Its edges forward run along its row: keep it off rows where they would pass through a node on the way.
-            ends = [main[layer[s]] for s in self.succs[k] if layer[s] > v]
-            # A node's slot starts at the top of its box and ends below its labels and button.
-            top = (self.top + 8) / self.cell
-            between = [(c - top, c + s - top) for m, c, s in taken if ends and main[v] < m < max(ends)]
-            aims = {g for s in self.succs[k] for g in self.chain(s)}
-            for c in children[None]:
-                if ends and c in size and c not in aims and main[v] < main[self.span(c)[0]] < max(ends):
-                    # Where its nodes landed, which can be further down than its band when they kept off a lane.
-                    ins = [n for n in self.inside(c) if n in cross]
-                    lo, hi = self.reach(c)
-                    between.append(
-                        (
-                            min(cross[n] - self.lead(n) for n in ins) - (lo + 8) / self.cell,
-                            max(cross[n] - self.lead(n) + self.slot(n) for n in ins) + (hi + 8) / self.cell,
-                        )
-                    )
-            options |= {lo - 0.01 for lo, _ in between} | {hi + 0.01 for _, hi in between}
-            options |= {lo - h - 0.5 for lo, _ in between} | {hi + 0.5 for _, hi in between}
-            fits = [y for y in options if self.clear(v, y, h, True)]
+            between = self._between(k)
+            fits = [y for y in self._options(k, want, between) if self.clear(v, y, h, True)]
             open_ = [y for y in fits if not any(lo < y < hi for lo, hi in between)]
             fits = open_ or fits
             y = min(fits, key=lambda y: (abs(y + lead - want), -y)) if fits else max(c + s for _, c, s in taken)
             cross[k] = y + lead
-            taken.append((main[v], y, h))
+            taken.append((position[v], y, h))
+
+    def _options(self, k: str, want: float, between: list[tuple[float, float]]) -> set[float]:
+        """Where loose node k's slot could start: where it wants to be, and just either side of the nodes already in its
+        layer, of the lanes through it, of the groups' bands and of the stretches its row must keep out of."""
+        v, h = self.layer[k], self.slot(k)
+        at, start, size, taken = self.position[v], self.start, self.size, self.taken
+        options = {want - self.lead(k), round(want) - self.lead(k)}
+        options |= {c - h for m, c, _ in taken if m == at} | {c + s for m, c, s in taken if m == at}
+        options |= {ln + 0.5 for ln in self.lanes(v)} | {ln - h - 0.5 for ln in self.lanes(v)}
+        for c in self.children[None]:
+            if c in size:
+                options |= {start[c] - self.gap(None, c) - h, start[c] + size[c] + self.gap(c, None)}
+        options |= {lo - 0.01 for lo, _ in between} | {hi + 0.01 for _, hi in between}
+        options |= {lo - h - 0.5 for lo, _ in between} | {hi + 0.5 for _, hi in between}
+        return options
+
+    def _between(self, k: str) -> list[tuple[float, float]]:
+        """Stretches across the flow, in cells, that loose node k's row keeps out of: its edges forward run along that
+        row, so they would pass through the nodes and boxes between it and its successors."""
+        layer, position, cross, cell = self.layer, self.position, self.cross, self.cell
+        v = layer[k]
+        ends = [position[layer[s]] for s in self.succs[k] if layer[s] > v]
+        if not ends:
+            return []
+        # A node's slot starts at the top of its box and ends below its labels and button.
+        top = (self.top + CLEAR) / cell
+        between = [(c - top, c + s - top) for m, c, s in self.taken if position[v] < m < max(ends)]
+        aims = {g for s in self.succs[k] for g in self.chain(s)}
+        for c in self.children[None]:
+            if c in self.size and c not in aims and position[v] < position[self.span(c)[0]] < max(ends):
+                # Where its nodes landed, which can be further down than its band when they kept off a lane.
+                ins = [n for n in self.inside(c) if n in cross]
+                lo, hi = self.reach(c)
+                between.append(
+                    (
+                        min(cross[n] - self.lead(n) for n in ins) - (lo + CLEAR) / cell,
+                        max(cross[n] - self.lead(n) + self.slot(n) for n in ins) + (hi + CLEAR) / cell,
+                    )
+                )
+        return between
 
     def write(self) -> None:
         """Each free node's cell. With nothing pinned, the diagram starts at [0, 0]."""
-        d, free, main, cross, layer = self.d, self.free, self.main, self.cross, self.layer
+        d, free, position, cross, layer = self.d, self.free, self.position, self.cross, self.layer
         pinned = any(not n.auto for n in d.nodes.values())
-        m0 = 0.0 if pinned else min(main[layer[k]] for k in free)
+        m0 = 0.0 if pinned else min(position[layer[k]] for k in free)
         c0 = 0.0 if pinned else min(cross[k] for k in free)
         for k in free:
-            m, c = round(main[layer[k]] - m0, 2), round(cross[k] - c0, 2)
+            m, c = round(position[layer[k]] - m0, 2), round(cross[k] - c0, 2)
             d.nodes[k].at = (c, m) if self.down else (m, c)
