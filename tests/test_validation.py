@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from diagr import json_schema
 from diagr.icons import _import_svg
 from tests.support import ROOT, Case, problems
 
@@ -52,6 +53,10 @@ class Format(Case):
         for what, yml in cases.items():
             with self.subTest(what):
                 self.assertReports(problems(yml), "is not an id: letters, digits, _ and - (not last)")
+
+    def test_unquoted_number_as_text_passes_the_parser_and_the_schema(self):
+        self.assertClean(problems(BASE + "title: 2024\nscenarios: {s: {steps: [{title: yes, do: [done a]}]}}\n"))
+        self.assertEqual(json_schema()["properties"]["title"]["type"], ["string", "number", "boolean"])
 
     def test_quoted_repeat_count(self):
         yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"

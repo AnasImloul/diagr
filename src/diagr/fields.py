@@ -88,7 +88,9 @@ class Str(T):
         return y.value
 
     def schema(self):
-        s: dict = {"type": "string"}
+        # Plain text may be written unquoted, as `title: 2024` or `sub: yes`, which a YAML editor reads as a number or
+        # a boolean: check() takes it as the text it is written as, so the schema allows it too.
+        s: dict = {"type": "string"} if self.enum or self.pattern else {"type": ["string", "number", "boolean"]}
         if self.enum:
             s["enum"] = list(self.enum)
         if self.pattern:
