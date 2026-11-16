@@ -5,6 +5,7 @@ import unittest
 from diagr import json_schema
 from diagr.icons import _import_svg
 from tests.support import ROOT, Case, problems
+from tests.test_build import prepared
 
 BASE = """
 id: t
@@ -70,6 +71,70 @@ class Format(Case):
     def test_quoted_repeat_count(self):
         yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"
         self.assertReports(problems(yml), "'repeat' needs a whole number")
+
+
+THREE = "nodes:\n  a: {at: [0, 0], icon: api}\n  b: {at: [1, 0], icon: api}\n  c: {at: [2, 0], icon: api}\n"
+
+
+def edges(yml: str):
+    return prepared("id: t\n" + THREE + "edges:\n" + yml).diagram.edges
+
+
+class EdgeKeys(Case):
+    def test_a_chain_makes_an_edge_per_arrow_with_a_label_each(self):
+        found = edges("  a -> b -> c: [x, y]\n")
+        self.assertEqual({k: e.label for k, e in found.items()}, {"a->b": "x", "b->c": "y"})
+
+    def test_a_fan_makes_an_edge_from_each(self):
+        self.assertEqual(sorted(edges("  (a b) -> c: {}\n")), ["a->c", "b->c"])
+
+    def test_dashed_arrow(self):
+        self.assertTrue(edges("  a --> b: {}\n")["a->b"].dashed)
+
+    def test_a_pair_makes_one_edge_each_way(self):
+        found = edges("  a <-> b: [go, back]\n")
+        self.assertEqual((found["a->b"].label, found["b->a"].label), ("go", "back"))
+        self.assertEqual((found["a->b"].twin, found["b->a"].twin), ("b->a", "a->b"))
+
+    def test_as_names_the_edge(self):
+        self.assertEqual(list(edges("  a -> b as feed: {}\n")), ["feed"])
+
+    def test_ports(self):
+        e = edges("  a@bottom+10 -> b@top: {}\n")["a->b"]
+        self.assertEqual((e.src.side, e.src.offset, e.dst.side, e.dst.offset), ("bottom", 10, "top", 0))
+
+    def test_too_many_labels(self):
+        found = problems("id: t\n" + THREE + "edges:\n  a -> b -> c: [x, y, z]\n")
+        self.assertReports(found, "'a -> b -> c' makes 2 edges but lists 3 labels or mappings")
+
+    def test_as_on_a_key_that_makes_several_edges(self):
+        found = problems("id: t\n" + THREE + "edges:\n  a -> b -> c as e: {}\n")
+        self.assertReports(found, "'as e' names one edge, and 'a -> b -> c' makes 2")
+
+
+class ErrorPaths(Case):
+    def test_each_is_reported(self):
+        cases = {
+            "id: t\n" + THREE + "  a: {at: [3, 0], icon: api}\n": "duplicate key 'a' (first defined at line 3)",
+            "id: t\nnodes:\n  [a, b]: {icon: api}\n": "keys must be plain text",
+            "": "file is empty",
+            "id: t\ngroups:\n  g: {title: G, nodes: {a: {at: [0, 0], icon: api}}}\n"
+            "nodes:\n  a: {at: [1, 0], icon: api}\n": "node 'a' is defined twice",
+            "id: t\ngroups:\n  a: {title: G}\nnodes:\n  a: {at: [0, 0], icon: api}\n": "is both a group and a node",
+            "id: t\n" + THREE + "edges:\n  a -> b as c: {}\n": "edge id 'c' is also a node or group id",
+            "id: t\n" + THREE + "edges:\n  a -> b: {route: [right], via: [[0.5, 1]]}\n": "either 'route' or 'via'",
+            "id: t\ngroups:\n  g: {title: G, span: [2, 1]}\n" + THREE: "group 'g': 'span' needs 'at'",
+            "id: t\nnodes:\n  a: {at: [0, 0], icon: api}\n  b: {at: [0, 0], icon: api}\n": "on the same cell as 'a'",
+            "id: t\n" + THREE + "actions:\n  go: [go]\nscenarios: {s: {steps: [{title: s, do: [go]}]}}\n": (
+                "action 'go' calls itself"
+            ),
+            "id: t\n" + THREE + "actions:\n  go: [activate a]\nscenarios: {s: {steps: [{title: s, do: [go x]}]}}\n": (
+                "action 'go' takes no instances"
+            ),
+        }
+        for yml, message in cases.items():
+            with self.subTest(message):
+                self.assertReports(problems(yml), message)
 
 
 class Flow(Case):
