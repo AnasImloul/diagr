@@ -136,6 +136,12 @@ class Errors(Case):
         yml = BASE.replace("  lb: {at: [-1, 1]", "  a/api: {at: [5, 5], icon: api, title: X}\n  lb: {at: [-1, 1]")
         self.assertReports(problems(yml), "instance 'a': a/api already defined elsewhere")
 
+    def test_edge_name_clash(self):
+        for edge, taken in (("lb -> a/db as a/backup: {}", "a/backup"), ("a/api -> a/db: again", "a/api->a/db")):
+            with self.subTest(edge):
+                yml = BASE.replace("edges:\n  lb -> a/api", f"edges:\n  {edge}\n  lb -> a/api")
+                self.assertReports(problems(yml), f"instance 'a': {taken} already defined elsewhere")
+
     def test_typos_get_suggestions(self):
         yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (
             "scenarios:\n  s:\n    steps:\n"
