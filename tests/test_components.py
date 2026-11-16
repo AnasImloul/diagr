@@ -126,6 +126,24 @@ class Errors(Case):
         hits = [p for p in found if "unknown parameter {nmae}" in p.message]
         self.assertEqual(len(hits), 1)
 
+    def test_unknown_placeholder_in_a_stacked_title_or_an_action(self):
+        behind = BASE.replace(
+            '        title: "{name}"\n', '        title: "{name}"\n        behind: {old: "{nmae} v1"}\n'
+        )
+        self.assertReports(problems(behind), "group 'box' uses unknown parameter {nmae}")
+        action = BASE.replace(
+            "    edges:\n      api -> db:",
+            "    actions:\n      go: [{api.sub: '{nmae} up'}]\n    edges:\n      api -> db:",
+        )
+        self.assertReports(problems(action), "action 'go' uses unknown parameter {nmae}")
+
+    def test_repeat_round_in_an_action_is_not_a_parameter(self):
+        action = BASE.replace(
+            "    edges:\n      api -> db:",
+            "    actions:\n      go: [{repeat 2: ['status: try {i}']}]\n    edges:\n      api -> db:",
+        )
+        self.assertClean(problems(action))
+
     def test_edge_to_a_node_outside_the_component(self):
         self.assertReports(problems(BASE.replace("api -> db: ", "api -> lb: ")), "not one of its nodes")
 

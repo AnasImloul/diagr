@@ -12,7 +12,7 @@ from dataclasses import fields, replace
 from typing import Any
 
 from .model import Component, Diagram, Edge, Instance, Loc
-from .source import Problem, did_you_mean
+from .source import Problem, Y, YMap, YScalar, YSeq, did_you_mean
 
 # {name} is a parameter; {{ and }} are literal braces.
 PARAM = re.compile(r"\{\{|\}\}|\{([A-Za-z_][A-Za-z0-9_]*)\}")
@@ -21,26 +21,49 @@ PARAM = re.compile(r"\{\{|\}\}|\{([A-Za-z_][A-Za-z0-9_]*)\}")
 def _check(c: Component, problems: list[Problem]) -> None:
     """Problems in the definition itself, reported once however many instances there are."""
 
-    def scan(loc: Loc | None, what: str, *texts: str | None) -> None:
+    def scan(loc: Loc | None, what: str, *texts: str | None, also: tuple[str, ...] = ()) -> None:
         for text in texts:
             for m in PARAM.finditer(text or ""):
-                if m.group(1) and m.group(1) not in c.params:
+                if m.group(1) and m.group(1) not in c.params and m.group(1) not in also:
                     have = ", ".join(c.params) or "none"
                     problems.append(
                         Problem(loc, f"component '{c.id}': {what} uses unknown parameter {m.group(0)} (params: {have})")
                     )
 
+    def text(x: Any) -> list[str | None]:
+        """The text fields of x that an instance fills, as own() finds them."""
+        out: list[str | None] = []
+        for fl in fields(x):
+            if fl.metadata.get("instance") == "text":
+                v = getattr(x, fl.name)
+                out += v if isinstance(v, list) else [v]
+        return out
+
     for g in c.groups.values():
-        scan(g.loc, f"group '{g.id}'", g.title, g.sub)
+        scan(g.loc, f"group '{g.id}'", *text(g), *g.behind.values())
     for n in c.nodes.values():
-        scan(n.loc, f"node '{n.id}'", n.title, n.tooltip, *n.sub)
+        scan(n.loc, f"node '{n.id}'", *text(n))
+    for k, body in c.actions.items():
+        # {i} in an effect's text is the round of a 'repeat'.
+        scan(body.loc if isinstance(body, Y) else c.loc, f"action '{k}'", *_strings(body), also=("i",))
     for e in c.edges.values():
-        scan(e.loc, f"edge '{e.id}'", e.label, e.tooltip)
+        scan(e.loc, f"edge '{e.id}'", *text(e))
         for end in (e.src.node, e.dst.node):
             if end not in c.nodes and end not in c.groups:
                 problems.append(
                     Problem(e.loc, f"component '{c.id}': edge '{e.id}' goes to '{end}', not one of its nodes or groups")
                 )
+
+
+def _strings(y: Any) -> list[str]:
+    """Every key and value in a YAML tree, as text."""
+    if isinstance(y, YScalar):
+        return [y.value]
+    if isinstance(y, YSeq):
+        return [s for item in y.items for s in _strings(item)]
+    if isinstance(y, YMap):
+        return [s for k, v in y.pairs for s in (k.value, *_strings(v))]
+    return []
 
 
 def instance_fill(c: Component, p: Instance) -> Callable[[str], str]:
