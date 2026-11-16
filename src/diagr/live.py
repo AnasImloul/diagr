@@ -1,5 +1,5 @@
 """Live preview for `diagr watch --serve`: a local server for the output folder and a page script that reloads
-on each rebuild, keeping the scenario, frame and scroll position."""
+on each rebuild, keeping the scenario, frame, zoom and scroll position."""
 
 from __future__ import annotations
 
