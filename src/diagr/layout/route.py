@@ -345,9 +345,10 @@ class _Router:
         """How many nodes a lane turning in lo..hi runs through."""
         return self._crossings(_lane(e, a, b, self.d, lo + (hi - lo) * 0.4), a, b)
 
-    def _crossings(self, pts: list[Point], a: NodeBox, b: NodeBox) -> int:
-        """How many nodes other than its two ends a path runs through."""
-        return sum(1 for n in self.nodes.values() if n is not a and n is not b and not n.point and _through(pts, n.box))
+    def _crossings(self, pts: list[Point], a: NodeBox, b: NodeBox, among: list[NodeBox] | None = None) -> int:
+        """How many nodes other than its two ends a path runs through, of those among if given."""
+        nodes = self.nodes.values() if among is None else among
+        return sum(1 for n in nodes if n is not a and n is not b and not n.point and _through(pts, n.box))
 
     def _late(self, a: NodeBox, b: NodeBox, gb: set[str], p0: Point, p1: Point) -> tuple[float, float] | None:
         """The stretch just before the target where a turn across from the source's row to the target's misses every
@@ -496,9 +497,13 @@ class _Router:
             if fewest:
                 lo, hi = sorted(gaps[k])
                 tries = sorted((lo + 4 * i for i in range(int((hi - lo) / 4) + 1)), key=lambda c: abs(c - turns[k]))
+                # Every try runs within the box around both ends, the line and the gap: only nodes there can be hit.
+                xs, ys = zip(*_back_lane(p0, p1, side, lo, down), *_back_lane(p0, p1, side, hi, down), strict=True)
+                area = Rect(min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys))
+                near = [n for n in nodes.values() if n.box.overlaps(area)]
                 for c in tries:
                     pts = _back_lane(p0, p1, side, c, down)
-                    if (n := self._crossings(pts, a, b)) < fewest:
+                    if (n := self._crossings(pts, a, b, near)) < fewest:
                         best, fewest = pts, n
                         if not n:
                             break

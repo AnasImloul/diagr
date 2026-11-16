@@ -10,6 +10,8 @@ one of them.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
+from typing import Any
 
 from ..model import Diagram, boxes_around
 from ..theme import Theme
@@ -121,6 +123,7 @@ class _Placer:
         x = ((-(half + 4), -(half + 4)), (-inset, -inset), (inset, inset))
         self.ext_main = y if down else x
         self.measured: dict[str, Rect] = {}
+        self.kept: dict[tuple[str, str | None], Any] = {}
         self.order = list(d.nodes)
         # An edge pinned to sides across the flow (bottom to top when it runs right) links nodes in one layer.
         across = ("left", "right") if down else ("top", "bottom")
@@ -249,15 +252,26 @@ class _Placer:
                 if d.nodes[k].at is None and self.preds[k]:
                     layer[k] = max(layer[k], self._after(k))
 
+    def _once(self, what: str, item: str | None, work: Callable[[], Any]) -> Any:
+        """What work gives for item, worked out the first time it is asked for. For what does not change once the
+        layers are final: placement asks for it far more often than there are groups."""
+        key = (what, item)
+        if key not in self.kept:
+            self.kept[key] = work()
+        return self.kept[key]
+
     def used(self, g: str | None) -> bool:
-        return bool(self.own[g]) or any(self.used(c) for c in self.children[g])
+        return self._once("used", g, lambda: bool(self.own[g]) or any(self.used(c) for c in self.children[g]))
 
     def depth(self, g: str) -> int:
-        live = [c for c in self.children[g] if self.used(c)]
-        return 1 + max((self.depth(c) for c in live), default=0)
+        return self._once(
+            "depth", g, lambda: 1 + max((self.depth(c) for c in self.children[g] if self.used(c)), default=0)
+        )
 
     def inside(self, g: str | None) -> list[str]:
-        return self.own[g] + [k for c in self.children[g] if self.used(c) for k in self.inside(c)]
+        return self._once(
+            "inside", g, lambda: self.own[g] + [k for c in self.children[g] if self.used(c) for k in self.inside(c)]
+        )
 
     def box(self, k: str) -> Rect:
         """A node's box, in px, around its centre at (0, 0)."""
@@ -291,6 +305,9 @@ class _Placer:
         before the start of its first slot and after the end of its last. A group's box sits half a cell out from its
         nodes' centres, past its padding (flowing right) or inside its inset (flowing down), and around their boxes
         with its title band below; each level of nesting adds the padding of the box around it."""
+        return self._once("reach", item, lambda: self._reach_past(item))
+
+    def _reach_past(self, item: str | None) -> tuple[float, float]:
         cell, t = self.cell, self.t
         if item is None:
             box, band, levels = (0.0, 0.0), 0.0, 0
@@ -312,6 +329,9 @@ class _Placer:
 
     def span(self, g: str | None) -> tuple[float, float]:
         """The first and last layer holding a free node of g, its child groups included."""
+        return self._once("span", g, lambda: self._span(g))
+
+    def _span(self, g: str | None) -> tuple[float, float]:
         ls = [self.layer[k] for k in self.own[g]] + [x for c in self.children[g] if self.used(c) for x in self.span(c)]
         return min(ls), max(ls)
 
@@ -406,8 +426,8 @@ class _Placer:
 
     def lanes(self, v: float) -> set[float]:
         """Rows an edge already placed runs along through layer v; nodes keep off them."""
-        cross, layer = self.cross, self.layer
-        return {cross[u] for u, w in self.dag if u in cross and layer[u] < v < layer[w]}
+        cross = self.cross
+        return {cross[u] for u in self.passing.get(v, []) if u in cross}
 
     def clear(self, v: float, y: float, h: float, bands: bool) -> bool:
         start, size = self.start, self.size
@@ -428,6 +448,12 @@ class _Placer:
     def place_grouped(self) -> None:
         """Grouped nodes, layer by layer: a band's nodes are ordered by their predecessors' average cross position."""
         d, layer, main, order = self.d, self.layer, self.main, self.order
+        # The sources of the edges that pass through each layer, for lanes().
+        self.passing: dict[float, list[str]] = defaultdict(list)
+        for u, w in self.dag:
+            for x in self.layers:
+                if layer[u] < x < layer[w]:
+                    self.passing[x].append(u)
         # Pinned nodes hold their places first.
         self.cross = cross = {k: (n.at[0] if self.down else n.at[1]) for k, n in d.nodes.items() if n.at is not None}
         self.taken: list[tuple[float, float, float]] = [(main.get(layer[k], layer[k]), cross[k], 1.0) for k in cross]
