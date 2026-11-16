@@ -57,7 +57,7 @@ def step_list(comp: Compiled, x0: float, y0: float, width: float) -> tuple[list[
                 El(
                     "text",
                     {"x": num(x + 30), "y": num(y), "font-size": STEP_TITLE, "font-weight": 600},
-                    [escape(s.title)],
+                    [s.title],
                     paint={"fill": "text"},
                 )
             )
@@ -67,7 +67,7 @@ def step_list(comp: Compiled, x0: float, y0: float, width: float) -> tuple[list[
                     El(
                         "text",
                         {"x": num(x + 30), "y": num(y + 19 + j * STEP_LINE), "font-size": STEP_TEXT},
-                        [escape(line)],
+                        [line],
                         paint={"fill": "muted"},
                     )
                 )

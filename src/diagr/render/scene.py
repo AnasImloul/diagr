@@ -182,7 +182,7 @@ class SceneBuilder:
             El(
                 "text",
                 {"class": "gtitle", "x": num(x), "y": num(tb.y + hs), "font-size": num(hs), "font-weight": 700},
-                [escape(g.title)],
+                [g.title],
                 paint={"fill": "text"},
             )
         )
@@ -196,7 +196,7 @@ class SceneBuilder:
                         "y": num(tb.y + hs + t.size("line") + 2),
                         "font-size": num(t.size("group_sub")),
                     },
-                    [escape(g.sub)],
+                    [g.sub],
                     paint={"fill": "muted"},
                 )
             )
@@ -321,7 +321,7 @@ class SceneBuilder:
                         "font-size": num(t.size("group_title")),
                         "font-weight": 600,
                     },
-                    [escape(g.behind[lid])],
+                    [g.behind[lid]],
                     paint={"fill": "text"},
                 )
             )
@@ -345,7 +345,7 @@ class SceneBuilder:
                 "font-size": num(t.size("group_title")),
                 "font-weight": 600,
             },
-            [escape(g.title)],
+            [g.title],
             paint={"fill": "text"},
         )
         if g.sub:
@@ -353,7 +353,7 @@ class SceneBuilder:
                 El(
                     "tspan",
                     {"class": "gsub", "dx": 8, "font-size": num(t.size("group_sub")), "font-weight": 400},
-                    [escape(g.sub)],
+                    [g.sub],
                     paint={"fill": "muted"},
                 )
             )
@@ -397,7 +397,7 @@ class SceneBuilder:
         if not into_junction and p.tip:
             el.add(El("path", {"class": "head-ok", "d": arrow(p.points)}, paint={"fill": "accent"}, only="html"))
         if e.tooltip:
-            el.add(El("title", {}, [escape(e.tooltip)]))
+            el.add(El("title", {}, [e.tooltip]))
         return el
 
     def edge_label(self, eid: str, p: EdgePath) -> El:
@@ -428,7 +428,7 @@ class SceneBuilder:
                         "data-key": f"t:{eid}:label",
                         "data-default": e.label,
                     },
-                    [escape(e.label)],
+                    [e.label],
                     paint={"fill": "muted"},
                 )
             )
@@ -443,7 +443,7 @@ class SceneBuilder:
         el = El("g", {"class": "node" + (" junction" if n.junction else ""), "id": f"n-{safe_id(k)}", "data-id": k})
         _flag(el, n.mark, n.hidden)
         if n.tooltip:
-            el.add(El("title", {}, [escape(n.tooltip)]))
+            el.add(El("title", {}, [n.tooltip]))
         if n.junction:
             el.add(El("circle", {"class": "dot", "cx": num(x), "cy": num(y), "r": 3}, paint={"fill": "line"}))
             return el
@@ -491,7 +491,7 @@ class SceneBuilder:
                     "data-key": f"t:{k}:title",
                     "data-default": n.title,
                 },
-                [escape(n.title)],
+                [n.title],
                 paint={"fill": "text"},
             )
         ]
@@ -526,7 +526,7 @@ class SceneBuilder:
                         "data-key": f"t:{k}:sub:{j}",
                         "data-default": line,
                     },
-                    [escape(line)],
+                    [line],
                     paint={"fill": "muted"},
                 )
             )
@@ -735,7 +735,7 @@ class SceneBuilder:
                     "text-anchor": "middle",
                     "data-default": label,
                 },
-                [escape(label)],
+                [label],
                 paint={"fill": "on-button"},
             )
         )
@@ -771,9 +771,10 @@ def arrow(points: list[tuple[float, float]], length: float = 10.5, width: float 
 
 
 def serialise(el: El | Raw | str, mode: str, paint: Callable[[str, str], str]) -> str:
-    """mode 'static' bakes colours into attributes; 'html' turns paint(prop, token) into a class."""
+    """mode 'static' bakes colours into attributes; 'html' turns paint(prop, token) into a class. Text is escaped
+    here, so what the scene holds is the text itself; only Raw passes markup through."""
     if isinstance(el, str):
-        return el
+        return escape(el)
     if isinstance(el, Raw):
         return el.markup
     if el.only and el.only != mode:
