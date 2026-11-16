@@ -50,6 +50,26 @@ edges:
   ops -> api: {}
 """
 
+FED_FROM_ROW_ZERO = """
+id: t
+groups:
+  src:
+    title: Sources
+    nodes:
+      a: {icon: server, title: A}
+      b: {icon: server, title: B}
+  dst:
+    title: Targets
+    nodes:
+      q: {icon: server, title: Q}
+      f1: {icon: server, title: F1}
+      f2: {icon: server, title: F2}
+      p: {icon: server, title: P}
+edges:
+  a -> p: {}
+  b -> q: {}
+"""
+
 
 class Placement(Case):
     def test_layers_follow_edges(self):
@@ -81,6 +101,12 @@ class Placement(Case):
         self.assertClean(problems(CHAIN))
         self.assertClean(problems(GROUPS))
         self.assertClean(problems(GROUPS.replace("id: t", "id: t\ndirection: down")))
+
+    def test_nodes_follow_a_predecessor_on_row_zero(self):
+        nodes = prepared(FED_FROM_ROW_ZERO).diagram.nodes
+        row = {k: (n.at or (-1, -1))[1] for k, n in nodes.items()}
+        self.assertLess(row["a"], row["b"])
+        self.assertLess(row["p"], row["q"])
 
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout

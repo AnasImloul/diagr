@@ -343,13 +343,18 @@ class _Placer:
         # Pinned nodes hold their places first.
         self.cross = cross = {k: (n.at[0] if self.down else n.at[1]) for k, n in d.nodes.items() if n.at is not None}
         self.taken: list[tuple[float, float, float]] = [(main.get(layer[k], layer[k]), cross[k], 1.0) for k in cross]
+
+        def key(k: str) -> tuple[float, int]:
+            b = self.bary(self.preds[k])
+            return (float(order.index(k)) if b is None else b, order.index(k))
+
         for v in self.layers:
             for g, members in self.own.items():
                 # own is a defaultdict, and asking used() about a group adds it with no members.
                 if g is None or not members:
                     continue
                 here = [k for k in members if layer[k] == v]
-                here.sort(key=lambda k: (self.bary(self.preds[k]) or float(order.index(k)), order.index(k)))
+                here.sort(key=key)
                 at = self.start[g]
                 for k in here:
                     while not self.clear(v, at, self.slot(k), False):
