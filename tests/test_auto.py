@@ -4,7 +4,7 @@ import unittest
 
 import yaml
 
-from tests.support import Case, problems
+from tests.support import ROOT, Case, problems
 from tests.test_build import cli, prepared
 
 CHAIN = """
@@ -234,6 +234,12 @@ class Placement(Case):
           s -> (a b c e): {}
         """
         self.assertClean(problems(yml))
+
+    def test_loose_nodes_keep_clear_of_groups_with_a_bigger_theme(self):
+        theme = self.tmp() / "big.yml"
+        theme.write_text("extends: default\nsizes: {icon: 110, title: 22, line: 30, group_top: 70}\n", encoding="utf-8")
+        example = ROOT / "examples/event-driven/diagram.yml"
+        self.assertClean(problems(example.read_text(encoding="utf-8"), example.parent, str(theme)))
 
     def test_group_boxes_do_not_overlap(self):
         lay = prepared(GROUPS).layout

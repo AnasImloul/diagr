@@ -110,16 +110,16 @@ class _Placer:
     def __init__(self, d: Diagram, free: list[str], t: Theme):
         self.d, self.free, self.t = d, free, t
         self.down = down = d.direction == "down"
-        # How far a box reaches past its cells, in px, as the theme draws it: (before, after) on the cross axis, for a
-        # node, a group and each level of nesting. A node sits inside its cell; a group adds padding above and a title
-        # band below, and each level of nesting adds to both. On the x axis a group sits inside its cells by its inset.
+        # How far a box reaches past its cells along the flow, in px, as the theme draws it: (before, after) for a
+        # node, a group and each level of nesting. A node sits inside its cell; a group adds padding before it and a
+        # title band after it when the flow runs down, and sits inside its cells by its inset when it runs right.
         half = t.size("icon") / 2
         inset, self.band = t.size("group_inset"), 2 * t.size("group_bottom")
         # A node's box starts this far above its centre, at the top of its icon's badge.
         self.top = half + 14
         y = ((-self.top, NODE_AFTER), (t.size("group_top"), t.size("group_bottom") + 6), (inset, self.band))
         x = ((-(half + 4), -(half + 4)), (-inset, -inset), (inset, inset))
-        self.ext_cross, self.ext_main = (x, y) if down else (y, x)
+        self.ext_main = y if down else x
         self.measured: dict[str, Rect] = {}
         self.order = list(d.nodes)
         # An edge pinned to sides across the flow (bottom to top when it runs right) links nodes in one layer.
@@ -281,15 +281,30 @@ class _Placer:
         wide one spreads both ways."""
         return (self.slot(k) - 1) / 2 if self.down else 0.0
 
+    def across(self, k: str) -> tuple[float, float]:
+        """How far a node's box reaches before and after its centre across the flow, in px."""
+        b = self.box(k)
+        return (-b.x, b.x1) if self.down else (-b.y, b.y1)
+
     def reach(self, item: str | None) -> tuple[float, float]:
-        """How far an item (a group id, or None for a block of loose nodes) reaches past its cells."""
-        down, cell = self.down, self.cell
-        node_ext, group_ext, level_ext = self.ext_cross
-        tall = 0.0 if down else max((self.below(k) - cell / 2 for k in self.inside(item)), default=0)
+        """How far an item (a group id, or None for any loose node) reaches past its cells across the flow, in px:
+        before the start of its first slot and after the end of its last. A group's box sits half a cell out from its
+        nodes' centres, past its padding (flowing right) or inside its inset (flowing down), and around their boxes
+        with its title band below; each level of nesting adds the padding of the box around it."""
+        cell, t = self.cell, self.t
         if item is None:
-            return (node_ext[0], max(node_ext[1], tall))
-        k = self.depth(item)
-        return (group_ext[0] + level_ext[0] * (k - 1), max(group_ext[1], tall + self.band) + level_ext[1] * (k - 1))
+            box, band, levels = (0.0, 0.0), 0.0, 0
+        elif self.down:
+            inset = t.size("group_inset")
+            box, band, levels = (cell / 2 - inset, cell / 2 - inset), 0.0, self.depth(item) - 1
+        else:
+            box, band = (cell / 2 + t.size("group_top"), cell / 2 + t.size("group_bottom")), self.band
+            levels = self.depth(item) - 1
+        per = (t.size("group_inset"), t.size("group_inset")) if self.down else (t.size("group_inset"), self.band)
+        nodes = self.inside(item)
+        before = max(max(box[0], self.across(k)[0]) - self.lead(k) * cell for k in nodes)
+        after = max(max(box[1], self.across(k)[1] + band) - (self.slot(k) - self.lead(k)) * cell for k in nodes)
+        return before + per[0] * levels, after + per[1] * levels
 
     def gap(self, a: str | None, b: str | None) -> float:
         px = max(0.0, self.reach(a)[1] + self.reach(b)[0] + MARGIN)
@@ -463,8 +478,8 @@ class _Placer:
                     lo, hi = self.reach(c)
                     between.append(
                         (
-                            min(cross[n] for n in ins) - top - (lo + 8) / self.cell,
-                            max(cross[n] + self.slot(n) for n in ins) - top + (hi + 8) / self.cell,
+                            min(cross[n] - self.lead(n) for n in ins) - (lo + 8) / self.cell,
+                            max(cross[n] - self.lead(n) + self.slot(n) for n in ins) + (hi + 8) / self.cell,
                         )
                     )
             options |= {lo - 0.01 for lo, _ in between} | {hi + 0.01 for _, hi in between}
