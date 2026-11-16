@@ -199,9 +199,11 @@
   lists.forEach(function (ol) {
     ol.querySelectorAll("li").forEach(function (li, idx) { li.addEventListener("click", function () { seek(steps[idx].last); }); });
   });
+  // Keys work while focus is in the diagram or the player, so the rest of the page keeps them.
   document.addEventListener("keydown", function (e) {
     var tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!(e.target.closest && e.target.closest(".wrap"))) return;
     if (e.key === " " && !(e.target.closest && e.target.closest(".trigger, button"))) {
       e.preventDefault(); if (playing) pause(); else play();
     } else if (e.key === "ArrowRight") { e.preventDefault(); if (e.shiftKey) seek(k + 1); else next(); }

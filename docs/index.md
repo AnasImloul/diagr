@@ -65,6 +65,9 @@ folder.
 
 ## Player keys
 
+The keys work once the diagram or the player has focus: click the diagram, or Tab to it. The rest of the page
+keeps its keys, so ++space++ and the arrows still scroll it.
+
 ++space++ plays or pauses. ++arrow-left++ and ++arrow-right++ go to the previous or next step; with ++shift++ they
 move one frame. ++home++ resets, ++end++ jumps to the end. Clicking a step in the list jumps to it. With several
 scenarios, the buttons above the progress bar switch between them.

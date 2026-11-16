@@ -102,9 +102,11 @@
       else if (act === "full") toggleFull();
     });
   });
+  // Keys work while focus is in the diagram or the player, so the rest of the page keeps them.
   document.addEventListener("keydown", function (e) {
     var tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!(e.target.closest && e.target.closest(".wrap"))) return;
     if (e.key === "+" || e.key === "=") zoomCenter(z * 1.5);
     else if (e.key === "-" || e.key === "_") zoomCenter(z / 1.5);
     else if (e.key === "0") fit();

@@ -54,7 +54,8 @@ CONTRAST_TOGGLE = (
     'else r.removeAttribute("data-contrast");try{localStorage.setItem("diagr-contrast",on?"on":"off")}catch(e){}'
     'sync()}b.addEventListener("click",flip);document.addEventListener("keydown",function(e){'
     'var g=(e.target&&e.target.tagName)||"";if(g==="INPUT"||g==="SELECT"||g==="TEXTAREA"||e.metaKey||e.ctrlKey'
-    '||e.altKey)return;if(e.key==="c"||e.key==="C")flip()});sync()})();</script>'
+    '||e.altKey||!(e.target.closest&&e.target.closest(".wrap")))return;if(e.key==="c"||e.key==="C")flip()});'
+    "sync()})();</script>"
 )
 ZOOM_ICONS = {
     "in": '<path d="M7 3v10M2 8h10"/>',
@@ -229,7 +230,7 @@ def render_html(p: Prepared, debug: bool = False, live: bool = False) -> str:
 <body>
 {TOGGLE}
 <div class="wrap">
-<div class="stage">{svg}{toolbar}</div>
+<div class="stage" tabindex="0" role="group" aria-label="{title}, diagram">{svg}{toolbar}</div>
 {panel}
 </div>
 {THEME_TOGGLE}{CONTRAST_TOGGLE if contrast else ""}{DEBUG_TOGGLE if debug else ""}

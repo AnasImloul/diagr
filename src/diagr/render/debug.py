@@ -59,7 +59,8 @@ def overlay(p: Prepared) -> str:
 
 TOGGLE = (
     "<script>document.addEventListener('keydown',function(e){var t=(e.target&&e.target.tagName)||'';"
-    "if(e.key!=='g'||e.metaKey||e.ctrlKey||e.altKey||t==='INPUT'||t==='SELECT'||t==='TEXTAREA')return;"
+    "if(e.key!=='g'||e.metaKey||e.ctrlKey||e.altKey||t==='INPUT'||t==='SELECT'||t==='TEXTAREA'"
+    "||!(e.target.closest&&e.target.closest('.wrap')))return;"
     "document.querySelectorAll('.dg-debug').forEach(function(o){o.style.display=o.style.display==='none'?'':'none'})"
     "});</script>"
 )

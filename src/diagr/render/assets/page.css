@@ -12,6 +12,8 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 
 svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y; }
 /* Room under the diagram for the toolbar, so it never covers a label. */
 .stage { position: relative; padding-bottom: 40px; }
+.stage:focus { outline: none; }
+.stage:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; border-radius: 4px; }
 .stage.zoomed svg.diagr { cursor: grab; }
 .stage.panning svg.diagr { cursor: grabbing; }
 .zoom { position: absolute; right: 12px; bottom: 8px; display: flex; gap: 4px; transition: opacity 150ms; }

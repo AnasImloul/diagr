@@ -173,7 +173,7 @@ class Authoring(Case):
 
     def test_every_page_can_zoom(self):
         html = render_html(prepared(BASE))
-        self.assertIn('<div class="stage"><svg class="diagr"', html)
+        self.assertIn('<div class="stage" tabindex="0" role="group" aria-label="t, diagram"><svg class="diagr"', html)
         self.assertIn('data-zoom="fit"', html)
         self.assertIn('data-zoom="full"', html)
         self.assertIn("window.diagrZoom", html)
@@ -256,6 +256,19 @@ class Accessibility(Case):
         self.assertIn('<title id="t-dark-title">Writes</title>', svg)
         self.assertIn('<desc id="t-dark-desc">A writes to B.</desc>', svg)
         self.assertNotIn("aria-label=", svg.split(">", 1)[0])
+
+    def test_shortcuts_only_act_inside_the_player(self):
+        html = render_html(
+            prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"), debug=True
+        )
+        self.assertIn('<div class="stage" tabindex="0" role="group" aria-label="t, diagram">', html)
+        # The player, zoom, contrast and debug keys each act only while focus is inside the player.
+        page_keys = html.count('document.addEventListener("keydown"') + html.count(
+            "document.addEventListener('keydown'"
+        )
+        scoped = html.count('e.target.closest(".wrap")') + html.count("e.target.closest('.wrap')")
+        self.assertEqual(page_keys, 4)
+        self.assertEqual(scoped, page_keys)
 
     def test_steps_are_buttons(self):
         html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"))
