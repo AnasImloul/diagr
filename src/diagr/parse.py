@@ -203,11 +203,34 @@ def _cell_names(d: Diagram, problems: list[Problem]) -> None:
 
 
 def from_tree(tree: Y, file: str, base: Path) -> Diagram:
+    """The diagram a checked tree describes, in steps: its own keys and boxes, its components and their instances,
+    its actions and scenarios, then its views. Every problem found along the way is raised together at the end."""
     problems: list[Problem] = []
     rec = f.check(DIAGRAM, tree, problems)
     if rec is None:
         raise DiagramError(problems)
+    d = _head(rec, file, base, problems)
+    components = _components(rec, problems)
+    instances = _instances(rec)
+    expand(d, components, instances, problems)
+    _tree_order(d)
+    if not d.nodes:
+        problems.append(Problem(rec.loc, "the diagram needs at least one node"))
+        raise DiagramError(problems)
+    _triggers(d, rec.get("scenarios") or [], problems)
+    _scenarios(d, rec, components, instances, problems)
+    _cell_names(d, problems)
+    for e in rec.get("views") or []:
+        v = e.value
+        d.views[e.key] = View(id=e.key, loc=e.loc, **_given(v, "title", "include", "exclude", "scenarios", "scenario"))
+    problems += check_views(d)
+    if problems:
+        raise DiagramError(_once(problems))
+    return d
 
+
+def _head(rec: f.Rec, file: str, base: Path, problems: list[Problem]) -> Diagram:
+    """The diagram's own keys, and the groups, nodes and edges it writes out."""
     grid = rec.get("grid")
     d = Diagram(
         grid=Grid(**_given(grid, "col", "row")) if grid else Grid(),
@@ -218,6 +241,10 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     )
     _boxes(rec.get("groups", []), rec.get("nodes", []), None, d.groups, d.nodes, problems)
     _edges(rec.get("edges", []), d.edges, problems)
+    return d
+
+
+def _components(rec: f.Rec, problems: list[Problem]) -> dict[str, Component]:
     components = {}
     for e in rec.get("components", []):
         c = e.value
@@ -228,6 +255,10 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         _edges(c.get("edges", []), comp.edges, problems)
         comp.actions = {a.key: a.value for a in c.get("actions", [])}
         components[e.key] = comp
+    return components
+
+
+def _instances(rec: f.Rec) -> dict[str, Instance]:
     instances = {}
     for e in rec.get("instances", []):
         v = e.value
@@ -235,13 +266,17 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
         instances[e.key] = Instance(
             id=e.key, component=v.get("component"), parent=v.get("in"), values=values, loc=e.loc, **_given(v, "at")
         )
-    expand(d, components, instances, problems)
-    _tree_order(d)
-    if not d.nodes:
-        problems.append(Problem(rec.loc, "the diagram needs at least one node"))
-        raise DiagramError(problems)
-    _triggers(d, rec.get("scenarios") or [], problems)
+    return instances
 
+
+def _scenarios(
+    d: Diagram,
+    rec: f.Rec,
+    components: dict[str, Component],
+    instances: dict[str, Instance],
+    problems: list[Problem],
+) -> None:
+    """The scenarios, with the actions they call: the diagram's own, and each component's on its instances."""
     actions = Actions(problems)
     for e in rec.get("actions", []):
         actions.add(None, e.key, e.value)
@@ -256,22 +291,17 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     for e in rec.get("scenarios") or []:
         d.scenarios[e.key] = _scenario(e.key, e.value, ctx)
     d.component_actions = actions.check_all()
-    _cell_names(d, problems)
-    for e in rec.get("views") or []:
-        v = e.value
-        d.views[e.key] = View(id=e.key, loc=e.loc, **_given(v, "title", "include", "exclude", "scenarios", "scenario"))
-    problems += check_views(d)
 
-    if problems:
-        seen: set[tuple[object, str]] = set()
-        unique = []
-        for p in problems:
-            # An action's body is parsed once for each instance it runs on; report each problem once.
-            if (p.loc, p.message) not in seen:
-                seen.add((p.loc, p.message))
-                unique.append(p)
-        raise DiagramError(unique)
-    return d
+
+def _once(problems: list[Problem]) -> list[Problem]:
+    """Each problem once: an action's body is parsed once for each instance it runs on."""
+    seen: set[tuple[object, str]] = set()
+    unique = []
+    for p in problems:
+        if (p.loc, p.message) not in seen:
+            seen.add((p.loc, p.message))
+            unique.append(p)
+    return unique
 
 
 def loads(text: str, file: str, base: Path) -> Diagram:
