@@ -48,7 +48,8 @@ svg.diagr { display: block; width: 100%; height: auto; touch-action: pan-x pan-y
 }
 svg.diagr .rot, svg.diagr .glyph { transform-box: fill-box; transform-origin: center; }
 svg.diagr .node, svg.diagr .edge, svg.diagr .elab, svg.diagr .grp { transition: opacity 300ms; }
-svg.diagr [data-hidden="1"] { opacity: 0; pointer-events: none; }
+/* Hidden wins over the dimming of a running or focusing scenario, whose selectors are more specific. */
+svg.diagr [data-hidden="1"] { opacity: 0 !important; pointer-events: none; }
 
 .edge .flow { stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; }
 .edge .head-ok { opacity: 0; }
