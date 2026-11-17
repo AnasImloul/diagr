@@ -62,6 +62,8 @@ class Group:
     box: bool = True
     # In a box with `layout`: the share of the leftover space along its direction this group takes, like flex-grow.
     grow: float = 0
+    # Placed automatically: "first" or "last" to go before or after everything else in the box it is in.
+    layer: str | None = None
 
 
 @dataclass
@@ -86,6 +88,8 @@ class Node:
     # Line the node up with another node, wherever each is: same x (one above the other) or same y (side by side).
     align_x: str | None = field(default=None, metadata=REF)
     align_y: str | None = field(default=None, metadata=REF)
+    # Placed automatically: "first" or "last" to go before or after everything else in the box it is in.
+    layer: str | None = None
 
 
 @dataclass
@@ -118,6 +122,8 @@ class Edge:
     loc: Loc | None = None
     # The edge going back the other way, for a pair written 'a <-> b'.
     twin: str | None = None
+    # False: drawn, but left out when placing nodes automatically.
+    constraint: bool = True
 
 
 @dataclass
@@ -227,6 +233,11 @@ class Diagram:
     file: str = "<memory>"
     # What upgrading the file from an older format version rewrote, as warnings.
     upgraded: list[Problem] = field(default_factory=list)
+    # Set by layered placement, for routing: edge id -> which way it runs (forward, back or across the flow) and the
+    # stretches it runs straight along, in px, as (start, end) points.
+    lanes: dict[str, tuple[str, list[tuple[tuple[float, float], tuple[float, float]]]]] = field(default_factory=dict)
+    # Whether the layered placer placed the diagram, which sizes every box itself: then boxes are not lined up after.
+    layered: bool = False
 
 
 def _file_order(x: Group | Node) -> tuple[int, int]:

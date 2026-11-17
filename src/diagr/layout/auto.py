@@ -1,10 +1,11 @@
 """Automatic placement for nodes without `at`.
 
-Nodes are put in layers along the main axis (`direction`: right or down) so edges point forward: a node goes one layer
-after the nodes that lead to it. On the cross axis every group gets its own band, nested inside its parent's band and
-spaced so the group boxes do not overlap; within a layer, a band's nodes are ordered by where their incoming
-neighbours sit, which keeps crossings down. Nodes with `at` keep it, and placed nodes move aside rather than land on
-one of them.
+With nothing pinned, the layered placer places everything (see layered.py). Otherwise, the placer here works around
+the nodes that are pinned. Nodes are put in layers along the main axis (`direction`: right or down) so edges point
+forward: a node goes one layer after the nodes that lead to it. On the cross axis every group gets its own band,
+nested inside its parent's band and spaced so the group boxes do not overlap; within a layer, a band's nodes are
+ordered by where their incoming neighbours sit, which keeps crossings down. Nodes with `at` keep it, and placed nodes
+move aside rather than land on one of them.
 """
 
 from __future__ import annotations
@@ -15,8 +16,12 @@ from typing import Any
 
 from ..model import Diagram, boxes_around
 from ..theme import Theme
+from .engine import sub_slots
 from .flow import laid_out
 from .geometry import Rect, node_box
+from .layered import acyclic as _acyclic
+from .layered import can_layer, place_layered
+from .layered import topological as _topological
 
 # Room kept past a node with nothing below its title, and between neighbouring boxes, in px.
 NODE_AFTER = -14
@@ -30,33 +35,6 @@ CLEAR = 8
 def _cells(px: float, cell: float) -> float:
     """px as cells of size cell, rounded up to the next twentieth of a cell."""
     return -(-px * 20 // cell) / 20
-
-
-def _acyclic(order: list[str], edges: list[tuple[str, str]]) -> list[tuple[str, str]]:
-    """The edges minus those that close a cycle, found by a depth-first walk in declaration order."""
-    out = defaultdict(list)
-    for a, b in edges:
-        out[a].append(b)
-    state: dict[str, int] = {}
-    back: set[tuple[str, str]] = set()
-    # With a stack of its own rather than recursion, so a long chain does not reach Python's recursion limit.
-    for root in order:
-        if root in state:
-            continue
-        state[root] = 1
-        stack = [(root, iter(out[root]))]
-        while stack:
-            v, ahead = stack[-1]
-            w = next(ahead, None)
-            if w is None:
-                state[v] = 2
-                stack.pop()
-            elif state.get(w) == 1:
-                back.add((v, w))
-            elif w not in state:
-                state[w] = 1
-                stack.append((w, iter(out[w])))
-    return [e for e in edges if e not in back]
 
 
 # A node, or the point just before or after a box, in the order of the layers.
@@ -76,28 +54,14 @@ def _reaches(ahead: dict[_Step, set[_Step]], start: _Step, goal: _Step) -> bool:
     return False
 
 
-def _topological(order: list[str], edges: list[tuple[str, str]]) -> list[str]:
-    indeg = {v: 0 for v in order}
-    out = defaultdict(list)
-    for a, b in edges:
-        out[a].append(b)
-        indeg[b] += 1
-    ready = [v for v in order if indeg[v] == 0]
-    done = []
-    while ready:
-        v = ready.pop(0)
-        done.append(v)
-        for w in out[v]:
-            indeg[w] -= 1
-            if indeg[w] == 0:
-                ready.append(w)
-    return done
-
-
 def place(d: Diagram, t: Theme) -> None:
-    flowed = laid_out(d)[0]
+    flowed, flowed_groups = laid_out(d)
     free = [k for k, n in d.nodes.items() if n.at is None and k not in flowed]
     if not free:
+        return
+    d.lanes, d.layered = {}, False
+    if can_layer(d, flowed, flowed_groups):
+        place_layered(d, t, sub_slots(d))
         return
     for k in free:
         d.nodes[k].auto = True

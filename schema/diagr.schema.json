@@ -146,6 +146,14 @@
             ],
             "description": "A node to line up with, side by side: same y"
           },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "first",
+              "last"
+            ],
+            "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
+          },
           "cells": {
             "oneOf": [
               {
@@ -245,6 +253,10 @@
                   "dashed": {
                     "type": "boolean"
                   },
+                  "constraint": {
+                    "type": "boolean",
+                    "description": "false: drawn, but left out when placing nodes automatically"
+                  },
                   "mark": {
                     "type": "string",
                     "enum": [
@@ -325,6 +337,10 @@
                         },
                         "dashed": {
                           "type": "boolean"
+                        },
+                        "constraint": {
+                          "type": "boolean",
+                          "description": "false: drawn, but left out when placing nodes automatically"
                         },
                         "mark": {
                           "type": "string",
@@ -483,6 +499,14 @@
                   ],
                   "description": "A node to line up with, side by side: same y"
                 },
+                "layer": {
+                  "type": "string",
+                  "enum": [
+                    "first",
+                    "last"
+                  ],
+                  "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
+                },
                 "cells": {
                   "oneOf": [
                     {
@@ -582,6 +606,10 @@
                         "dashed": {
                           "type": "boolean"
                         },
+                        "constraint": {
+                          "type": "boolean",
+                          "description": "false: drawn, but left out when placing nodes automatically"
+                        },
                         "mark": {
                           "type": "string",
                           "enum": [
@@ -662,6 +690,10 @@
                               },
                               "dashed": {
                                 "type": "boolean"
+                              },
+                              "constraint": {
+                                "type": "boolean",
+                                "description": "false: drawn, but left out when placing nodes automatically"
                               },
                               "mark": {
                                 "type": "string",
@@ -1232,6 +1264,14 @@
           "type": "boolean",
           "description": "false: draw no box or title; the group only arranges what it holds"
         },
+        "layer": {
+          "type": "string",
+          "enum": [
+            "first",
+            "last"
+          ],
+          "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
+        },
         "grow": {
           "type": "number",
           "minimum": 0,
@@ -1324,6 +1364,14 @@
                   "boolean"
                 ],
                 "description": "A node to line up with, side by side: same y"
+              },
+              "layer": {
+                "type": "string",
+                "enum": [
+                  "first",
+                  "last"
+                ],
+                "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
               },
               "cells": {
                 "oneOf": [

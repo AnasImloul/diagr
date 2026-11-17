@@ -36,13 +36,15 @@ that edge, `top-left` puts it in the top corner, and `middle` makes it a heading
 bottom just right of the box's own nodes, with `sub` on the line below as a description (a card with an icon on the
 left and its name beside it). A box that fits its contents leaves room for the title on the side it is on. Without
 `at` it fits around its member nodes. With `at` (top-left cell) and `span` (cells wide and tall) it covers a fixed
-area, which is how you make several groups the same height. Tones come from the theme: `neutral`, `blue`, `teal`,
-`green`, `violet`, `amber`, `orange`.
+area, which is how you make several groups the same height. Placed automatically, `layer: first` or `last` puts a
+group before or after everything else in its parent. Tones come from the theme: `neutral`, `blue`, `teal`, `green`,
+`violet`, `amber`, `orange`.
 
 **Alignment.** Neighbouring boxes with the same parent that nearly line up are lined up: boxes one above the other
 share their left and right edges when those are within a grid column of each other, boxes side by side share their
 top and bottom edges within a row. Boxes only grow, so what they hold stays inside, and a side moves only when the
-grown box covers no node or box it did not cover already. Child boxes that sat flush with a side that moves move with
+grown box covers no node or box it did not cover already. A box with `at` keeps its cells. A diagram placed
+automatically with nothing pinned is not lined up: the placer sizes its boxes itself. Child boxes that sat flush with a side that moves move with
 it, so they keep filling their parent. What a grown box holds keeps its place relative to the box: its pinned nodes
 and the child boxes that did not grow with it move by the shift of its middle, so a centred node stays centred. That
 move is skipped on an axis where it would bend an edge running straight along it to a node outside the box, or an
@@ -126,6 +128,7 @@ Nodes go under `nodes` at the top level, or in the `nodes` of the group they are
 | `hidden` | Start hidden; a scenario brings it out by showing, drawing or activating it. Hidden elements are left out of static SVGs. |
 | `tooltip` | Hover text. |
 | `align_x`, `align_y` | Another node's id: line this node up with it, one above the other (`align_x`, same x) or side by side (`align_y`, same y), wherever each sits. See [Row and column layout](#row-and-column-layout). |
+| `layer` | `first` or `last`: placed automatically, the node goes before or after everything else in its group. See [Automatic layout](#automatic-layout). |
 
 ## Edges
 
@@ -178,12 +181,13 @@ edges:
   and a group it is in is an error.
 - **`as name`** gives the edge an id, for a key that makes one edge. The default id is `a->b`; a second edge between
   the same pair needs a name.
-- Other keys: `dashed`, `mark`, `label_at` (0 to 1 along the path; the default is the middle of the longest
-  horizontal run), `hidden`, `tooltip`.
+- Other keys: `dashed`, `mark`, `label_at` (0 to 1 along the path; by default the label goes where it covers nothing,
+  see [Automatic layout](#automatic-layout)), `hidden`, `tooltip`, and `constraint: false` to leave the edge out when
+  placing nodes.
 
 ## Automatic layout
 
-Nodes without `at` are placed for you, so a first draft needs no coordinates at all:
+Nodes without `at` are placed for you, so most diagrams need no coordinates at all:
 
 ```yaml
 id: signup
@@ -203,28 +207,59 @@ edges:
   api -> mail: send
 ```
 
-- **Layers.** Edges point along the flow: a node goes one column after the nodes that lead to it (one row, with
-  `direction: down`). An edge that would close a loop is drawn back round the outside instead. A node with nothing
-  leading to it goes just before what it leads to, and one with room to spare moves up next to its successors.
-- **Dashed edges** are side links (replication, a dead-letter queue, a wake-up call) and place a node only when no
-  solid edge does: `queue --> dlq` puts the dead letters after the queue, but `a/db --> b/db` leaves the replica where
-  its own writes put it.
-- **Groups.** Each group gets its own band across the flow, nested inside its parent's band and spaced so the boxes do
-  not overlap. Groups that sit in different columns share rows, and a group that a solid edge leads into from a
-  sibling starts after it, so the two sit side by side. Nodes outside any group go as close as they can to the nodes
-  they are connected to, on a row where their edges forward pass no node or group on the way.
-- **Edges** between placed nodes that have no `route` or `via` get a path of their own: along the source's row, then
-  across in the gap before the target, with lanes from different sources spread apart. Edges into one side of a node
-  meet it side by side, in the order they come from, and a label skips the run a source's edges share.
-- **Mixing.** Nodes with `at` keep it, and placed nodes move aside rather than land on them, so you can pin the few
-  nodes whose place matters and leave the rest. A group with a fixed area (`at` and `span`) needs its nodes pinned.
+When no node or group has `at`, diagr lays the diagram out in layers, the way Graphviz does. The layers are the
+whole diagram's, like columns, so nodes in boxes side by side line up. Across the flow it goes one box at a time from
+the inside out: each group's contents first, then the group as one block inside its parent, over the layers it spans.
+So boxes never overlap, and a box is only as big as what it holds.
+
+- **Layers.** Edges point along the flow (`direction`: `right`, the default, or `down`), each at least one layer
+  long, and as short as they can all be together. A box (or node) that an edge goes into starts after the box (or
+  node) it comes from, among what one box holds, so the two sit side by side. An edge that would close a loop is
+  drawn back against the flow.
+- **Order.** Within each layer, nodes and boxes are sorted by where their neighbours sit, sweeping forward and back
+  and keeping the order with the fewest crossings; a box keeps one place in every layer it spans. An edge that skips
+  layers keeps a lane open in each layer it passes, so it never runs through a node, and an edge that leaves a box
+  has a lane to the box's edge.
+- **Straight lines.** Each node and box then moves across the flow to where its edges run straight, keeping its order
+  and its distance from its neighbours. A chain comes out as a straight line, a node fanning out to several sits in
+  the middle of them, and a node with one edge in and several out stays in line with the one coming in.
+- **Spacing.** Each layer is as thick as its biggest node. The gap after it, between the boxes that end in it and
+  those that start in the next, is wide enough for the labels of the edges crossing it and for the edges that turn
+  there; `grid` scales the gaps and the padding inside boxes.
+- **Dashed edges** are side links (replication, a dead-letter queue, a wake-up call). One sets the layer of the node it
+  leads into only when no solid edge does, and `a/db --> b/db` leaves the replica where its own writes put it. A node
+  hanging off another by its only edge, dashed or hidden, such as `queue --> dlq` or something a scenario reveals,
+  goes right beside it in the same layer, with the edge running straight across; so does a node whose only edges are
+  dashed ones out of it, such as a scheduler or a health check.
+- **Hidden edges** pull a quarter as hard as the others, so what only a scenario shows does not bend the picture as it
+  first appears.
+- **A node that no edge places**, joined only by dashed edges out of it, goes in the layer of what it is joined to: a
+  governance box of separate services spreads along under the platform they serve, each service by what it serves.
+- **Edges** follow their lanes and turn only in the gaps between layers. Edges that turn in one gap turn side by
+  side; those from one node leave it as one trunk, a dashed one beside a solid one. Edges that meet a node on one
+  side meet it side by side, in the order they come from, and an edge that runs straight on keeps the middle.
+- **Labels** go on their edge where they cover nothing: they move along the path off nodes, other labels, group
+  titles and other edges' lines. `label_at` on an edge puts its label where you say.
+
+Three keys steer the layout without coordinates:
+
+| Key | On | Meaning |
+|---|---|---|
+| `layer: first`, `layer: last` | node, group | Before or after everything else in the box it is in (the diagram, for a top-level node or group): an actor or a side system at one end of the picture. Edges into a `first` item or out of a `last` one are drawn back against the flow. |
+| `constraint: false` | edge | Drawn, but left out when placing: for a long edge back to the start, or a side link that should not pull its ends together. |
+| `align_x`, `align_y` | node | Line the node up with another one, see [Row and column layout](#row-and-column-layout). |
+
+The [examples](examples/index.md) are all laid out this way: the only layout key in them is `layer: last` on the two
+users of the [data platform](examples/data-platform.md).
+
+- **Pinning.** A node with `at` keeps its cell. When some nodes are pinned, the rest are placed around them by a
+  simpler placer: in layers, with every group in its own band and placed nodes moving aside rather than landing on a
+  pinned one. A group with a fixed area (`at` and `span`) needs its nodes pinned. `layer` only applies when nothing
+  is pinned, and `diagr check` says so.
 - **Pinning everything.** `diagr expand FILE` writes every computed position as `at` and every computed path as a
   `route`, so the output draws the same picture with nothing left to place. Start from it to fine-tune by hand.
   Its [views](#views) become crops of the pinned diagram.
 - `diagr build --html --debug` labels each placed node with the cell it got (`[2, 1] auto`).
-
-The [event-driven example](examples/event-driven.md) is laid out this way from start to finish. The placement is simple and predictable rather than clever. For a dense diagram, pinning a handful of nodes usually
-does more than any amount of reordering.
 
 ## Row and column layout
 
@@ -507,8 +542,8 @@ views:
 - `diagr expand` pins every position, so in the expanded file a view of automatically placed nodes is a crop of the
   whole rather than laid out again.
 
-The [data platform example](examples/data-platform.md#views) has two views of a pinned diagram, and the
-[event-driven example](examples/event-driven.md#views) one of a diagram placed automatically.
+The [data platform example](examples/data-platform.md#views) has two views and the
+[event-driven example](examples/event-driven.md#views) one, each laid out again.
 
 ### Dynamic views
 
@@ -533,8 +568,8 @@ views:
   arrow. `diagr check` warns if it covers another label or a node.
 - The view keeps its scenario, first, so its page plays the story; `scenarios` can keep others as well.
 
-The [multi-region example](examples/multi-region.md#views) has a dynamic view of a pinned diagram, and the
-[event-driven example](examples/event-driven.md#views) one that is laid out again.
+The [multi-region example](examples/multi-region.md#views) and the
+[event-driven example](examples/event-driven.md#views) each have a dynamic view.
 
 ## Versions
 

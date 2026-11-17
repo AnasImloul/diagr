@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..model import Diagram, Group, Node, boxes_around
+from ..model import Diagram, Group, Node, Port, boxes_around
 from ..scenario import walk_effects
 from ..theme import Theme
 from .flow import flow
@@ -12,6 +12,7 @@ from .geometry import (
     Rect,
     behind_title_box,
     group_title_box,
+    ink,
     middle_title_box,
     node_box,
     stack,
@@ -20,7 +21,9 @@ from .geometry import (
     title_place,
     title_width,
 )
-from .route import auto_routes, route_edge
+from .labels import place_labels
+from .lanes import lane_routes
+from .route import auto_routes, place_badge, route_edge
 
 
 def sub_slots(d: Diagram) -> dict[str, int]:
@@ -307,9 +310,10 @@ def layout(d: Diagram, t: Theme) -> Layout:
             r = frames.get(k) or group_rect(d.groups[k], d, t, nodes, children)
             if r:
                 fitted[k] = sized[k] = r
-        if d.align:
+        if d.align and not d.layered:
             # Line up whole stacks: each box with the boxes stacked behind it, then put the front box back inside.
-            keys = [k for k in level if k in fitted and k not in frames]
+            # A box with cells of its own keeps them.
+            keys = [k for k in level if k in fitted and k not in frames and d.groups[k].at is None]
             ext = {k: stack_reach(d.groups[k]) for k in keys}
             hull = {
                 k: Rect(r.x - ext[k][0], r.y - ext[k][1], r.w + ext[k][0], r.h + ext[k][1])
@@ -325,19 +329,23 @@ def layout(d: Diagram, t: Theme) -> Layout:
         for k in level:
             if k in fitted and d.groups[k].behind:
                 layers[k] = stack(d.groups[k], fitted[k])
-    if d.align:
+    if d.align and not d.layered:
         recentre(d, t, sized, fitted, nodes, slots, set(frames))
     # A box may have grown with its parent since its level: place the boxes behind it again.
     layers = {k: stack(d.groups[k], fitted[k]) for k in layers}
     # Outer groups first, so inner ones are drawn on top and fill_at() finds the innermost.
     groups = {k: fitted[k] for k in sorted(fitted, key=lambda k: group_depth(d, k))}
-    auto, trunks, ports = auto_routes(d, nodes, groups, t)
     ends = dict(nodes)
     covers: dict[str, list[Rect]] = {}
     boxes = [(k, k, r) for k, r in groups.items()] + [(k, lid, r) for k, ls in layers.items() for lid, r in ls]
     for k, end, r in boxes:
         cx, cy = r.x + r.w / 2, r.y + r.h / 2
         ends[end] = NodeBox(Node(end, None, group=k), cx, cy, cy, [], None, None, None, r.y1, r, area=True)
+    starts: dict[str, Port] = {}
+    if d.layered:
+        auto, trunks, starts, ports = lane_routes(d, ends, t)
+    else:
+        auto, trunks, ports = auto_routes(d, nodes, groups, t)
     for k, ls in layers.items():
         for i, (lid, _) in enumerate(ls):
             covers[lid] = [groups[k]] + [r for _, r in ls[:i]]
@@ -348,10 +356,19 @@ def layout(d: Diagram, t: Theme) -> Layout:
         if d.groups[k].box
     ] + [behind_title_box(d.groups[k], d.groups[k].behind[lid], r, t) for k, ls in layers.items() for lid, r in ls]
     edges = {
-        k: route_edge(e, ends, d, t, auto.get(k), covers, titles, k in trunks, ports.get(k))
+        k: route_edge(e, ends, d, t, auto.get(k), covers, titles, k in trunks, ports.get(k), starts.get(k))
         for k, e in d.edges.items()
         if e.src.node in ends and e.dst.node in ends
     }
+
+    # Labels move off what they cover, once every edge has its path; step badges then go next to them.
+    for p in edges.values():
+        p.badge_at = p.badge_box = None
+    fixed = {k for k, e in d.edges.items() if e.label_at is not None}
+    place_labels(edges, [r for nb in nodes.values() if not nb.point for r in ink(nb)], titles, fixed)
+    for k, p in edges.items():
+        if k in d.numbers:
+            place_badge(p, d.numbers[k], t)
 
     rects = list(groups.values()) + [b.box for b in nodes.values()] + [r for ls in layers.values() for _, r in ls]
     rects += [p.label_box for p in edges.values() if p.label_box]

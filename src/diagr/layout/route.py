@@ -539,7 +539,7 @@ def _grouped(keys: list[str], by: Callable[[str], object]) -> list[list[str]]:
     return list(out.values())
 
 
-def _fraction(pts: list[Point], at: Point) -> float:
+def fraction(pts: list[Point], at: Point) -> float:
     """How far along pts the point at lies, from 0 to 1."""
     lens = [math.dist(a, b) for a, b in zip(pts, pts[1:], strict=False)]
     done = 0.0
@@ -608,6 +608,7 @@ def route_edge(
     titles: list[Rect] | None = None,
     trunk: bool = False,
     port: Port | None = None,
+    start: Port | None = None,
 ) -> EdgePath:
     a, b = nodes[e.src.node], nodes[e.dst.node]
     problems: list[str] = []
@@ -666,14 +667,11 @@ def route_edge(
         label = label_point(rest if fits else pts, e.label_at, w)
         box = Rect(label[0] - w / 2, label[1] - 9, w, 18)
         if fits and math.dist(label, label_point(pts, None, w)) > 0.01:
-            frac = _fraction(pts, label)
-    path = EdgePath(e, pts, label, box, problems, tip=tip, port=port, label_frac=frac)
-    if e.id in d.numbers:
-        _place_badge(path, d.numbers[e.id], t)
-    return path
+            frac = fraction(pts, label)
+    return EdgePath(e, pts, label, box, problems, tip=tip, port=port, label_frac=frac, start=start)
 
 
-def _place_badge(path: EdgePath, number: str, t: Theme) -> None:
+def place_badge(path: EdgePath, number: str, t: Theme) -> None:
     """A dynamic view's step badge: just left of the label when its run has room for both, otherwise on the last
     segment, just before the arrow, where no other edge runs."""
     bw, r = badge_width(number, t), t.size("badge")
@@ -682,8 +680,10 @@ def _place_badge(path: EdgePath, number: str, t: Theme) -> None:
         whole = bw + 4 + box.w
         for a, b in zip(pts, pts[1:], strict=False):
             flat = abs(a[1] - b[1]) < 0.5 and abs(a[1] - lab[1]) < 0.5 and min(a[0], b[0]) <= lab[0] <= max(a[0], b[0])
-            if flat and abs(b[0] - a[0]) >= whole + 20:
-                left = lab[0] - whole / 2
+            lo, hi = sorted((a[0], b[0]))
+            if flat and hi - lo >= whole + 24:
+                # Around where the label was, but 12px clear of both ends of the run.
+                left = min(max(lab[0] - whole / 2, lo + 12), hi - 12 - whole)
                 path.label_at = (left + bw + 4 + box.w / 2, lab[1])
                 path.label_box = Rect(left + bw + 4, box.y, box.w, box.h)
                 path.badge_at = (left + bw / 2, lab[1])

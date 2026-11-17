@@ -96,6 +96,8 @@ class EdgePath:
     # and where along the path (0 to 1) the label sits, when it moved past a trunk.
     port: Port | None = None
     label_frac: float | None = None
+    # The port it starts at, when routing moved it along a side it shares with other edges.
+    start: Port | None = None
 
 
 @dataclass
@@ -148,6 +150,15 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
         Rect(x - half_w, top, 2 * half_w, bottom - top),
         half + 4,
     )
+
+
+def ink(n: NodeBox) -> list[Rect]:
+    """What of a node shows, as rects: its icon, with the room above it for a step badge, and the text, cells and
+    button below it. Its box also covers the empty corners beside the icon where the text is wider."""
+    b, r = n.box, n.reach
+    icon = Rect(n.x - r - 6, b.y, 2 * (r + 6), n.y + r - b.y)
+    below = Rect(b.x, n.y + r, b.w, b.y1 - n.y - r)
+    return [icon, below]
 
 
 def title_width(g: Group, t: Theme) -> float:

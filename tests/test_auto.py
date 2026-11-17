@@ -159,7 +159,8 @@ class Placement(Case):
         nodes = prepared(CHAIN).diagram.nodes
         at = {k: n.at or (-1, -1) for k, n in nodes.items()}
         self.assertEqual(at["a"][0], 0)
-        self.assertEqual(at["b"][0], 1)
+        self.assertGreater(at["b"][0], at["a"][0])
+        self.assertGreater(at["c"][0], at["b"][0])
         self.assertEqual(at["c"][0], at["d"][0])
         self.assertNotEqual(at["c"][1], at["d"][1])
         self.assertTrue(all(n.auto for n in nodes.values()))
@@ -169,7 +170,8 @@ class Placement(Case):
             k: n.at or (-1, -1)
             for k, n in prepared(CHAIN.replace("id: t", "id: t\ndirection: down")).diagram.nodes.items()
         }
-        self.assertEqual([at["a"][1], at["b"][1]], [0, 1])
+        self.assertEqual(at["a"][1], 0)
+        self.assertGreater(at["b"][1], at["a"][1])
         self.assertEqual(at["a"][0], at["b"][0])
 
     def test_pinned_nodes_keep_their_place(self):

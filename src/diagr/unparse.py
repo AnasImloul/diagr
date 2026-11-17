@@ -146,6 +146,8 @@ def _pin(d: Diagram) -> None:
             e.route = as_route(path.points) if len(path.points) > 2 else None
             if path.port and not e.dst.side:
                 e.dst = path.port
+            if path.start and not e.src.side:
+                e.src = path.start
             # A route's first and last moves imply the sides it leaves and enters by; a path that turns back
             # before its first turn, or comes into a side moving away from it, needs its sides written down.
             if e.route:

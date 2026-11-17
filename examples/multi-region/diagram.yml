@@ -8,7 +8,7 @@ description: >-
   failover and a rolling deploy.
 grid: {col: 200, row: 150}
 
-# One region, defined once. Its cells are relative: [0, 0] is the checkout API.
+# One region, defined once.
 components:
   region:
     params: {name: {required: true}, role: primary, database: primary}
@@ -26,52 +26,52 @@ components:
                 title: Checkout
                 tone: teal
                 nodes:
-                  api: {at: [0, 0], icon: api, title: Checkout API}
-                  worker: {at: [1, 0], icon: server, title: Workers, sub: v1, stack: 2}
+                  api: {icon: api, title: Checkout API}
+                  worker: {icon: server, title: Workers, sub: v1, stack: 2}
               catalog:
                 title: Catalog
                 tone: violet
                 nodes:
-                  prices: {at: [2, 0], icon: function, title: Pricing}
+                  prices: {icon: function, title: Pricing}
           data:
             title: Data
             tone: amber
             nodes:
-              db: {at: [3, 0], icon: database, title: Orders, sub: "{database}"}
+              db: {icon: database, title: Orders, sub: "{database}"}
     edges:
       api -> worker: jobs
-      api -> prices: {label: prices, route: [up 40px, right, down]}
-      worker -> db@left: {label: write, route: [down 56px, right, up, right 70px]}
+      api -> prices: prices
+      worker -> db: write
 
 # Two instances. Their nodes are a/api, a/worker, ... and b/api, b/worker, ...
 instances:
-  a: {component: region, at: [2.2, 0], with: {name: Region A}}
-  b: {component: region, at: [2.2, 2.4], with: {name: Region B, role: standby, database: replica}}
+  a: {component: region, with: {name: Region A}}
+  b: {component: region, with: {name: Region B, role: standby, database: replica}}
 
 nodes:
-  health: {at: [0, 0], icon: clock, title: Health checks, sub: every 10 s}
-  user: {at: [0, 1.2], icon: browser, title: Customer}
+  health: {icon: clock, title: Health checks, sub: every 10 s}
+  user: {icon: browser, title: Customer}
 
 groups:
   edge:
     title: Global edge
     tone: neutral
     nodes:
-      lb: {at: [1, 1.2], icon: globe, title: Load balancer, sub: anycast}
+      lb: {icon: globe, title: Load balancer, sub: anycast}
   delivery:
     title: Delivery
     tone: green
     nodes:
-      ci: {at: [6.4, 1.2], icon: pipeline, title: Deploy pipeline, cells: [build, test, canary, rollout]}
+      ci: {icon: pipeline, title: Deploy pipeline, cells: [build, test, canary, rollout]}
 
 edges:
   user -> lb: HTTPS
-  health --> a/api@left-12: probe
-  lb -> a/api@left+12: {label: active, route: [right 0.39, up, right]}
-  lb --> b/api@left: {label: standby, route: [right 0.39, down, right]}
-  a/db@bottom+16 --> b/db@top+16: replication
-  ci -> a/worker: {label: rollout, route: [up, left, down 130px], hidden: true}
-  ci -> b/worker: {label: canary, route: [down, left, up 130px], hidden: true}
+  health --> a/api: probe
+  lb -> a/api: active
+  lb --> b/api: standby
+  a/db --> b/db: replication
+  ci -> a/worker: {label: rollout, hidden: true}
+  ci -> b/worker: {label: canary, hidden: true}
 
 scenarios:
   checkout:

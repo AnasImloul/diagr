@@ -18,9 +18,9 @@ components:
         sub: "{format}"
         tone: blue
         nodes:
-          src: {at: [0, 0], icon: file, title: "{source}"}
-          ingest: {at: [1, 0], icon: upload, title: Ingest}
-          check: {at: [2, 0], icon: check, title: Validate, sub: "schema v{version}"}
+          src: {icon: file, title: "{source}"}
+          ingest: {icon: upload, title: Ingest}
+          check: {icon: check, title: Validate, sub: "schema v{version}"}
     edges:
       src -> ingest -> check: [pull, records]
     # Called with the feeds they run on, side by side: 'pull orders clicks stock'.
@@ -29,16 +29,16 @@ components:
       validate: [flow ingest -> check 800ms done]
 
 instances:
-  orders: {component: feed, at: [0, 0], in: ingestion, with: {name: Orders, source: Order DB, format: CDC}}
-  clicks: {component: feed, at: [0, 1.6], in: ingestion, with: {name: Clickstream, source: Web events}}
-  stock: {component: feed, at: [0, 3.2], in: ingestion, with: {name: Inventory, source: ERP export, format: CSV, version: "1"}}
+  orders: {component: feed, in: ingestion, with: {name: Orders, source: Order DB, format: CDC}}
+  clicks: {component: feed, in: ingestion, with: {name: Clickstream, source: Web events}}
+  stock: {component: feed, in: ingestion, with: {name: Inventory, source: ERP export, format: CSV, version: "1"}}
 
 nodes:
-  bus: {at: [2.9, 1.6], junction: true}
-  quarantine: {at: [3.55, 2.35], icon: folder, title: Quarantine, sub: bad records, hidden: true}
-  oncall: {at: [3.55, 3.2], icon: mail, title: On-call, sub: paged on errors}
-  app: {at: [10, 0.2], icon: browser, title: Web app}
-  analyst: {at: [10, 1.6], icon: user, title: Analyst}
+  bus: {junction: true}
+  quarantine: {icon: folder, title: Quarantine, sub: bad records, hidden: true}
+  oncall: {icon: mail, title: On-call, sub: paged on errors}
+  app: {icon: browser, title: Web app, layer: last}
+  analyst: {icon: user, title: Analyst, layer: last}
 
 groups:
   ingestion: {title: Ingestion, tone: neutral}
@@ -56,45 +56,45 @@ groups:
             sub: raw
             tone: orange
             nodes:
-              raw: {at: [4.6, 1.6], icon: lake, title: Raw tables}
+              raw: {icon: lake, title: Raw tables}
           silver:
             title: Silver
             sub: clean
             tone: neutral
             nodes:
-              clean: {at: [5.6, 1.6], icon: database, title: Clean tables}
+              clean: {icon: database, title: Clean tables}
           gold:
             title: Gold
             sub: curated
             tone: amber
             nodes:
-              marts: {at: [6.6, 1.6], icon: layers, title: Data marts}
+              marts: {icon: layers, title: Data marts}
         nodes:
-          spark: {at: [5.1, 3], icon: cube, title: Batch engine, cells: [dedupe, join, enrich, aggregate]}
+          spark: {icon: cube, title: Batch engine, cells: [dedupe, join, enrich, aggregate]}
       serving:
         title: Serving
         tone: violet
         nodes:
-          api: {at: [7.8, 0.2], icon: api, title: Metrics API}
-          warehouse: {at: [7.8, 1.6], icon: database, title: Warehouse, stack: 2}
-          dashboards: {at: [8.8, 1.6], icon: chart, title: Dashboards, sub: refreshed daily}
+          api: {icon: api, title: Metrics API}
+          warehouse: {icon: database, title: Warehouse, stack: 2}
+          dashboards: {icon: chart, title: Dashboards, sub: refreshed daily}
       governance:
         title: Governance
         tone: green
         nodes:
-          catalog: {at: [5.6, 5.2], icon: folder, title: Catalog, sub: lineage and owners}
-          access: {at: [7.8, 5.2], icon: lock, title: Access control}
+          catalog: {icon: folder, title: Catalog, sub: lineage and owners}
+          access: {icon: lock, title: Access control}
 
 edges:
-  orders/check -> bus: {route: [right, down]}
+  orders/check -> bus:
   clicks/check -> bus:
-  stock/check -> bus: {route: [right, up]}
+  stock/check -> bus:
   bus -> raw: land
-  clicks/check -> quarantine: {label: rejected, route: [down, right], hidden: true}
+  clicks/check -> quarantine: {label: rejected, hidden: true}
   quarantine -> oncall: {label: alert, hidden: true}
 
-  raw@bottom+30 -> spark: {label: read, route: [down, right]}
-  spark -> clean@bottom+30: {label: write, route: [right, up]}
+  raw -> spark: read
+  spark -> clean: write
   clean -> marts -> warehouse: [model, publish]
 
   api -> warehouse: reads
@@ -105,7 +105,7 @@ edges:
   catalog --> spark: lineage
   access --> warehouse: grants
 
-  app@top --> clicks/src@left: {label: click events, via: [[10, -0.95], [-0.8, -0.95], [-0.8, 1.6]]}
+  app --> clicks/src: click events
 
 scenarios:
   nightly:
@@ -208,7 +208,7 @@ scenarios:
         do: [draw catalog->spark, catalog.sub: backfill recorded, done catalog]
 
 # Parts of the diagram built as their own images and pages: data-platform-ingestion and data-platform-serving.
-# The nodes are pinned, so each view is a crop of the whole.
+# Each view is placed again on its own, closing up around what it keeps.
 views:
   ingestion: {title: Ingestion, include: [ingestion, bus]}
   serving: {title: Self-serve queries, include: [serving, analyst, access], scenarios: [query]}

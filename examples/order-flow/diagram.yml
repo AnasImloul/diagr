@@ -10,18 +10,18 @@ groups:
     title: Frontend
     tone: blue
     nodes:
-      web: {at: [0, 0], icon: browser, title: Web app, sub: checkout page}
+      web: {icon: browser, title: Web app, sub: checkout page}
   back:
     title: Backend
     sub: one region
     tone: teal
     nodes:
-      api: {at: [1, 0], icon: function, title: API, sub: validates}
-      queue: {at: [2, 0], icon: queue, title: Order queue}
-      worker: {at: [3, 0], icon: server, title: Workers, sub: three replicas, stack: 3}
-      db: {at: [3, 1], icon: database, title: Orders}
-      dlq: {at: [2, 1], icon: queue, title: Dead letters, sub: kept for 14 days, mark: new}
-      mail: {at: [4, 0], icon: mail, title: Email, sub: confirmation, hidden: true}
+      api: {icon: function, title: API, sub: validates}
+      queue: {icon: queue, title: Order queue}
+      worker: {icon: server, title: Workers, sub: three replicas, stack: 3}
+      db: {icon: database, title: Orders}
+      dlq: {icon: queue, title: Dead letters, sub: kept for 14 days, mark: new}
+      mail: {icon: mail, title: Email, sub: confirmation, hidden: true}
 
 edges:
   web -> api -> queue -> worker -> db: [POST /orders, enqueue, deliver, write]

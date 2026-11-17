@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .icons import Icons, SvgIcon, Tile
 from .layout.flow import laid_out
-from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box
+from .layout.geometry import Layout, Point, Rect, behind_title_box, group_title_box, ink
 from .model import Diagram, Effect, Loc, Scenario, boxes_around, edge_id, stack_owners
 from .scenario import resolve_edge, text_key, walk_effects
 from .source import Problem, did_you_mean
@@ -62,6 +62,13 @@ def _check_placing(d: Diagram, p: list[Problem]) -> None:
         root = d.flow is None and (g.parent not in flowed_groups)
         if g.span is not None or (g.at is not None and not root):
             p.append(Problem(g.loc, f"group '{k}' has 'at' or 'span', but a 'layout' places it; remove them"))
+    # `layer` is for the layered placer, which places a diagram only when nothing is pinned.
+    pinned = bool(flowed or flowed_groups) or any(n.at is not None and not n.auto for n in d.nodes.values())
+    pinned = pinned or any(g.at is not None for g in d.groups.values())
+    if pinned:
+        for x in [*d.nodes.values(), *d.groups.values()]:
+            if x.layer is not None:
+                _warn(p, x.loc, f"'{x.id}' has 'layer', which only applies when no node or group is pinned with 'at'")
     for n in d.nodes.values():
         for key in ("align_x", "align_y"):
             target = getattr(n, key)
@@ -289,7 +296,7 @@ def check_layout(d: Diagram, lay: Layout, t: Theme) -> list[Problem]:
         for n, b in lay.nodes.items():
             if n in (d.edges[k].src.node, d.edges[k].dst.node) or b.point:
                 continue
-            if box.overlaps(b.box):
+            if any(box.overlaps(r) for r in ink(b)):
                 _warn(p, d.edges[k].loc, f"label of edge '{k}' overlaps node '{n}'")
     own: dict[str, list[Rect]] = {}
     for nb in lay.nodes.values():

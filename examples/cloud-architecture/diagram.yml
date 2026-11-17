@@ -9,27 +9,27 @@ grid: { col: 182, row: 175 }
 step_list: false
 
 nodes:
-  api: { at: [0, 1], icon: function, title: API, sub: admission }
-  backlog: { at: [1, 1], icon: database, title: Backlog, sub: fair order }
-  tick: { at: [2, 0], icon: clock, title: Scheduler, sub: every minute }
-  dispatcher: { at: [2, 1], icon: function, title: Dispatcher }
-  jobs: { at: [3, 0], icon: queue, title: Jobs queue }
-  transcode: { at: [4, 0], icon: server, title: Transcode workers, sub: pull one job at a time, stack: 3 }
-  dlq: { at: [4, 1], icon: queue, title: Dead letters }
-  cq: { at: [3, 2], icon: queue, title: Captions queue }
-  captions: { at: [4, 2], icon: server, title: Captions workers, sub: speech to text }
-  llm: { at: [5, 2], icon: globe, title: Model API, sub: classification }
+  api: { icon: function, title: API, sub: admission }
+  backlog: { icon: database, title: Backlog, sub: fair order }
+  tick: { icon: clock, title: Scheduler, sub: every minute }
+  dispatcher: { icon: function, title: Dispatcher }
+  jobs: { icon: queue, title: Jobs queue }
+  transcode: { icon: server, title: Transcode workers, sub: pull one job at a time, stack: 3 }
+  dlq: { icon: queue, title: Dead letters }
+  cq: { icon: queue, title: Captions queue }
+  captions: { icon: server, title: Captions workers, sub: speech to text }
+  llm: { icon: globe, title: Model API, sub: classification }
 
 edges:
   api -> backlog -> dispatcher: [admit, release fairly]
   tick --> dispatcher:
-  api --> dispatcher as wake: { label: wake, route: [up 0.4, right, down] }
-  dispatcher -> jobs: { label: send, route: [right 70px, up, right] }
+  api --> dispatcher as wake: wake
+  dispatcher -> jobs: send
   jobs -> transcode:
   transcode -> dlq: bad source, deadline
-  jobs@bottom+15 -> dlq: { label: three failures, route: [down, right] }
-  dlq --> jobs@bottom-15 as redrive: { label: make redrive, route: [right 0.45, down 0.45, left, up] }
-  api -> cq: { label: captions job, route: [down, right] }
+  jobs -> dlq: three failures
+  dlq --> jobs as redrive: make redrive
+  api -> cq: captions job
   cq -> captions:
   captions -> llm: transcript
 

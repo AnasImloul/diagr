@@ -26,6 +26,8 @@ ARROW = r"<->|-->|->"
 EDGE_KEY = rf"{_END}(?:\s*(?:{ARROW})\s*{_END})+(?:\s+as\s+{REF})?"
 MOVE = r"(up|down|left|right)(?:\s+(\d+(?:\.\d+)?)(px)?)?"
 MARKS = ("new", "removed", "changed")
+LAYERS = ("first", "last")
+LAYER = "Placed automatically: first or last, to go before or after everything else in the box it is in"
 # How far apart the two edges of a pair 'a <-> b' run, either side of the middle, in px.
 PAIR_GAP = 10
 
@@ -178,6 +180,7 @@ GROUP = f.Obj(
         ),
         "layout": f.F(LAYOUT, attr="flow", read=layout_flow, write=layout_data),
         "box": f.F(f.Bool(description="false: draw no box or title; the group only arranges what it holds")),
+        "layer": f.F(f.Str(enum=LAYERS, description=LAYER)),
         "grow": f.F(
             f.Num(minimum=0, description="In a box with layout: this group's share of the space left over (default 0)"),
             write=num,
@@ -209,6 +212,7 @@ NODE = f.Obj(
         "junction": f.F(f.Bool(description="A dot where edges meet (a bus); has no icon or text")),
         "align_x": f.F(f.Str(description="A node to line up with, one above the other: same x")),
         "align_y": f.F(f.Str(description="A node to line up with, side by side: same y")),
+        "layer": f.F(f.Str(enum=LAYERS, description=LAYER)),
         "cells": f.F(Cells(), write=cells_data),
         "stack": f.F(f.Num(integer=True, minimum=1, description="Draw the icon as a stack of N")),
         "mark": f.F(f.Str(enum=MARKS)),
@@ -252,6 +256,7 @@ EDGE = f.Obj(
             write=lambda vs: [pair(v) for v in vs],
         ),
         "dashed": f.F(f.Bool()),
+        "constraint": f.F(f.Bool(description="false: drawn, but left out when placing nodes automatically")),
         "mark": f.F(f.Str(enum=MARKS)),
         "label_at": f.F(
             f.Num(
