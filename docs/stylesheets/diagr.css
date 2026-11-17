@@ -753,6 +753,17 @@ iframe.diagr-embed {
   max-width: none;
 }
 
+/* At most its natural size, as diagr build writes it, so wide windows don't blow its labels up past the text. */
+.md-typeset .dg-hero .dg-frame {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.md-typeset .dg-hero .dg-frame img {
+  width: auto;
+  max-width: 100%;
+}
+
 .md-typeset .dg-hero figcaption {
   max-width: none;
   margin-top: 0.9em;
