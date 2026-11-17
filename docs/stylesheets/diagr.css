@@ -946,6 +946,24 @@ iframe.diagr-embed {
   transition: background-color 150ms ease-out, border-color 150ms ease-out;
 }
 
+/* The browser's own arrow sits against the border whatever the padding, so the select draws its own chevron, in a
+   grey that reads on light and dark. Forced colours drop background images, so there it keeps the browser's. */
+.md-typeset .dg-play select {
+  appearance: none;
+  padding-right: 1.7rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238b8f98' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 0.6rem center;
+  background-repeat: no-repeat;
+  background-size: 0.5rem auto;
+}
+
+@media (forced-colors: active) {
+  .md-typeset .dg-play select {
+    appearance: auto;
+    padding-right: 0.6rem;
+  }
+}
+
 .md-typeset .dg-play select:is(:hover, :focus-visible),
 .md-typeset .dg-play__button:is(:hover, :focus-visible),
 .md-typeset .dg-play__tabs button:is(:hover, :focus-visible) {
