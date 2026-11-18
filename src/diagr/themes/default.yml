@@ -40,9 +40,9 @@ light:
     neutral: {fill: "#f6f8fa", stroke: "#afb8c1"}
     blue: {fill: "#f1f6fd", stroke: "#2e8bf0"}
     teal: {fill: "#f1fbf8", stroke: "#1fa38a"}
-    green: {fill: "#f1faf3", stroke: "#2da44e"}
     violet: {fill: "#f7f3fe", stroke: "#8a63d2"}
     amber: {fill: "#fefaf0", stroke: "#d4a72c"}
+    green: {fill: "#f1faf3", stroke: "#2da44e"}
     orange: {fill: "#fff8f1", stroke: "#f38020"}
   tiles:
     blue: ["#0a5cb8", "#2e8bf0"]
@@ -74,9 +74,9 @@ dark:
     neutral: {fill: "#151b23", stroke: "#3d444d"}
     blue: {fill: "#0f1824", stroke: "#3a8dde"}
     teal: {fill: "#0f1b19", stroke: "#2bb59a"}
-    green: {fill: "#0f1a12", stroke: "#3fb950"}
     violet: {fill: "#16121f", stroke: "#8a63d2"}
     amber: {fill: "#1a1608", stroke: "#d4a72c"}
+    green: {fill: "#0f1a12", stroke: "#3fb950"}
     orange: {fill: "#1c1410", stroke: "#f38020"}
   tiles:
     blue: ["#0a5cb8", "#2e8bf0"]

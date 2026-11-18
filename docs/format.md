@@ -40,8 +40,13 @@ bottom just right of the box's own nodes, with `sub` on the line below as a desc
 left and its name beside it). A box that fits its contents leaves room for the title on the side it is on. Without
 `at` it fits around its member nodes. With `at` (top-left cell) and `span` (cells wide and tall) it covers a fixed
 area, which is how you make several groups the same height. Placed automatically, `layer: first` or `last` puts a
-group before or after everything else in its parent. Tones come from the theme: `neutral`, `blue`, `teal`, `green`,
-`violet`, `amber`, `orange`.
+group before or after everything else in its parent. Tones come from the theme: `neutral`, `blue`, `teal`, `violet`,
+`amber`, `green`, `orange`.
+
+**Tones without `tone`.** A group that leaves out `tone` gets one. A group that holds other groups is `neutral`, a
+frame around them; the others take the theme's tones in turn, in the order the file has them, never their parent's.
+A component's group takes one tone in all its instances. Set `tone` when the colour means something, such as orange,
+neutral and amber for bronze, silver and gold.
 
 **Alignment.** Neighbouring boxes with the same parent that nearly line up are lined up: boxes one above the other
 share their left and right edges when those are within a grid column of each other, boxes side by side share their

@@ -109,7 +109,8 @@ class Transparent(Case):
         p = prepared(GROUPED)
         svg = render_static(p.scene(), p.theme, "dark", transparent=True)
         self.assertNotIn("<mask", svg)
-        self.assertIn(f'rx="4" fill="{p.theme.hex("dark", "tone-neutral-fill")}"', svg)
+        tone = p.diagram.groups["g"].tone
+        self.assertIn(f'rx="4" fill="{p.theme.hex("dark", f"tone-{tone}-fill")}"', svg)
 
     def test_row_of_cells_shows_what_is_behind_it(self):
         p = prepared(BASE.replace("title: A}", "title: A, cells: [x, y]}"))

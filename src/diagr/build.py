@@ -33,8 +33,37 @@ class Prepared:
         return SceneBuilder(self.diagram, self.theme, self.layout, self.icons, self.scenarios)
 
 
+def tone_groups(d: Diagram, t: Theme) -> None:
+    """A tone for each group without one. A box that holds other boxes is neutral, a frame around them; the others
+    take the theme's tones in turn, in the order the file has them, skipping their parent's. A component's group has
+    one tone in every instance ('a/data' and 'b/data'), since it is the same thing in each."""
+    cycle = [k for k in t.tones if k != "neutral"]
+    parents = {g.parent for g in d.groups.values()}
+    shared: dict[str, str] = {}
+    turn = 0
+    for g in d.groups.values():
+        if g.tone is not None:
+            continue
+        if g.id in parents or not g.box or not cycle:
+            g.tone = "neutral"
+            continue
+        local = g.id.partition("/")[2]
+        if local in shared:
+            g.tone = shared[local]
+            continue
+        skip = d.groups[g.parent].tone if g.parent in d.groups else None
+        g.tone = cycle[turn % len(cycle)]
+        turn += 1
+        if g.tone == skip:
+            g.tone = cycle[turn % len(cycle)]
+            turn += 1
+        if local:
+            shared[local] = g.tone
+
+
 def prepare(d: Diagram, theme: str | None = None) -> Prepared:
     t = load_theme(theme, Path.cwd()) if theme else load_theme(d.theme, d.base)
+    tone_groups(d, t)
     place(d, t)
     icons = Icons([(d.base / f).resolve() for f in d.icons])
     problems = check_model(d, t, icons)

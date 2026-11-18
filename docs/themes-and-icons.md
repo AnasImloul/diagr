@@ -37,7 +37,8 @@ Use it with `theme: ./acme.yml` in the diagram, or `diagr build --theme ./acme.y
 the diagram.
 
 Tokens: `bg`, `text`, `muted`, `line`, `rule`, `hover`, `accent`, `on-accent`, `fail`, `new`, `changed`, `button`,
-`on-button`, `badge`, `on-badge`, `tones.<tone>.fill|stroke` for groups, and `tiles.<tone>: [from, to]` for the
+`on-button`, `badge`, `on-badge`, `tones.<tone>.fill|stroke` for groups (handed out in the order they are listed to
+groups that set no `tone`), and `tiles.<tone>: [from, to]` for the
 gradient of generated icon tiles.
 
 Every value ends up in the page's CSS, so a colour may only use letters, digits, spaces and `# ( ) , . % / -`

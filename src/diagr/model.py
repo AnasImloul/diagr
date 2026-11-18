@@ -47,7 +47,8 @@ class Group:
     title: str = field(metadata=TEXT)
     sub: str = field(default="", metadata=TEXT)
     icon: str | None = None
-    tone: str = "neutral"
+    # None until the diagram is prepared, which gives it one from the theme.
+    tone: str | None = None
     at: tuple[float, float] | None = field(default=None, metadata=CELL)
     span: tuple[float, float] | None = None
     loc: Loc | None = None
