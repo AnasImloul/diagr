@@ -204,6 +204,8 @@
     }
 
     var downloads = {};
+    // The text a Format request was sent for: its result replaces the source only if nobody has typed since.
+    var formatting = null;
 
     function onMessage(e) {
       var m = e.data;
@@ -217,7 +219,21 @@
         return say(FAILED, "error");
       }
       busy = false;
-      if (m.kind === "download") {
+      if (m.kind === "format") {
+        var asked = formatting;
+        formatting = null;
+        if (asked && asked.id === m.id && source() === asked.text && m.result.text && m.result.text !== asked.text) {
+          // Formatting keeps every line where it was, so the cursor and the scroll stay on the same line.
+          var cursor = editor && editor.getCursor();
+          var scroll = editor && editor.getScrollInfo();
+          setSource(m.result.text);
+          if (editor) {
+            editor.setCursor(cursor);
+            editor.scrollTo(scroll.left, scroll.top);
+          }
+          build();
+        }
+      } else if (m.kind === "download") {
         var save = downloads[m.id];
         delete downloads[m.id];
         if (save) save(m.result);
@@ -514,6 +530,11 @@
 
     root.querySelectorAll("[data-download]").forEach(function (b) {
       b.addEventListener("click", function () { download(b.dataset.download); });
+    });
+
+    $("dg-play-format").addEventListener("click", function () {
+      var text = source();
+      formatting = { id: send({ kind: "format", source: text }), text: text };
     });
 
     $("dg-play-share").addEventListener("click", function () {

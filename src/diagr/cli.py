@@ -143,6 +143,30 @@ def cmd_expand(args) -> int:
     return 0
 
 
+def cmd_fmt(args) -> int:
+    from .fmt import format_text
+
+    status = 0
+    for f in args.files:
+        path = Path(f)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            print(f"error: cannot read {f}: {getattr(e, 'strerror', None) or e}", file=sys.stderr)
+            status = 1
+            continue
+        out = format_text(text)
+        if out == text:
+            continue
+        if args.check:
+            print(f"{f}: would be reformatted")
+            status = 1
+        else:
+            path.write_text(out, encoding="utf-8")
+            print(f"{f}: reformatted")
+    return status
+
+
 def cmd_icons(args) -> int:
     folders: list[Path] = []
     if args.file:
@@ -325,6 +349,11 @@ def main(argv: list[str] | None = None) -> int:
     x.add_argument("file")
     x.add_argument("--out", "-o")
     x.set_defaults(fn=cmd_expand)
+
+    m = sub.add_parser("fmt", help="line up nodes and edges into columns, in place; comments and the rest stay")
+    m.add_argument("files", nargs="+")
+    m.add_argument("--check", action="store_true", help="change nothing; fail if a file would be reformatted")
+    m.set_defaults(fn=cmd_fmt)
 
     n = sub.add_parser("icons", help="list the icons a diagram can use")
     n.add_argument("file", nargs="?", help="a diagram, to include its icon folders")

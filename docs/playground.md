@@ -9,6 +9,7 @@ hide: [navigation, toc, footer]
 <h1>Playground</h1>
 <label class="dg-play__field">Start from <select id="dg-play-example"></select></label>
 <p class="dg-play__status" id="dg-play-status" role="status">Loading</p>
+<button class="dg-play__button" id="dg-play-format" type="button" title="Line up nodes and edges into columns">Format</button>
 <button class="dg-play__button" id="dg-play-share" type="button">Copy link</button>
 </div>
 <div class="dg-play__panes">

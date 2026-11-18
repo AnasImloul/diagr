@@ -110,7 +110,10 @@ onmessage = async (e) => {
   const started = performance.now();
   let result;
   try {
-    result = JSON.parse(play.build(m.source, m.want, m.view || "", !!m.contrast));
+    result =
+      m.kind === "format"
+        ? { text: play.fmt(m.source) }
+        : JSON.parse(play.build(m.source, m.want, m.view || "", !!m.contrast));
   } catch (err) {
     result = { crash: String((err && err.message) || err) };
   }

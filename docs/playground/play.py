@@ -5,6 +5,7 @@ import traceback
 from pathlib import Path
 
 from diagr.build import prepare_all
+from diagr.fmt import format_text
 from diagr.parse import loads
 from diagr.render.html import render_html
 from diagr.render.svg import render_static
@@ -52,3 +53,8 @@ def build(text: str, want: str, view: str = "", contrast: bool = False) -> str:
             "problems": [_problem(w) for q in ps for w in q.warnings],
         }
     )
+
+
+def fmt(text: str) -> str:
+    """The text with its nodes and edges lined up, as `diagr fmt` writes it."""
+    return format_text(text)

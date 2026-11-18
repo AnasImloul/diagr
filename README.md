@@ -128,6 +128,7 @@ To show a diagram in a README, use both SVGs so the image follows the reader's t
 | `diagr build FILE... [--light] [--dark] [--svg] [--html] [-o DIR] [--theme T] [--debug] [--transparent]` | Write the files you ask for, at least one, for each diagram and each of its views: `--light` and `--dark` the static SVGs, `--svg` both, `--html` the page with the player; `--debug` adds the grid and route overlay to the page (G toggles it); `--transparent` leaves the background out of the SVGs |
 | `diagr watch FILE... [--light] [--dark] [--svg] [--html] [-o DIR] [--theme T] [--interval S] [--debug] [--transparent] [--serve] [--port P]` | Rebuild the files you ask for, as `build` does, when the diagram, its icon folders or its theme file change; `--serve` also serves the output, and open pages reload on each rebuild |
 | `diagr check FILE... [--theme T] [--strict] [--format json]` | Validate; problems are printed as `file:line:col`, or as JSON on stdout; `--strict` fails on warnings too |
+| `diagr fmt FILE... [--check]` | Line up nodes and edges into columns, in place, leaving comments and everything else as written; `--check` changes nothing and fails if a file would change |
 | `diagr expand FILE [-o OUT]` | Print the diagram with its components written out as plain groups, nodes and edges and every position pinned; the output builds to the same files |
 | `diagr icons [FILE]` | List the core icons, plus the icon folders of `FILE` if given |
 | `diagr schema [-o FILE]` | Print the JSON Schema |

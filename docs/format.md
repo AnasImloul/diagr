@@ -598,6 +598,30 @@ views:
 The [multi-region example](examples/multi-region.md#views) and the
 [event-driven example](examples/event-driven.md#views) each have a dynamic view.
 
+## Formatting
+
+`diagr fmt FILE` lines the file up into columns, and the playground's Format button does the same:
+
+```yaml
+nodes:
+  api:    {icon: function, title: API,     sub: validates}
+  queue:  {icon: queue,    title: Order queue}
+  worker: {icon: server,   title: Workers, sub: three replicas, stack: 3}
+
+edges:
+  web   -> api:   POST /orders
+  api   -> queue: enqueue
+  queue --> dlq:  after 3 tries
+```
+
+- **One-line mappings** side by side at one indent, such as nodes, start their values in one column, and each item
+  in one column while every line with an item after it has the same key there.
+- **Edges** under `edges:` start their arrows in one column, and their labels too. One key much longer than the
+  others, such as a long chain, keeps its label one space after it rather than pushing every label to the right.
+- A blank line or a comment ends a run, so related lines can be grouped. Comments, quoting, blank lines and
+  everything else stay as written, and every line stays on its line.
+- `--check` changes nothing and fails if a file would change, for CI.
+
 ## Versions
 
 `version` says which version of the format a file is written in; a file without it is version 1, the current one.
