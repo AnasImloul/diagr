@@ -123,7 +123,7 @@ scenarios:
       - Land in bronze:
           at: raw
           text: The validated records are merged and landed as raw tables.
-          do: [draw orders/check->bus clicks/check->bus stock/check->bus, draw bus->raw, done raw]
+          do: [draw (orders/check clicks/check stock/check) -> bus, draw bus -> raw, done raw]
       - Clean and curate:
           at: spark
           text: The batch engine deduplicates, joins, enriches and aggregates, writing clean tables.

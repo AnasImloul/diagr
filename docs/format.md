@@ -438,20 +438,26 @@ out of view or the tab is in the background.
 
 An effect is `verb targets [duration]`. The duration is how long the frame holds before the next one.
 
+Targets are written the way edge keys are. A node, group or named edge is its id, `(a b)` is several side by side,
+and arrows between them name the edges along the way: `draw a -> b -> c` draws `a->b` and `b->c`,
+`draw (orders clicks stock) -> bus` draws one edge from each, and `draw a <-> b` both edges of a pair. `-->` names
+the same edge as `->`, and spaces around arrows are optional (`draw a->b`). Targets with no arrow between them are
+separate: `done a b` and `draw a->b c->d`.
+
 | Effect | Meaning | Default |
 |---|---|---|
 | `activate a [b ...]` | Node starts working: pulsing ring, spinner badge | 0 ms |
 | `done a [b ...]` | Node finished: check badge | 0 ms |
 | `fail a [b ...]` | Node failed: red ring and cross. An active cell fails too | 0 ms |
 | `run a [b ...] [ms]` | Node works for a while, then finishes: `activate a ms`, then `done a` | 0 ms |
-| `draw a->b [c->d ...]` | The accent line draws along the edge, then its arrow turns accent | 1400 ms |
+| `draw a -> b [c -> d ...]` | The accent line draws along the edge, then its arrow turns accent | 1400 ms |
 | `flow a -> b -> c` | Follow a path, see [below](#flow) | |
 | `cells n [2..4] [ms]` | Fill the cells one by one. A range by position (`2..4`, or `3` for one cell) or by name (`build..test`, `canary`) fills only those; a range that stops early leaves its last cell active, and the next range completes it | 1040 ms per cell |
 | `spin n`, `spin n off` | Rotate the node's glyph | 0 ms |
 | `show x`, `hide x` | Reveal or hide a node, edge or group | 0 ms |
 | `focus x y`, `focus none` | Dim everything except the targets and the edges between them; a step's own `focus` does this for the step | 0 ms |
 | `wait 400ms` | Pause | |
-| `n.sub: text` | Replace text: `n.title`, `n.sub` (every line), `n.sub.1` (one line), `a->b.label` | 0 ms |
+| `n.sub: text` | Replace text: `n.title`, `n.sub` (every line), `n.sub.1` (one line), `a -> b.label` | 0 ms |
 | `status: text` | Replace the status line | 0 ms |
 | `parallel: [...]` | Effects that play together, in lockstep: each frame plays the next frame of every effect and lasts as long as the slowest, so flows advance one hop at a time, cells fill side by side, a `repeat` runs its rounds alongside and a nested `parallel` plays its own lockstep as one lane | longest |
 | `repeat 3: [...]` | Unrolled at build time; `$i` in text becomes the round number | |

@@ -107,7 +107,8 @@ class Ctx:
 
 def _text(key: str, text: str, y: Y, ctx: Ctx) -> Effect | None:
     """'status: text' or 'target.field: text', each with an optional duration before the colon."""
-    parts = key.split()
+    # An edge is named as in an edge key: 'a -> b.label' and 'a --> b.label' are the edge 'a->b'.
+    parts = re.sub(r"\s*-?->\s*", "->", key).split()
     if not parts:
         ctx.fail(y, "empty effect")
         return None
@@ -180,7 +181,7 @@ def _verb(head: str, y: Y, ctx: Ctx) -> Effect | None:
         return None
     if word == "flow":
         return _flow(head[len(word) :], y, ctx)
-    verb, *args = re.sub(r"\s*->\s*", "->", head.strip()).split()
+    verb, *args = re.sub(r"(<->|-->|->|\(|\))", r" \1 ", head).split()
     e = Effect(verb, loc=y.loc)
     if args and _ms(args[-1]) is not None:
         e.ms = _ms(args.pop())
@@ -201,8 +202,62 @@ def _verb(head: str, y: Y, ctx: Ctx) -> Effect | None:
         ctx.fail(y, f"'{verb}' needs at least one target")
         return None
     keep = {"spin": "off", "focus": "none"}.get(verb)
-    e.targets = [a if a == keep else ctx.ref(a) for a in args]
+    targets = _targets(verb, args, y, ctx)
+    if targets is None:
+        return None
+    e.targets = [a if a == keep else ctx.ref(a) for a in targets]
     return e
+
+
+def _targets(verb: str, words: list[str], y: Y, ctx: Ctx) -> list[str] | None:
+    """Targets written the way edge keys are: 'a' and '(a b)' name nodes, groups or edges, and a chain of them with
+    arrows names the edges along it, 'a -> b -> c' as a->b and b->c and '(a b) -> c' as a->c and b->c. '-->' is the
+    same edge as '->', and '<->' names both directions. Targets side by side, with no arrow between, are separate."""
+    out: list[str] = []
+    chain: list[tuple[str | None, list[str]]] = []
+
+    def close() -> None:
+        if len(chain) == 1:
+            out.extend(chain[0][1])
+        for (_, a), (arrow, b) in zip(chain, chain[1:], strict=False):
+            for s in a:
+                for t in b:
+                    out.append(f"{s}->{t}")
+                    if arrow == "<->":
+                        out.append(f"{t}->{s}")
+        chain.clear()
+
+    arrow: str | None = None
+    i = 0
+    while i < len(words):
+        w = words[i]
+        if w in ("->", "-->", "<->"):
+            if not chain or arrow:
+                ctx.fail(y, f"'{verb}': '{w}' needs a target on each side")
+                return None
+            arrow, i = w, i + 1
+            continue
+        if w == ")":
+            ctx.fail(y, f"'{verb}': ')' without '('")
+            return None
+        if w == "(":
+            end = words.index(")", i) if ")" in words[i:] else -1
+            ids = words[i + 1 : end] if end > i else []
+            if not ids or "(" in ids:
+                ctx.fail(y, f"'{verb}': write targets side by side in one pair of parentheses, like '(a b)'")
+                return None
+            i = end + 1
+        else:
+            ids, i = [w], i + 1
+        if arrow is None:
+            close()
+        chain.append((arrow, ids))
+        arrow = None
+    if arrow:
+        ctx.fail(y, f"'{verb}': '{arrow}' needs a target on each side")
+        return None
+    close()
+    return out
 
 
 def _texts(item: YMap, ctx: Ctx) -> Effect | None:
