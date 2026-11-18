@@ -219,7 +219,10 @@ NODE = f.Obj(
         "hidden": f.F(f.Bool(description="Start hidden; a scenario can show it")),
         "tooltip": f.F(f.Str()),
     },
-    description="A node: icon, title and sub text, centred on a grid cell",
+    shorthand=f.Str(description="The title"),
+    shorthand_field="title",
+    empty=True,
+    description="A node: icon, title and sub text, centred on a grid cell; its title, or nothing",
 )
 
 GROUP.fields["nodes"] = f.F(

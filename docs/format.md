@@ -117,12 +117,23 @@ nodes:
   bus:    {at: [2.5, 1], junction: true}
 ```
 
-Nodes go under `nodes` at the top level, or in the `nodes` of the group they are in.
+Nodes go under `nodes` at the top level, or in the `nodes` of the group they are in. A node can also be just its
+title (`api: API`) or nothing at all (`web:`), and a node that no `nodes` declares but an edge names is a plain node
+at the top level:
+
+```yaml
+edges:
+  web -> api -> db: [POST /orders, write]
+```
+
+is a whole diagram of three nodes. An edge end that is not declared but is close to an id that is (`wrker` next to
+`worker`) is a warning, since it is more likely a typo than a new node. An instance's ids (`a/db`) are never made up
+this way.
 
 | Key | Meaning |
 |---|---|
 | `at` | Grid cell `[col, row]`. Fractions are allowed (`[2.5, 1]`). Leave it out to have the node placed for you, see [Automatic layout](#automatic-layout). |
-| `title`, `sub` | Text under the icon. `sub` is a string or a list of lines. |
+| `title`, `sub` | Text under the icon; `title` defaults to the node's id, and `title: ""` leaves it out. `sub` is a string or a list of lines. |
 | `icon`, `tone` | Icon name; `tone` recolours a generated tile (`blue`, `teal`, `green`, `violet`, `amber`, `orange`, `slate`, `red`). |
 | `junction` | A dot where edges meet, for a bus or fan-out. No icon or text. |
 | `cells` | A strip of progress squares. A list of names (each shows as the caption while active) or a count. |
@@ -585,14 +596,13 @@ each file as it reads it, and warns at each place it rewrote with what the new v
 ## Validation
 
 `diagr check` reports problems as `file:line:col: error: message`: unknown keys, nodes, groups, edges, icons and
-scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges to nowhere,
-edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal segments, two
+scenarios (each with a "did you mean" suggestion for typos), duplicate keys and ids, unknown tones, edges from a node to itself without a `route` or `via`, routes that cannot reach their target, diagonal segments, two
 nodes on one cell, nodes outside their group, groups outside their parent or inside themselves, triggers at an unknown
 node or on a node that already has one, effects that reference nothing, actions that call themselves, unknown components
 or parameters, and broken theme or `icons.yml` files. Overlapping nodes, labels over nodes or over other labels,
 overlapping groups, nodes over a group they are not in, nodes or child groups over a group's title, edges through a node
-they do not connect or across a group's title, hidden nodes or edges that nothing shows, draws or activates, and visible
-edges into hidden nodes are warnings; `--strict` makes them fail.
+they do not connect or across a group's title, hidden nodes or edges that nothing shows, draws or activates, visible
+edges into hidden nodes, and edge ends that are not declared but look like a typo of an id that is are warnings; `--strict` makes them fail.
 
 ## Python
 

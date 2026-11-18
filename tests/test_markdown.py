@@ -44,9 +44,9 @@ class Fence(unittest.TestCase):
 
     def test_errors_show_in_place(self):
         with self.assertLogs("mkdocs.plugins.diagr", "WARNING"):
-            out = fence(STATIC.replace("a -> b", "a -> c"), "diagr", "diagr", {}, None)
+            out = fence(STATIC.replace("icon: api", "icon: nope"), "diagr", "diagr", {}, None)
         self.assertIn("diagr-error", out)
-        self.assertIn("&#x27;c&#x27;", out)
+        self.assertIn("&#x27;nope&#x27;", out)
 
 
 if __name__ == "__main__":

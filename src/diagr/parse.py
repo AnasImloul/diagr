@@ -23,6 +23,7 @@ from .model import (
     View,
     edge_id,
     held,
+    stack_owners,
 )
 from .scenario import walk_effects
 from .source import DiagramError, Problem, Y, did_you_mean, load
@@ -70,7 +71,8 @@ def _group(e: f.Entry) -> Group:
 
 
 def _node(e: f.Entry) -> Node:
-    return f.build(Node, NODE, e.value, id=e.key, at=None, loc=e.loc)
+    title = "" if e.value.get("junction") else e.key
+    return f.build(Node, NODE, e.value, id=e.key, at=None, loc=e.loc, title=title)
 
 
 def _boxes(
@@ -97,6 +99,17 @@ def _boxes(
             continue
         n.group = parent
         nout[e.key] = n
+
+
+def _nodes_from_edges(d: Diagram) -> None:
+    """A plain node for each edge end that names no node or box, so that 'web -> api' is a whole diagram. An instance's
+    id ('a/db') is never made up: it has to come from the instance."""
+    known = set(d.nodes) | set(d.groups) | set(stack_owners(d))
+    for e in d.edges.values():
+        for end in (e.src.node, e.dst.node):
+            if end not in known and "/" not in end:
+                d.nodes[end] = Node(id=end, at=None, title=end, loc=e.loc, implied=True)
+                known.add(end)
 
 
 def _tree_order(d: Diagram) -> None:
@@ -214,6 +227,7 @@ def from_tree(tree: Y, file: str, base: Path, name: str = "diagram") -> Diagram:
     instances = _instances(rec)
     expand(d, components, instances, problems)
     _tree_order(d)
+    _nodes_from_edges(d)
     if not d.nodes:
         problems.append(Problem(rec.loc, "the diagram needs at least one node"))
         raise DiagramError(problems)

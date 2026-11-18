@@ -115,8 +115,11 @@ def _check_nodes(d: Diagram, t: Theme, icons: Icons, p: list[Problem]) -> None:
             p.append(Problem(n.loc, f"node '{n.id}': unknown group '{n.group}'{did_you_mean(n.group, d.groups)}"))
         if n.icon:
             _icon(p, n.loc, f"node '{n.id}'", n.icon, n.tone, t, icons)
-        if not n.junction and not n.icon:
-            _warn(p, n.loc, f"node '{n.id}' has no icon")
+        if n.implied:
+            declared = [k for k, m in d.nodes.items() if not m.implied] + list(d.groups)
+            hint = did_you_mean(n.id, declared)
+            if hint:
+                _warn(p, n.loc, f"'{n.id}' is not declared, so the edge makes it a new node{hint}")
         if n.tone and n.tone not in t.tiles:
             p.append(Problem(n.loc, f"node '{n.id}': unknown tile tone '{n.tone}' (theme has {', '.join(t.tiles)})"))
         if n.at is not None and n.at in seen:

@@ -101,7 +101,7 @@ class EdgesToBoxes(Case):
         self.assertEqual(len(prepared(yml).layout.edges["zone->card"].points), 4)
 
     def test_unknown_end_and_own_group(self):
-        self.assertReports(problems(BOXES.replace("e -> bottom", "e -> botom")), "unknown node or group 'botom'")
+        self.assertReports(problems(BOXES.replace("e -> bottom", "e -> botom")), "did you mean 'bottom'?", "warning")
         self.assertReports(problems(BOXES.replace("e -> bottom", "c -> bottom")), "to the group 'bottom' it is in")
 
     def test_flow_passes_through_a_box(self):

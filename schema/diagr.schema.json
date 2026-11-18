@@ -73,124 +73,139 @@
         "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "at": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "minItems": 2,
-            "maxItems": 2,
-            "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
-          },
-          "title": {
+        "oneOf": [
+          {
             "type": [
               "string",
               "number",
               "boolean"
-            ]
+            ],
+            "description": "The title"
           },
-          "sub": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
+          {
+            "type": "object",
+            "properties": {
+              "at": {
                 "type": "array",
                 "items": {
-                  "type": "string"
-                }
-              }
-            ],
-            "description": "Muted text under the title"
-          },
-          "icon": {
-            "type": [
-              "string",
-              "number",
-              "boolean"
-            ],
-            "description": "Icon name from the diagram's icon folders or the core set"
-          },
-          "tone": {
-            "type": [
-              "string",
-              "number",
-              "boolean"
-            ],
-            "description": "Tile colour for generated icons"
-          },
-          "junction": {
-            "type": "boolean",
-            "description": "A dot where edges meet (a bus); has no icon or text"
-          },
-          "align_x": {
-            "type": [
-              "string",
-              "number",
-              "boolean"
-            ],
-            "description": "A node to line up with, one above the other: same x"
-          },
-          "align_y": {
-            "type": [
-              "string",
-              "number",
-              "boolean"
-            ],
-            "description": "A node to line up with, side by side: same y"
-          },
-          "layer": {
-            "type": "string",
-            "enum": [
-              "first",
-              "last"
-            ],
-            "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
-          },
-          "cells": {
-            "oneOf": [
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
               },
-              {
+              "title": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ]
+              },
+              "sub": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "Muted text under the title"
+              },
+              "icon": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "Icon name from the diagram's icon folders or the core set"
+              },
+              "tone": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "Tile colour for generated icons"
+              },
+              "junction": {
+                "type": "boolean",
+                "description": "A dot where edges meet (a bus); has no icon or text"
+              },
+              "align_x": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "A node to line up with, one above the other: same x"
+              },
+              "align_y": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ],
+                "description": "A node to line up with, side by side: same y"
+              },
+              "layer": {
+                "type": "string",
+                "enum": [
+                  "first",
+                  "last"
+                ],
+                "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
+              },
+              "cells": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                ],
+                "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+              },
+              "stack": {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1,
+                "description": "Draw the icon as a stack of N"
+              },
+              "mark": {
+                "type": "string",
+                "enum": [
+                  "new",
+                  "removed",
+                  "changed"
+                ]
+              },
+              "hidden": {
+                "type": "boolean",
+                "description": "Start hidden; a scenario can show it"
+              },
+              "tooltip": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ]
               }
-            ],
-            "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+            },
+            "additionalProperties": false
           },
-          "stack": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "Draw the icon as a stack of N"
-          },
-          "mark": {
-            "type": "string",
-            "enum": [
-              "new",
-              "removed",
-              "changed"
-            ]
-          },
-          "hidden": {
-            "type": "boolean",
-            "description": "Start hidden; a scenario can show it"
-          },
-          "tooltip": {
-            "type": [
-              "string",
-              "number",
-              "boolean"
-            ]
+          {
+            "type": "null"
           }
-        },
-        "additionalProperties": false,
-        "description": "A node: icon, title and sub text, centred on a grid cell"
+        ],
+        "description": "A node: icon, title and sub text, centred on a grid cell; its title, or nothing"
       },
       "minProperties": 1
     },
@@ -426,124 +441,139 @@
               "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$"
             },
             "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "at": {
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  },
-                  "minItems": 2,
-                  "maxItems": 2,
-                  "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
-                },
-                "title": {
+              "oneOf": [
+                {
                   "type": [
                     "string",
                     "number",
                     "boolean"
-                  ]
+                  ],
+                  "description": "The title"
                 },
-                "sub": {
-                  "oneOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
+                {
+                  "type": "object",
+                  "properties": {
+                    "at": {
                       "type": "array",
                       "items": {
-                        "type": "string"
-                      }
-                    }
-                  ],
-                  "description": "Muted text under the title"
-                },
-                "icon": {
-                  "type": [
-                    "string",
-                    "number",
-                    "boolean"
-                  ],
-                  "description": "Icon name from the diagram's icon folders or the core set"
-                },
-                "tone": {
-                  "type": [
-                    "string",
-                    "number",
-                    "boolean"
-                  ],
-                  "description": "Tile colour for generated icons"
-                },
-                "junction": {
-                  "type": "boolean",
-                  "description": "A dot where edges meet (a bus); has no icon or text"
-                },
-                "align_x": {
-                  "type": [
-                    "string",
-                    "number",
-                    "boolean"
-                  ],
-                  "description": "A node to line up with, one above the other: same x"
-                },
-                "align_y": {
-                  "type": [
-                    "string",
-                    "number",
-                    "boolean"
-                  ],
-                  "description": "A node to line up with, side by side: same y"
-                },
-                "layer": {
-                  "type": "string",
-                  "enum": [
-                    "first",
-                    "last"
-                  ],
-                  "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
-                },
-                "cells": {
-                  "oneOf": [
-                    {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
                     },
-                    {
+                    "title": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    },
+                    "sub": {
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "Muted text under the title"
+                    },
+                    "icon": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ],
+                      "description": "Icon name from the diagram's icon folders or the core set"
+                    },
+                    "tone": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ],
+                      "description": "Tile colour for generated icons"
+                    },
+                    "junction": {
+                      "type": "boolean",
+                      "description": "A dot where edges meet (a bus); has no icon or text"
+                    },
+                    "align_x": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ],
+                      "description": "A node to line up with, one above the other: same x"
+                    },
+                    "align_y": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ],
+                      "description": "A node to line up with, side by side: same y"
+                    },
+                    "layer": {
+                      "type": "string",
+                      "enum": [
+                        "first",
+                        "last"
+                      ],
+                      "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
+                    },
+                    "cells": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      ],
+                      "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+                    },
+                    "stack": {
                       "type": "integer",
-                      "minimum": 1
+                      "minimum": 1,
+                      "description": "Draw the icon as a stack of N"
+                    },
+                    "mark": {
+                      "type": "string",
+                      "enum": [
+                        "new",
+                        "removed",
+                        "changed"
+                      ]
+                    },
+                    "hidden": {
+                      "type": "boolean",
+                      "description": "Start hidden; a scenario can show it"
+                    },
+                    "tooltip": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
                     }
-                  ],
-                  "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+                  },
+                  "additionalProperties": false
                 },
-                "stack": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "description": "Draw the icon as a stack of N"
-                },
-                "mark": {
-                  "type": "string",
-                  "enum": [
-                    "new",
-                    "removed",
-                    "changed"
-                  ]
-                },
-                "hidden": {
-                  "type": "boolean",
-                  "description": "Start hidden; a scenario can show it"
-                },
-                "tooltip": {
-                  "type": [
-                    "string",
-                    "number",
-                    "boolean"
-                  ]
+                {
+                  "type": "null"
                 }
-              },
-              "additionalProperties": false,
-              "description": "A node: icon, title and sub text, centred on a grid cell"
+              ],
+              "description": "A node: icon, title and sub text, centred on a grid cell; its title, or nothing"
             },
             "minProperties": 1
           },
@@ -1289,124 +1319,139 @@
             "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?(?:/[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)?)$"
           },
           "additionalProperties": {
-            "type": "object",
-            "properties": {
-              "at": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "minItems": 2,
-                "maxItems": 2,
-                "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
-              },
-              "title": {
+            "oneOf": [
+              {
                 "type": [
                   "string",
                   "number",
                   "boolean"
-                ]
+                ],
+                "description": "The title"
               },
-              "sub": {
-                "oneOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
+              {
+                "type": "object",
+                "properties": {
+                  "at": {
                     "type": "array",
                     "items": {
-                      "type": "string"
-                    }
-                  }
-                ],
-                "description": "Muted text under the title"
-              },
-              "icon": {
-                "type": [
-                  "string",
-                  "number",
-                  "boolean"
-                ],
-                "description": "Icon name from the diagram's icon folders or the core set"
-              },
-              "tone": {
-                "type": [
-                  "string",
-                  "number",
-                  "boolean"
-                ],
-                "description": "Tile colour for generated icons"
-              },
-              "junction": {
-                "type": "boolean",
-                "description": "A dot where edges meet (a bus); has no icon or text"
-              },
-              "align_x": {
-                "type": [
-                  "string",
-                  "number",
-                  "boolean"
-                ],
-                "description": "A node to line up with, one above the other: same x"
-              },
-              "align_y": {
-                "type": [
-                  "string",
-                  "number",
-                  "boolean"
-                ],
-                "description": "A node to line up with, side by side: same y"
-              },
-              "layer": {
-                "type": "string",
-                "enum": [
-                  "first",
-                  "last"
-                ],
-                "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
-              },
-              "cells": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "description": "Grid cell [col, row]; fractions allowed; default: placed automatically"
                   },
-                  {
+                  "title": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  },
+                  "sub": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ],
+                    "description": "Muted text under the title"
+                  },
+                  "icon": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "Icon name from the diagram's icon folders or the core set"
+                  },
+                  "tone": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "Tile colour for generated icons"
+                  },
+                  "junction": {
+                    "type": "boolean",
+                    "description": "A dot where edges meet (a bus); has no icon or text"
+                  },
+                  "align_x": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "A node to line up with, one above the other: same x"
+                  },
+                  "align_y": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "A node to line up with, side by side: same y"
+                  },
+                  "layer": {
+                    "type": "string",
+                    "enum": [
+                      "first",
+                      "last"
+                    ],
+                    "description": "Placed automatically: first or last, to go before or after everything else in the box it is in"
+                  },
+                  "cells": {
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    ],
+                    "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+                  },
+                  "stack": {
                     "type": "integer",
-                    "minimum": 1
+                    "minimum": 1,
+                    "description": "Draw the icon as a stack of N"
+                  },
+                  "mark": {
+                    "type": "string",
+                    "enum": [
+                      "new",
+                      "removed",
+                      "changed"
+                    ]
+                  },
+                  "hidden": {
+                    "type": "boolean",
+                    "description": "Start hidden; a scenario can show it"
+                  },
+                  "tooltip": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
                   }
-                ],
-                "description": "Progress cells: a list of names (shown as the caption while active) or a count"
+                },
+                "additionalProperties": false
               },
-              "stack": {
-                "type": "integer",
-                "minimum": 1,
-                "description": "Draw the icon as a stack of N"
-              },
-              "mark": {
-                "type": "string",
-                "enum": [
-                  "new",
-                  "removed",
-                  "changed"
-                ]
-              },
-              "hidden": {
-                "type": "boolean",
-                "description": "Start hidden; a scenario can show it"
-              },
-              "tooltip": {
-                "type": [
-                  "string",
-                  "number",
-                  "boolean"
-                ]
+              {
+                "type": "null"
               }
-            },
-            "additionalProperties": false,
-            "description": "A node: icon, title and sub text, centred on a grid cell"
+            ],
+            "description": "A node: icon, title and sub text, centred on a grid cell; its title, or nothing"
           },
           "minProperties": 1,
           "description": "Nodes inside this group"

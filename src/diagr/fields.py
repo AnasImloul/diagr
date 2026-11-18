@@ -266,11 +266,15 @@ class Obj(T):
     description: str = ""
     shorthand: T | None = None
     shorthand_field: str | None = None
+    # Nothing at all (a key with no value) is the mapping with no keys.
+    empty: bool = False
 
     def kind(self) -> str:
         return "a mapping"
 
     def check(self, y, problems):
+        if self.empty and isinstance(y, YScalar) and y.null:
+            return Rec(y.loc, {}, {})
         if self.shorthand and self.shorthand_field and not isinstance(y, YMap):
             v = self.shorthand.check(y, problems)
             return Rec(y.loc, {self.shorthand_field: v}, {self.shorthand_field: y.loc})
@@ -309,6 +313,8 @@ class Obj(T):
             s["required"] = req
         if self.shorthand:
             s = {"oneOf": [self.shorthand.schema(), s]}
+        if self.empty:
+            s = {"oneOf": [*s.get("oneOf", [s]), {"type": "null"}]}
         return _describe(s, self.description)
 
 

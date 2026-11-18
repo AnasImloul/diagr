@@ -90,6 +90,8 @@ class Node:
     align_y: str | None = field(default=None, metadata=REF)
     # Placed automatically: "first" or "last" to go before or after everything else in the box it is in.
     layer: str | None = None
+    # Not declared: an edge names it, which makes it a plain node.
+    implied: bool = False
 
 
 @dataclass
