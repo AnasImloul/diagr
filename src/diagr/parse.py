@@ -30,6 +30,9 @@ from .source import DiagramError, Problem, Y, did_you_mean, load
 from .syntax import ARROW, DIAGRAM, EDGE, GROUP, ID, NODE, PAIR_GAP, PORT, REF, layout_flow
 from .views import check_views
 
+# The id of the scenario written under 'scenario', for views and scripts that name it.
+MAIN_SCENARIO = "main"
+
 
 def _scenario(sid: str, sc: f.Rec, ctx: Ctx) -> Scenario:
     steps = []
@@ -231,8 +234,9 @@ def from_tree(tree: Y, file: str, base: Path, name: str = "diagram") -> Diagram:
     if not d.nodes:
         problems.append(Problem(rec.loc, "the diagram needs at least one node"))
         raise DiagramError(problems)
-    _triggers(d, rec.get("scenarios") or [], problems)
-    _scenarios(d, rec, components, instances, problems)
+    scenarios = _scenario_entries(rec, problems)
+    _triggers(d, scenarios, problems)
+    _scenarios(d, rec, scenarios, components, instances, problems)
     _cell_names(d, problems)
     for e in rec.get("views") or []:
         v = e.value
@@ -284,9 +288,20 @@ def _instances(rec: f.Rec) -> dict[str, Instance]:
     return instances
 
 
+def _scenario_entries(rec: f.Rec, problems: list[Problem]) -> list[f.Entry]:
+    """The scenarios by id: 'scenario' is the one scenario of a diagram that has one, with the id 'main'."""
+    one = rec.get("scenario")
+    if one is None:
+        return rec.get("scenarios") or []
+    if rec.get("scenarios") is not None:
+        problems.append(Problem(rec.at("scenario"), "use either 'scenario' or 'scenarios', not both"))
+    return [f.Entry(MAIN_SCENARIO, rec.at("scenario"), one)]
+
+
 def _scenarios(
     d: Diagram,
     rec: f.Rec,
+    scenarios: list[f.Entry],
     components: dict[str, Component],
     instances: dict[str, Instance],
     problems: list[Problem],
@@ -303,7 +318,7 @@ def _scenarios(
             actions.instances[p.id] = (p.component, instance_fill(components[p.component], p))
     actions.check_names()
     ctx = Ctx(problems, actions)
-    for e in rec.get("scenarios") or []:
+    for e in scenarios:
         d.scenarios[e.key] = _scenario(e.key, e.value, ctx)
     d.component_actions = actions.check_all()
 

@@ -472,6 +472,7 @@ DIAGRAM = f.Obj(
         "components": f.F(f.MapOf(COMPONENT)),
         "instances": f.F(f.MapOf(INSTANCE)),
         "actions": f.F(ACTIONS),
+        "scenario": f.F(SCENARIO),
         "scenarios": f.F(
             f.MapOf(SCENARIO, min_items=1, description="Scenarios by id; the first is the default and static output's")
         ),

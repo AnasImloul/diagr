@@ -380,26 +380,24 @@ edges:
 ## Scenarios
 
 ```yaml
-scenarios:
-  order:                             # scenario id
-    title: Place an order            # name in the player's scenario picker, when there are several
-    trigger: {at: web, label: Place order}   # a button under a node that plays the scenario
-    ready: Press Place order to follow one order.
-    end: Order stored.
-    steps:
-      - title: Validate and queue
-        at: api                      # the node that gets the step's number badge
-        status: Validating           # status line while the step plays; default: the title
-        text: The API checks the order and puts it on the queue.
-        do:
-          - activate api 400ms
-          - api.sub: order is valid
-          - flow api -> queue
-      - title: Store
-        at: db
-        focus: [queue, worker, db]   # dim the rest while the step plays
-        do: [flow queue -> worker 1200ms -> db 600ms done]
-      - Confirm: [run mail 800ms]    # a step with nothing to say but its title
+scenario:
+  trigger: {at: web, label: Place order}   # a button under a node that plays the scenario
+  ready: Press Place order to follow one order.
+  end: Order stored.
+  steps:
+    - title: Validate and queue
+      at: api                        # the node that gets the step's number badge
+      status: Validating             # status line while the step plays; default: the title
+      text: The API checks the order and puts it on the queue.
+      do:
+        - activate api 400ms
+        - api.sub: order is valid
+        - flow api -> queue
+    - title: Store
+      at: db
+      focus: [queue, worker, db]     # dim the rest while the step plays
+      do: [flow queue -> worker 1200ms -> db 600ms done]
+    - Confirm: [run mail 800ms]      # a step with nothing to say but its title
 ```
 
 - **`trigger`** puts a button under the node `at`, with `label` on it, that plays the scenario. A node carries one
@@ -413,14 +411,17 @@ drawn, a text is replaced), and the state at frame k is all assignments up to k.
 scrub and replay exact: the player jumps to any frame and the page shows the same thing it shows when playing up to
 it.
 
-`scenarios` maps ids to scenarios, and a diagram can have any number. With more than one, the HTML page gets a picker;
+`scenario` is a diagram's one scenario. For several, `scenarios` maps ids to scenarios instead, and `title` on each
+names it in the player's picker; a file has one key or the other. With more than one, the HTML page gets a picker;
 switching resets the diagram and shows that scenario's steps and badges. Each scenario's `trigger` plays it:
 
 ```yaml
 scenarios:
-  checkout: {trigger: {at: user, label: Place order}, steps: [...]}
-  failover: {trigger: {at: health, label: Fail region A}, steps: [...]}
+  checkout: {title: Checkout, trigger: {at: user, label: Place order}, steps: [...]}
+  failover: {title: Failover, trigger: {at: health, label: Fail region A}, steps: [...]}
 ```
+
+The scenario under `scenario` has the id `main`, for the [views](#views) and scripts that name it.
 
 A static SVG can only show one scenario, so it shows the first one's badges and step list. From a script,
 `diagr.scenario("failover")` switches and `diagr.scenarios` lists the ids.

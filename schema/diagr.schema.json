@@ -836,6 +836,143 @@
       },
       "description": "Named lists of effects, called in a step's 'do' by their name"
     },
+    "scenario": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "Name in the player's scenario picker"
+        },
+        "trigger": {
+          "type": "object",
+          "properties": {
+            "at": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ],
+              "description": "The node the button hangs under"
+            },
+            "label": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ],
+              "description": "The button's label"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "at",
+            "label"
+          ],
+          "description": "A button under a node that plays this scenario"
+        },
+        "loop": {
+          "type": "boolean",
+          "description": "Replay forever; the first looping scenario starts on its own when the page loads"
+        },
+        "ready": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "Status line before the run"
+        },
+        "end": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ],
+          "description": "Status line after the run"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  },
+                  "text": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "Longer explanation for the step list"
+                  },
+                  "at": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "Node that carries the step's number badge"
+                  },
+                  "status": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ],
+                    "description": "Status line while the step plays; default: the title"
+                  },
+                  "focus": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    },
+                    "minItems": 1,
+                    "description": "Dim everything but these, and the edges between them, for the step"
+                  },
+                  "do": {
+                    "$ref": "#/$defs/effects",
+                    "description": "Effects, in order"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "title"
+                ]
+              },
+              {
+                "type": "object",
+                "minProperties": 1,
+                "maxProperties": 1,
+                "additionalProperties": {
+                  "$ref": "#/$defs/effects"
+                },
+                "description": "'Title: [effects]', for a step with no text"
+              }
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "steps"
+      ]
+    },
     "scenarios": {
       "type": "object",
       "propertyNames": {

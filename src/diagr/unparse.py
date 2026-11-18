@@ -90,7 +90,8 @@ def _expand_calls(rest: dict[str, Any], d: Diagram) -> None:
         return
     for k, body in (rest.get("actions") or {}).items():
         rest["actions"][k] = _calls(body, d, names)
-    for sc in (rest.get("scenarios") or {}).values():
+    one = [rest["scenario"]] if rest.get("scenario") else []
+    for sc in [*(rest.get("scenarios") or {}).values(), *one]:
         for step in sc.get("steps") or []:
             # A step is a mapping with 'do', or 'Title: [effects]'.
             for k in ["do"] if "title" in step else list(step):
