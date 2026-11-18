@@ -257,9 +257,24 @@
       });
     }
 
+    // The list names what the editor holds: the snippet or example it is, or the one it started from with
+    // "(edited)", which picking that one again restores. Text from anywhere else shows the prompt.
+    var PROMPT = "Choose a snippet or example";
+    var started = null;
+
+    function showPicked(text) {
+      var none = exampleSelect.options[0];
+      var at = examples.findIndex(function (x) { return x.source === text; });
+      if (at >= 0) started = at;
+      if (!none) return;
+      none.textContent = at < 0 && started !== null ? examples[started].title + " (edited)" : PROMPT;
+      exampleSelect.value = at >= 0 ? String(at) : "";
+    }
+
     function build() {
       clearTimeout(timer);
       var text = source();
+      showPicked(text);
       store(STORE, text);
       link(text);
       if (workerState === "ready") say("Building");
@@ -525,7 +540,6 @@
     exampleSelect.addEventListener("change", function () {
       var ex = examples[Number(exampleSelect.value)];
       if (ex) pick(ex.source);
-      exampleSelect.value = "";
     });
 
     root.querySelectorAll("[data-download]").forEach(function (b) {
@@ -570,7 +584,7 @@
         examples = list;
         var none = document.createElement("option");
         none.value = "";
-        none.textContent = "Choose a snippet or example";
+        none.textContent = PROMPT;
         exampleSelect.appendChild(none);
         // Snippets first: each shows one thing, in the order to read them. Then the full examples.
         [["snippet", "Snippets"], ["example", "Examples"]].forEach(function (kind) {
