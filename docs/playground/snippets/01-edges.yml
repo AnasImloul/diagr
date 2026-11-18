@@ -1,0 +1,8 @@
+# Edges are enough: every name an edge uses
+# becomes a node, placed for you.
+# Try: add "db -> cache" on a new line, or a
+# label after a colon.
+title: Edges are enough
+
+edges:
+  web -> api -> db:

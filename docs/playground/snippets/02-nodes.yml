@@ -1,0 +1,16 @@
+# A node has an icon, a title and sub text.
+# 'audit: Audit log' is a node with just a title.
+# Try: change an icon (browser, queue, user, ...)
+# or add "stack: 3" to the workers.
+title: Nodes
+
+nodes:
+  user:    {icon: user,     title: Customer}
+  api:     {icon: api,      title: Orders API, sub: validates}
+  workers: {icon: server,   title: Workers,    sub: [three replicas, autoscaled]}
+  db:      {icon: database, title: Orders}
+  audit: Audit log
+
+edges:
+  user    -> api -> workers -> db:
+  workers -> audit:

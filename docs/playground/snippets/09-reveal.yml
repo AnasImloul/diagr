@@ -1,0 +1,18 @@
+# A hidden node or edge starts out of sight, and
+# drawing it brings it out. 'focus' on a step dims
+# everything else while the step plays.
+title: Reveal and focus
+
+nodes:
+  dlq: {icon: queue, title: Dead letters, hidden: true}
+
+edges:
+  api    -> queue -> worker:
+  worker -> dlq: {label: after 3 tries, hidden: true}
+
+scenario:
+  steps:
+    - Process: [flow api -> queue -> worker]
+    - Give up:
+        focus: [worker, dlq]
+        do: [fail worker, draw worker -> dlq, done dlq]

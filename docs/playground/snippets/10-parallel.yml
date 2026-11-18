@@ -1,0 +1,20 @@
+# '(a b)' in a flow plays stops side by side,
+# 'parallel' plays effects together, and 'repeat'
+# plays them again, with $i as the round number.
+title: Parallel and repeat
+
+edges:
+  lb -> (east west) -> db:
+
+scenario:
+  steps:
+    - Fan out: [flow lb -> (east west) -> db done]
+    - Together:
+        do:
+          - parallel: [run east 800ms, run west 1200ms]
+    - Retry:
+        do:
+          - repeat 3:
+              - db.sub: attempt $i of 3
+              - wait 600ms
+          - done db

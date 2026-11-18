@@ -1,0 +1,14 @@
+# A scenario plays the diagram step by step: press
+# Play, or the button under the web app.
+# 'flow a -> b' makes a active, draws the edge to
+# b, then marks a done.
+title: A first scenario
+
+edges:
+  web -> api -> db: [POST /orders, write]
+
+scenario:
+  trigger: {at: web, label: Place order}
+  steps:
+    - Submit: [flow web -> api]
+    - Store:  [flow api -> db done]

@@ -269,7 +269,7 @@
 
     // Until Python is ready, an unedited example shows what the docs build already made from it.
     function early(text) {
-      var ex = examples.filter(function (x) { return x.source === text; })[0];
+      var ex = examples.filter(function (x) { return x.source === text && x.html; })[0];
       if (!ex || state.view) return;
       var base = new URL(root.dataset.examples, location.href);
       if (state.mode === "player") player(null, new URL(ex.html, base).href);
@@ -570,13 +570,20 @@
         examples = list;
         var none = document.createElement("option");
         none.value = "";
-        none.textContent = "Choose an example";
+        none.textContent = "Choose a snippet or example";
         exampleSelect.appendChild(none);
-        list.forEach(function (ex, i) {
-          var o = document.createElement("option");
-          o.value = String(i);
-          o.textContent = ex.title;
-          exampleSelect.appendChild(o);
+        // Snippets first: each shows one thing, in the order to read them. Then the full examples.
+        [["snippet", "Snippets"], ["example", "Examples"]].forEach(function (kind) {
+          var group = document.createElement("optgroup");
+          group.label = kind[1];
+          list.forEach(function (ex, i) {
+            if (ex.kind !== kind[0]) return;
+            var o = document.createElement("option");
+            o.value = String(i);
+            o.textContent = ex.title;
+            group.appendChild(o);
+          });
+          if (group.children.length) exampleSelect.appendChild(group);
         });
         exampleSelect.value = "";
         return list;

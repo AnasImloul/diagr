@@ -1,0 +1,22 @@
+# Nodes go active, done or failed, cells fill one
+# by one, and text changes as a step plays.
+# Try: replace 'fail test' with 'done test'.
+title: Node states
+
+nodes:
+  build: {icon: pipeline, title: Build, cells: [lint, compile, package]}
+  test:  {icon: check,    title: Tests, sub: waiting}
+  ship:  {icon: cloud,    title: Deploy}
+
+edges:
+  build -> test -> ship:
+
+scenario:
+  steps:
+    - Build:
+        at: build
+        do: [activate build, cells build, done build]
+    - Test:
+        at: test
+        text: The tests run for two seconds, then one fails.
+        do: [draw build -> test, test.sub: running, run test 2s, fail test, test.sub: 1 failed]

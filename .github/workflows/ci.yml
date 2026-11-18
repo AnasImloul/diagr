@@ -25,5 +25,5 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run pyright
       - run: uv run python -m unittest discover -s tests -t .
-      - run: uv run diagr check --strict examples/*/diagram.yml
-      - run: uv run diagr fmt --check examples/*/diagram.yml
+      - run: uv run diagr check --strict examples/*/diagram.yml docs/playground/snippets/*.yml
+      - run: uv run diagr fmt --check examples/*/diagram.yml docs/playground/snippets/*.yml

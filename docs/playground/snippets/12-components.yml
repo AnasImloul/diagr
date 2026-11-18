@@ -1,0 +1,34 @@
+# A component is defined once and placed as
+# instances, whose ids become 'a/api', 'b/api'.
+# '$name' is filled from each instance's 'with',
+# and an action plays on the instances it names.
+title: Components
+
+components:
+  region:
+    params: {name: {required: true}}
+    groups:
+      region:
+        title: $name
+        nodes:
+          api: {icon: api,      title: API}
+          db:  {icon: database, title: Orders}
+    edges:
+      api -> db: write
+    actions:
+      serve: [flow api -> db done]
+
+nodes:
+  lb: {icon: balancer, title: Load balancer}
+
+instances:
+  a: {component: region, with: {name: Region A}}
+  b: {component: region, with: {name: Region B}}
+
+edges:
+  lb   -> (a/api b/api):
+  a/db --> b/db: replication
+
+scenario:
+  steps:
+    - Serve both: [flow lb -> (a/api b/api), serve a b]

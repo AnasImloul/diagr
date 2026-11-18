@@ -1,0 +1,16 @@
+# Layout flows right by default; 'direction: down'
+# turns it. 'layer: last' puts a node after the
+# rest, like an actor at the end of the flow.
+title: Direction
+direction: down
+
+nodes:
+  ingest:  {icon: upload,   title: Ingest}
+  clean:   {icon: cube,     title: Clean}
+  publish: {icon: database, title: Publish}
+  ops:     {icon: user,     title: On-call, layer: last}
+
+edges:
+  ingest  -> clean -> publish:
+  publish -> ops:  page on failure
+  clean   --> ops: warnings

@@ -1,0 +1,16 @@
+# 'mark' flags what a change adds, removes or
+# alters, for an as-is versus to-be picture.
+title: As-is and to-be
+
+nodes:
+  web:    {icon: browser,  title: Web app}
+  cron:   {icon: clock,    title: Nightly export, mark: removed}
+  queue:  {icon: queue,    title: Event queue,    mark: new}
+  db:     {icon: database, title: Orders,         mark: changed, sub: now partitioned}
+  search: {icon: search,   title: Search}
+
+edges:
+  web   -> db:
+  cron  -> db:
+  db    -> queue:  {label: change events, mark: new}
+  queue -> search: {label: index, mark: new}

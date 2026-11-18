@@ -1,0 +1,18 @@
+# A view is a part of the diagram built on its own.
+# With 'scenario' it keeps only what the story
+# touches, numbered by step. Pick it in the View
+# list above the preview.
+title: Views
+
+edges:
+  web -> api -> db:
+  api -> cache:
+  ops -> api: deploys
+
+scenario:
+  steps:
+    - Request: [flow web -> api]
+    - Read:    [flow api -> db done]
+
+views:
+  story: {title: The request, scenario: main}

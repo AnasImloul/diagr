@@ -1,0 +1,28 @@
+# Groups are boxes: a node written inside a group
+# is in it, and groups nest. A box without 'tone'
+# gets one from the theme; set it when the colour
+# means something.
+title: Groups
+
+groups:
+  front:
+    title: Frontend
+    nodes:
+      web: {icon: browser, title: Web app}
+  cloud:
+    title: Cloud
+    sub: one region
+    groups:
+      compute:
+        title: Compute
+        nodes:
+          api: {icon: function, title: API}
+      data:
+        title: Data
+        tone: amber
+        nodes:
+          db: {icon: database, title: Orders}
+
+edges:
+  web -> api: HTTPS
+  api -> db:  write

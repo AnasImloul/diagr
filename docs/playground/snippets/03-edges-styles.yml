@@ -1,0 +1,11 @@
+# A label goes after the colon. '-->' is dashed,
+# '<->' is a pair, and '(a b)' makes several edges.
+# A chain with a list gives one label per arrow.
+title: Edge styles
+
+edges:
+  web -> api -> db: [POST /orders, write]
+  db  --> replica:  replication
+  api <-> cache:    [lookup, hit]
+
+  (mobile partner) -> api: HTTPS

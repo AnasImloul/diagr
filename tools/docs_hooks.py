@@ -161,6 +161,7 @@ def _playground(files, config):
         id_ = yml.parent.name
         examples.append(
             {
+                "kind": "example",
                 "title": data["title"],
                 "source": "\n".join(lines).strip() + "\n",
                 "html": f"../examples/{id_}/{id_}.html",
@@ -168,6 +169,11 @@ def _playground(files, config):
                 "dark": f"../examples/{id_}/{id_}-dark.svg",
             }
         )
+    # Short snippets that each show one thing, in the order a newcomer would read them. They have no pictures built
+    # ahead: they are small enough to wait for Python.
+    for yml in sorted((Path(config["docs_dir"]) / "playground" / "snippets").glob("*.yml")):
+        text = yml.read_text()
+        examples.append({"kind": "snippet", "title": yaml.safe_load(text)["title"], "source": text.strip() + "\n"})
     files.append(File.generated(config, "playground/examples.json", content=json.dumps(examples)))
 
 

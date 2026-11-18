@@ -1,0 +1,25 @@
+# 'layout: row' or 'column' lines a box's contents
+# up in file order, like CSS flexbox. 'box: false'
+# arranges without a box, and 'grow' shares the
+# space left over.
+title: Rows and columns
+
+layout: {direction: column, gap: 24, align: stretch}
+groups:
+  top:
+    title: Pipeline
+    layout: row
+    nodes:
+      extract:   {icon: file,   title: Extract}
+      transform: {icon: cube,   title: Transform}
+      load:      {icon: upload, title: Load}
+  bottom:
+    box: false
+    layout: {direction: row, gap: 24}
+    groups:
+      dev:  {title: Dev,  grow: 1, nodes: {ci: {icon: pipeline, title: CI}}}
+      prod: {title: Prod, grow: 1, nodes: {cd: {icon: cloud, title: Deploy}}}
+
+edges:
+  extract -> transform -> load:
+  ci      -> cd:
