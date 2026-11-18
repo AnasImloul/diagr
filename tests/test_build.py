@@ -17,7 +17,6 @@ from diagr.theme import BUILTIN, theme_files
 from tests.support import ROOT, Case
 
 BASE = """
-id: t
 nodes:
   a: {at: [0, 0], icon: server, title: A}
   b: {at: [1, 0], icon: database, title: B}
@@ -82,7 +81,6 @@ class Render(Case):
 
 
 GROUPED = """
-id: t
 groups:
   g:
     title: G
@@ -218,7 +216,7 @@ class Escaping(Case):
         base = self.tmp()
         (base / "icons").mkdir()
         (base / "icons" / name).write_text(text, encoding="utf-8")
-        yml = f"id: t\nicons: [./icons]\nnodes:\n  a: {{at: [0, 0], icon: {icon}, title: A}}\n"
+        yml = f"icons: [./icons]\nnodes:\n  a: {{at: [0, 0], icon: {icon}, title: A}}\n"
         return render_html(prepared(yml, base=base))
 
     def test_comment_in_a_tile_glyph_is_dropped(self):
@@ -319,30 +317,37 @@ class Cli(Case):
         self.assertEqual(code, 0)
         self.assertIn(": ok", out)
 
-    def test_build_refuses_two_files_with_one_id(self):
+    def test_build_refuses_two_files_with_one_name(self):
         base = self.tmp()
-        for name in ("one.yml", "two.yml"):
-            (base / name).write_text(textwrap.dedent(BASE), encoding="utf-8")
+        for folder in ("one", "two"):
+            (base / folder).mkdir()
+            (base / folder / "t.yml").write_text(textwrap.dedent(BASE), encoding="utf-8")
         code, out, err = cli(
-            "build", "--svg", "--html", str(base / "one.yml"), str(base / "two.yml"), "-o", str(base / "out")
+            "build",
+            "--svg",
+            "--html",
+            str(base / "one" / "t.yml"),
+            str(base / "two" / "t.yml"),
+            "-o",
+            str(base / "out"),
         )
         self.assertEqual(code, 1)
         self.assertIn("diagram 't' writes t.html and its SVGs, which diagram 't' in", err)
         self.assertEqual(sorted(p.name for p in (base / "out").iterdir()), ["t-dark.svg", "t-light.svg", "t.html"])
 
-    def write(self, base, name: str, did: str, views: str = "") -> str:
-        text = textwrap.dedent(BASE).replace("id: t", f"id: {did}") + (f"views:\n{views}" if views else "")
-        (base / name).write_text(text, encoding="utf-8")
-        return str(base / name)
+    def write(self, base, name: str, views: str = "") -> str:
+        text = textwrap.dedent(BASE) + (f"views:\n{views}" if views else "")
+        (base / f"{name}.yml").write_text(text, encoding="utf-8")
+        return str(base / f"{name}.yml")
 
     def test_build_refuses_a_view_that_writes_another_diagrams_files(self):
         base = self.tmp()
-        first = self.write(base, "a.yml", "shop-front")
-        second = self.write(base, "b.yml", "shop", "  front: {include: [a]}\n")
+        first = self.write(base, "shop-front")
+        second = self.write(base, "shop", "  front: {include: [a]}\n")
         code, _, err = cli("build", "--svg", "--html", first, second, "-o", str(base / "out"))
         self.assertEqual(code, 1)
         self.assertIn(
-            "b.yml: view 'front' of 'shop' writes shop-front.html and its SVGs, which diagram 'shop-front' in", err
+            "shop.yml: view 'front' of 'shop' writes shop-front.html and its SVGs, which diagram 'shop-front' in", err
         )
         self.assertEqual(
             sorted(p.name for p in (base / "out").iterdir()),
@@ -351,8 +356,8 @@ class Cli(Case):
 
     def test_build_refuses_two_views_with_one_name(self):
         base = self.tmp()
-        first = self.write(base, "a.yml", "a", "  b-c: {include: [a]}\n")
-        second = self.write(base, "ab.yml", "a-b", "  c: {include: [a]}\n")
+        first = self.write(base, "a", "  b-c: {include: [a]}\n")
+        second = self.write(base, "a-b", "  c: {include: [a]}\n")
         code, _, err = cli("build", "--svg", "--html", first, second, "-o", str(base / "out"))
         self.assertEqual(code, 1)
         self.assertIn("view 'c' of 'a-b' writes a-b-c.html and its SVGs, which view 'b-c' of 'a' in", err)
@@ -360,13 +365,13 @@ class Cli(Case):
     def test_watch_claims_names_again_on_each_rebuild(self):
         base = self.tmp()
         names: dict[str, tuple[str, str]] = {}
-        shop = self.write(base, "shop.yml", "shop", "  front: {include: [a]}\n")
+        shop = self.write(base, "shop", "  front: {include: [a]}\n")
         _claim(names, "shop.yml", loads(Path(shop).read_text(encoding="utf-8"), shop, base))
-        other = self.write(base, "other.yml", "shop-front")
+        other = self.write(base, "shop-front")
         with self.assertRaises(DiagramError):
             _claim(names, "other.yml", loads(Path(other).read_text(encoding="utf-8"), other, base))
         # shop.yml drops its view: the name is free again.
-        shop = self.write(base, "shop.yml", "shop")
+        shop = self.write(base, "shop")
         _claim(names, "shop.yml", loads(Path(shop).read_text(encoding="utf-8"), shop, base))
         _claim(names, "other.yml", loads(Path(other).read_text(encoding="utf-8"), other, base))
         self.assertEqual(names["shop-front"][0], "other.yml")
@@ -417,7 +422,7 @@ class Cli(Case):
 
     def test_check_json(self):
         base = self.tmp()
-        (base / "bad.yml").write_text("id: t\nnodes:\n  a: {at: [0, 0], icon: nope}\n", encoding="utf-8")
+        (base / "bad.yml").write_text("nodes:\n  a: {at: [0, 0], icon: nope}\n", encoding="utf-8")
         code, out, err = cli(
             "check", "--format", "json", str(base / "bad.yml"), str(ROOT / "examples/order-flow/diagram.yml")
         )
@@ -425,7 +430,7 @@ class Cli(Case):
         self.assertEqual(err, "")
         found = json.loads(out)
         self.assertEqual(len(found), 1)
-        self.assertEqual(found[0]["line"], 3)
+        self.assertEqual(found[0]["line"], 2)
         self.assertEqual(found[0]["level"], "error")
         self.assertIn("icon 'nope' not found", found[0]["message"])
 
@@ -442,24 +447,19 @@ class Cli(Case):
         base = self.tmp()
         (base / "icons").mkdir()
         (base / "icons" / "icons.yml").write_text("tiles:\n  mine: {tone: blue, glyph: '<path/>'}\n", encoding="utf-8")
-        (base / "d.yml").write_text(
-            "id: t\nicons: [./icons]\nnodes:\n  a: {at: [0, 0], icon: mine}\n", encoding="utf-8"
-        )
+        (base / "d.yml").write_text("icons: [./icons]\nnodes:\n  a: {at: [0, 0], icon: mine}\n", encoding="utf-8")
         code, out, _ = cli("icons", str(base / "d.yml"))
         self.assertEqual(code, 0)
         self.assertRegex(out, r"(?m)^mine\s+tile\s+.*icons$")
 
     def test_init_writes_a_clean_diagram(self):
-        path = self.tmp() / "my flow" / "diagram.yml"
+        base = self.tmp()
+        path = base / "my flow" / "diagram.yml"
         code, _, _ = cli("init", str(path))
         self.assertEqual(code, 0)
-        self.assertIn("id: my-flow\n", path.read_text(encoding="utf-8"))
         self.assertEqual(cli("check", "--strict", str(path))[0], 0)
-
-    def test_init_takes_an_id(self):
-        path = self.tmp() / "x.yml"
-        cli("init", str(path), "--id", "orders")
-        self.assertIn("id: orders\n", path.read_text(encoding="utf-8"))
+        self.assertEqual(cli("build", "--html", str(path), "-o", str(base / "out"))[0], 0)
+        self.assertEqual([p.name for p in (base / "out").iterdir()], ["my-flow.html"])
 
     def test_init_never_overwrites(self):
         path = self.tmp() / "x.yml"

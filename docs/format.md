@@ -6,7 +6,6 @@ Colours, fonts and sizes live in the theme, not here. To try any of it without i
 
 ```yaml
 version: 1                   # format version; see Versions
-id: order-flow               # used for output file names
 title: Order processing
 description: One sentence, used as the accessible label.
 theme: default               # built-in name or a path to a theme file
@@ -17,9 +16,13 @@ align: true                  # line up the edges of neighbouring boxes that near
 step_list: true              # numbered badges and the step list in static output
 ```
 
-Every id (of the diagram, a group, a node, a component, an instance, a scenario or a view) is letters, digits, `_`
-and `-`, starting with a letter or `_` and not ending in `-`, which would run into an arrow: `a-->b` could be `a-` to
-`b` or a dashed edge.
+The files a diagram builds are named after it: `order-flow.yml` writes `order-flow.html`, `order-flow-light.svg`
+and `order-flow-dark.svg`. A file called `diagram.yml` is named after its folder instead, so
+`order-flow/diagram.yml` writes the same files.
+
+Every id (of a group, a node, a component, an instance, a scenario or a view) is letters, digits, `_` and `-`,
+starting with a letter or `_` and not ending in `-`, which would run into an arrow: `a-->b` could be `a-` to `b` or a
+dashed edge.
 
 ## Groups
 
@@ -190,7 +193,6 @@ edges:
 Nodes without `at` are placed for you, so most diagrams need no coordinates at all:
 
 ```yaml
-id: signup
 groups:
   back:
     title: Backend
@@ -527,8 +529,8 @@ views:
   serving:   {include: [serving, analyst, access], scenarios: [query]}
 ```
 
-- **Files.** Each view is written next to the diagram's files as `<id>-<view>-light.svg`, `<id>-<view>-dark.svg` and
-  `<id>-<view>.html`.
+- **Files.** Each view is written next to the diagram's files as `<name>-<view>-light.svg`,
+  `<name>-<view>-dark.svg` and `<name>-<view>.html`, where `<name>` is what the diagram's own files are named.
 - **`include`** lists group and node ids; a group brings everything inside it, nested groups included. Without
   `include` the view starts from every node. **`exclude`** takes ids out again in the same way.
 - An edge is kept when both its ends are, and a group when it holds a kept node, so the parents of what you include

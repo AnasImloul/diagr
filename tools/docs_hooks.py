@@ -109,7 +109,7 @@ def on_files(files, config):
         if status != 0 or contrast != 0:
             raise RuntimeError(f"diagr build failed for {yml}")
         data = yaml.safe_load(yml.read_text())
-        id_, title = data["id"], data["title"]
+        id_, title = yml.parent.name, data["title"]
         description = " ".join(str(data.get("description", "")).split())
         for name in (f"{id_}.html", f"{id_}-light.svg", f"{id_}-dark.svg"):
             files.append(File.generated(config, f"examples/{id_}/{name}", abs_src_path=str(built / name)))
@@ -158,7 +158,7 @@ def _playground(files, config):
     for yml in sorted(EXAMPLES.glob("*/diagram.yml"), key=lambda y: (y.parent.name != "order-flow", y)):
         lines = [ln for ln in yml.read_text().splitlines() if not ln.startswith("# yaml-language-server")]
         data = yaml.safe_load(yml.read_text())
-        id_ = data["id"]
+        id_ = yml.parent.name
         examples.append(
             {
                 "title": data["title"],
@@ -186,7 +186,7 @@ def _icon_gallery() -> str:
     icons = Icons([])
     cells = []
     for name, _, _ in icons.available():
-        d = loads(f"id: icon\nnodes:\n  x: {{icon: {name}}}\n", "<icon>", Path.cwd())
+        d = loads(f"nodes:\n  x: {{icon: {name}}}\n", "<icon>", Path.cwd())
         p = prepare(d)
         # The node sits at [0, 0]: crop the picture to its tile, leaving out the room kept for a title.
         h = p.theme.size("icon") / 2 + 6

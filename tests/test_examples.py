@@ -55,9 +55,9 @@ class Examples(Case):
         folder = self.tmp()
         if (path.parent / "icons").is_dir():
             shutil.copytree(path.parent / "icons", folder / "icons")
-        expanded = folder / "diagram.yml"
         source = yaml.safe_load(path.read_text(encoding="utf-8"))
         d = load_file(path)
+        expanded = folder / f"{d.id}.yml"
         main = {f"{d.id}-light.svg", f"{d.id}-dark.svg", f"{d.id}.html"}
         expanded.write_text(to_yaml(d, source), encoding="utf-8")
         placed = any(n.auto for n in d.nodes.values())

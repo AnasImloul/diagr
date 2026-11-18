@@ -10,7 +10,6 @@ from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
 ROW = """
-id: f
 groups:
   box:
     title: Box
@@ -23,7 +22,6 @@ groups:
 """
 
 STACK = """
-id: s
 layout: {direction: column, gap: 20, align: stretch}
 groups:
   top:
@@ -92,7 +90,6 @@ class Columns(Case):
 
 
 GROW = """
-id: g
 layout: {direction: column, align: stretch}
 groups:
   wide:
@@ -142,7 +139,6 @@ class GrowAndJustify(Case):
 
 
 ALIGN = """
-id: a
 layout: {direction: column, align: stretch}
 groups:
   ci:
@@ -193,7 +189,7 @@ class LineUp(Case):
 
 class Centring(Case):
     def test_icon_and_labels_are_centred_in_a_row(self):
-        yml = "id: c\ngroups:\n  card:\n    title: Card\n    title_at: middle\n    tone: blue\n    layout: row\n"
+        yml = "groups:\n  card:\n    title: Card\n    title_at: middle\n    tone: blue\n    layout: row\n"
         yml += "    nodes:\n      a: {icon: api, title: A}\n"
         p = prepared(yml)
         r, nb = p.layout.groups["card"], p.layout.nodes["a"]
@@ -206,7 +202,6 @@ class HangingButtons(Case):
         from diagr.layout.geometry import group_title_box
 
         yml = """
-        id: h
         groups:
           ci:
             title: Development
@@ -242,7 +237,6 @@ class Expand(Case):
     def test_keeps_boxes_behind(self):
         yml = "\n".join(
             [
-                "id: e",
                 "groups:",
                 "  g:",
                 "    title: prod",

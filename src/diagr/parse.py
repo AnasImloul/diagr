@@ -26,7 +26,7 @@ from .model import (
 )
 from .scenario import walk_effects
 from .source import DiagramError, Problem, Y, did_you_mean, load
-from .syntax import ARROW, DIAGRAM, EDGE, GROUP, NODE, PAIR_GAP, PORT, REF, layout_flow
+from .syntax import ARROW, DIAGRAM, EDGE, GROUP, ID, NODE, PAIR_GAP, PORT, REF, layout_flow
 from .views import check_views
 
 
@@ -202,14 +202,14 @@ def _cell_names(d: Diagram, problems: list[Problem]) -> None:
                 e.range = (spots[0], spots[1])
 
 
-def from_tree(tree: Y, file: str, base: Path) -> Diagram:
+def from_tree(tree: Y, file: str, base: Path, name: str = "diagram") -> Diagram:
     """The diagram a checked tree describes, in steps: its own keys and boxes, its components and their instances,
     its actions and scenarios, then its views. Every problem found along the way is raised together at the end."""
     problems: list[Problem] = []
     rec = f.check(DIAGRAM, tree, problems)
     if rec is None:
         raise DiagramError(problems)
-    d = _head(rec, file, base, problems)
+    d = _head(rec, file, base, name, problems)
     components = _components(rec, problems)
     instances = _instances(rec)
     expand(d, components, instances, problems)
@@ -229,15 +229,16 @@ def from_tree(tree: Y, file: str, base: Path) -> Diagram:
     return d
 
 
-def _head(rec: f.Rec, file: str, base: Path, problems: list[Problem]) -> Diagram:
+def _head(rec: f.Rec, file: str, base: Path, name: str, problems: list[Problem]) -> Diagram:
     """The diagram's own keys, and the groups, nodes and edges it writes out."""
     grid = rec.get("grid")
     d = Diagram(
+        id=name,
         grid=Grid(**_given(grid, "col", "row")) if grid else Grid(),
         flow=layout_flow(rec.get("layout")),
         base=base,
         file=file,
-        **_given(rec, "id", "title", "description", "theme", "icons", "step_list", "direction", "align"),
+        **_given(rec, "title", "description", "theme", "icons", "step_list", "direction", "align"),
     )
     _boxes(rec.get("groups", []), rec.get("nodes", []), None, d.groups, d.nodes, problems)
     _edges(rec.get("edges", []), d.edges, problems)
@@ -304,11 +305,19 @@ def _once(problems: list[Problem]) -> list[Problem]:
     return unique
 
 
-def loads(text: str, file: str, base: Path) -> Diagram:
-    """A diagram from YAML text, upgraded from an older format version first."""
+def diagram_name(path: Path) -> str:
+    """What a diagram's outputs are named after: its file, or its folder for a file called diagram.yml."""
+    name = path.parent.name if path.stem == "diagram" else path.stem
+    name = re.sub(r"[^A-Za-z0-9_-]+", "-", name).strip("-") or "diagram"
+    return name if re.fullmatch(ID, name) else f"d-{name}"
+
+
+def loads(text: str, file: str, base: Path, name: str | None = None) -> Diagram:
+    """A diagram from YAML text, upgraded from an older format version first. Its outputs are named `name`, or after
+    `file` as given."""
     tree, upgraded = upgrade(load(text, file))
     try:
-        d = from_tree(tree, file, base)
+        d = from_tree(tree, file, base, name or diagram_name(Path(file)))
     except DiagramError as e:
         raise DiagramError(upgraded + e.problems) from None
     d.upgraded = upgraded
@@ -323,4 +332,4 @@ def load_file(path: str | Path) -> Diagram:
         raise DiagramError([Problem(None, f"cannot read {path}: {e.strerror or e}")]) from None
     except UnicodeDecodeError:
         raise DiagramError([Problem(None, f"cannot read {path}: not UTF-8 text")]) from None
-    return loads(text, str(path), path.resolve().parent)
+    return loads(text, str(path), path.resolve().parent, diagram_name(path.resolve()))

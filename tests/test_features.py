@@ -8,7 +8,6 @@ from tests.support import Case, problems
 from tests.test_build import prepared
 
 NESTED = """
-id: t
 groups:
   outer:
     title: Outer
@@ -26,7 +25,6 @@ edges:
 """
 
 TWO = """
-id: t
 nodes:
   a: {at: [0, 0], icon: server, title: A}
   b: {at: [1, 0], icon: database, title: B}
@@ -153,7 +151,6 @@ class LayoutWarnings(Case):
 
     def test_edge_across_a_group_title(self):
         yml = """
-id: t
 groups:
   g: {title: A long group title, tone: blue, nodes: {in: {at: [0, 0], icon: cube, title: In}}}
 nodes:

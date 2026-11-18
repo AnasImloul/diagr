@@ -11,7 +11,6 @@ from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
 BASE = """
-id: t
 components:
   pair:
     params: {name: {required: true}, note: default note}

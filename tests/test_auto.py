@@ -8,7 +8,6 @@ from tests.support import ROOT, Case, problems
 from tests.test_build import cli, prepared
 
 CHAIN = """
-id: t
 nodes:
   a: {icon: api, title: A}
   b: {icon: queue, title: B}
@@ -22,7 +21,6 @@ edges:
 """
 
 GROUPS = """
-id: t
 groups:
   front:
     title: Front
@@ -51,7 +49,6 @@ edges:
 """
 
 FED_FROM_ROW_ZERO = """
-id: t
 groups:
   src:
     title: Sources
@@ -72,7 +69,6 @@ edges:
 
 # Edges between three sibling groups in both directions: g before h before k, and edges from k and h back into g.
 BOTH_WAYS = """
-id: t
 groups:
   g: {title: G, nodes: {a1: {icon: server, title: A1}, a2: {icon: server, title: A2}}}
   h: {title: H, nodes: {b1: {icon: server, title: B1}, b2: {icon: server, title: B2}}}
@@ -87,7 +83,6 @@ edges:
 
 # x goes before y, and a path from y back into x runs through a node of their parent.
 THROUGH_PARENT = """
-id: t
 groups:
   p:
     title: P
@@ -124,7 +119,6 @@ def shared(points: dict[str, list[tuple[float, float]]]) -> list[tuple[str, str]
 # into another.
 BACK = (
     """
-id: t
 nodes:
 """
     + "".join(f"  {k}{i}: {{icon: server, title: {k.upper()}{i}}}\n" for k in "pmq" for i in range(3))
@@ -135,7 +129,6 @@ nodes:
 
 # A group with pinned nodes, and one whose nodes are placed after it.
 BESIDE_PINNED = """
-id: t
 groups:
   g:
     title: G
@@ -166,10 +159,7 @@ class Placement(Case):
         self.assertTrue(all(n.auto for n in nodes.values()))
 
     def test_direction_down_swaps_axes(self):
-        at = {
-            k: n.at or (-1, -1)
-            for k, n in prepared(CHAIN.replace("id: t", "id: t\ndirection: down")).diagram.nodes.items()
-        }
+        at = {k: n.at or (-1, -1) for k, n in prepared("direction: down\n" + CHAIN).diagram.nodes.items()}
         self.assertEqual(at["a"][1], 0)
         self.assertGreater(at["b"][1], at["a"][1])
         self.assertEqual(at["a"][0], at["b"][0])
@@ -185,7 +175,7 @@ class Placement(Case):
     def test_groups_and_cycles_are_clean(self):
         self.assertClean(problems(CHAIN))
         self.assertClean(problems(GROUPS))
-        self.assertClean(problems(GROUPS.replace("id: t", "id: t\ndirection: down")))
+        self.assertClean(problems("direction: down\n" + GROUPS))
 
     def test_nodes_follow_a_predecessor_on_row_zero(self):
         nodes = prepared(FED_FROM_ROW_ZERO).diagram.nodes
@@ -197,7 +187,7 @@ class Placement(Case):
         n = 1100
         nodes = "".join(f"  n{i}: {{icon: server, title: N{i}}}\n" for i in range(n))
         edges = "".join(f"  n{i} -> n{i + 1}: {{}}\n" for i in range(n - 1))
-        self.assertClean(problems(f"id: t\nnodes:\n{nodes}edges:\n{edges}"))
+        self.assertClean(problems(f"nodes:\n{nodes}edges:\n{edges}"))
 
     def test_edges_against_the_group_order_do_not_push_groups_apart(self):
         for yml, last in ((BOTH_WAYS, 6), (THROUGH_PARENT, 3)):
@@ -217,7 +207,7 @@ class Placement(Case):
         )
         tall = ", sub: [one, two]}"
         yml = (
-            "id: t\ntheme: ./big.yml\nnodes:\n  s: {icon: server, title: S}\n"
+            "theme: ./big.yml\nnodes:\n  s: {icon: server, title: S}\n"
             + "".join(f"  {k}: {{icon: server, title: {k.upper()}{tall}\n" for k in "abc")
             + "edges:\n  s -> (a b c): {}\n"
         )
@@ -225,7 +215,6 @@ class Placement(Case):
 
     def test_wide_nodes_side_by_side_when_the_flow_runs_down(self):
         yml = """
-        id: t
         direction: down
         nodes:
           s: {icon: server, title: Source}
@@ -239,7 +228,6 @@ class Placement(Case):
 
     def test_wide_node_keeps_its_neighbours_along_the_flow_apart(self):
         yml = """
-        id: t
         nodes:
           s: {icon: server, title: S}
           a: {icon: server, title: A customer relationship management platform for every region}
@@ -251,7 +239,6 @@ class Placement(Case):
 
     def test_lane_turns_late_rather_than_run_along_a_busy_row(self):
         yml = """
-        id: t
         groups:
           g:
             title: G
@@ -276,7 +263,6 @@ class Placement(Case):
 
     def test_lanes_turn_clear_of_a_wide_title(self):
         yml = """
-        id: t
         nodes:
           s: {icon: server, title: Source}
           a: {icon: server, title: Customer relationship management platform}
@@ -301,9 +287,7 @@ class Placement(Case):
     def test_arrowheads_into_a_full_side_share_points(self):
         sources = " ".join(f"s{i}" for i in range(8))
         nodes = "".join(f"  s{i}: {{icon: server, title: S{i}}}\n" for i in range(8))
-        lay = prepared(
-            f"id: t\nnodes:\n{nodes}  t: {{icon: server, title: T}}\nedges:\n  ({sources}) -> t: {{}}\n"
-        ).layout
+        lay = prepared(f"nodes:\n{nodes}  t: {{icon: server, title: T}}\nedges:\n  ({sources}) -> t: {{}}\n").layout
         ends = sorted({round(lay.edges[f"s{i}->t"].points[-1][1], 1) for i in range(8)})
         self.assertEqual(len(ends), 4)
         self.assertGreaterEqual(min(b - a for a, b in zip(ends, ends[1:], strict=False)), 12)
@@ -316,7 +300,7 @@ class Placement(Case):
         folder = self.tmp()
         files = []
         for name, yml in (("back", BACK), ("groups", GROUPS), ("both", BOTH_WAYS)):
-            (folder / f"{name}.yml").write_text(yml.replace("id: t\n", f"id: {name}\n"), encoding="utf-8")
+            (folder / f"{name}.yml").write_text(yml, encoding="utf-8")
             files.append(str(folder / f"{name}.yml"))
         seen = set()
         for seed in ("1", "2", "3"):

@@ -9,11 +9,6 @@
       "maximum": 1,
       "description": "Format version the file is written in; default 1. The current one is 1"
     },
-    "id": {
-      "type": "string",
-      "pattern": "^(?:[A-Za-z_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?)$",
-      "description": "Diagram id, used for output file names"
-    },
     "title": {
       "type": [
         "string",
@@ -1088,9 +1083,6 @@
     }
   },
   "additionalProperties": false,
-  "required": [
-    "id"
-  ],
   "$defs": {
     "effects": {
       "type": "array",

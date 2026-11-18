@@ -23,7 +23,6 @@ markdown_extensions:
 
 ````markdown
 ```diagr
-id: signup
 nodes:
   web:   {icon: browser, title: Web app}
   api:   {icon: api, title: API}
@@ -37,7 +36,6 @@ edges:
 which comes out as:
 
 ```diagr
-id: signup-static
 nodes:
   web:   {icon: browser, title: Web app}
   api:   {icon: api, title: API}
@@ -58,7 +56,6 @@ edges:
 And with a scenario and a group:
 
 ```diagr
-id: signup
 title: Sign-up
 groups:
   back:

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -14,7 +13,7 @@ from .migrations import upgrade
 from .model import Diagram
 from .parse import load_file
 from .source import DiagramError, Problem, data, load
-from .syntax import ID, json_schema
+from .syntax import json_schema
 from .theme import SCHEMES, theme_files
 
 
@@ -172,11 +171,7 @@ def cmd_init(args) -> int:
     if path.exists():
         print(f"error: {path} already exists", file=sys.stderr)
         return 1
-    name = args.id or (path.stem if path.stem != "diagram" else path.resolve().parent.name)
-    did = re.sub(r"[^A-Za-z0-9_-]+", "-", name).strip("-") or "diagram"
-    if not re.fullmatch(ID, did):
-        did = f"d-{did}"
-    text = STARTER.read_text(encoding="utf-8").replace("id: order-flow", f"id: {did}", 1)
+    text = STARTER.read_text(encoding="utf-8")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
@@ -324,7 +319,6 @@ def main(argv: list[str] | None = None) -> int:
 
     i = sub.add_parser("init", help="write a starter diagram")
     i.add_argument("file", nargs="?", default="diagram.yml")
-    i.add_argument("--id", help="diagram id; default: the file name, or the folder name for diagram.yml")
     i.set_defaults(fn=cmd_init)
 
     x = sub.add_parser("expand", help="print the diagram with components expanded into plain groups, nodes and edges")

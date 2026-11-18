@@ -7,7 +7,6 @@ from tests.support import Case, problems
 from tests.test_build import prepared
 
 BOXES = """
-id: b
 groups:
   top:
     title: Top
@@ -69,7 +68,6 @@ class EdgesToBoxes(Case):
 
     def test_box_to_box_jogs_round_titles_that_cover_the_overlap(self):
         yml = """
-        id: z
         layout: {direction: column, gap: 24, align: start}
         groups:
           ws:
@@ -112,7 +110,6 @@ class EdgesToBoxes(Case):
 
 
 ALIGN = """
-id: a
 groups:
   one:
     title: One
@@ -138,7 +135,6 @@ class Alignment(Case):
 
     def test_flush_children_follow_their_parent(self):
         yml = """
-        id: f
         groups:
           ws:
             title: Workspace
@@ -164,7 +160,6 @@ class Alignment(Case):
 
     def test_contents_stay_centred_when_a_box_grows(self):
         yml = """
-        id: c
         groups:
           left:
             title: Left
@@ -199,7 +194,7 @@ class Alignment(Case):
         self.assertNotAlmostEqual(g["one"].x, g["two"].x)
 
     def test_can_be_turned_off(self):
-        g = prepared(ALIGN.replace("id: a", "id: a\nalign: false")).layout.groups
+        g = prepared("align: false\n" + ALIGN).layout.groups
         self.assertNotAlmostEqual(g["one"].x, g["two"].x)
 
     def test_never_grows_over_a_node(self):
@@ -213,7 +208,6 @@ class Titles(Case):
         from diagr.layout.geometry import group_title_box
 
         base = """
-        id: t
         groups:
           g: {title: Zone, tone: blue%s, nodes: {a: {at: [0, 0], icon: api, title: A}}}
         """
@@ -234,7 +228,6 @@ class Titles(Case):
         from diagr.layout.geometry import group_title_box
 
         yml = """
-        id: t
         groups:
           card:
             title: Orchestration of all the jobs
@@ -254,7 +247,6 @@ class Titles(Case):
 
     def test_a_top_title_gets_room_above_the_contents(self):
         yml = """
-        id: t
         groups:
           o:
             title: Outer
@@ -274,7 +266,6 @@ class Titles(Case):
 
     def test_node_over_a_group_title(self):
         yml = """
-        id: t
         groups:
           g:
             title: A long group title here
@@ -294,7 +285,6 @@ class Titles(Case):
 
 
 STACKED = """
-id: s
 groups:
   ws:
     title: prod workspace
@@ -352,7 +342,6 @@ class Stacked(Case):
 
     def test_alignment_uses_the_whole_stack(self):
         yml = """
-        id: h
         groups:
           ws:
             title: prod

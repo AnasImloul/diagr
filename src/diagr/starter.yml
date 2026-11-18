@@ -1,5 +1,4 @@
 version: 1
-id: order-flow
 title: Order processing
 grid: {col: 200, row: 170}
 

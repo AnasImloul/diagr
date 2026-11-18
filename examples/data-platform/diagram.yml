@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=../../schema/diagr.schema.json
 version: 1
-id: data-platform
 title: Data platform
 description: >-
   Three source feeds are ingested, validated and merged into a lakehouse, where a batch engine cleans and curates

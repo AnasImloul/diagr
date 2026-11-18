@@ -14,7 +14,6 @@ from tests.support import ROOT, Case, problems
 from tests.test_build import prepared
 
 BASE = """
-id: t
 nodes:
   a: {at: [0, 0], icon: server, title: A}
   b: {at: [1, 0], icon: database, title: B}
@@ -31,13 +30,13 @@ class Format(Case):
         self.assertReports(problems(BASE + "titel: x\n"), "did you mean 'title'?")
 
     def test_empty_nodes(self):
-        self.assertReports(problems("id: t\nnodes: {}\n"), "must not be empty")
+        self.assertReports(problems("nodes: {}\n"), "must not be empty")
 
     def test_empty_steps(self):
         self.assertReports(problems(BASE + "scenarios: {s: {steps: []}}\n"), "must not be empty")
 
     def test_nan_is_not_a_number(self):
-        self.assertReports(problems("id: t\nnodes:\n  a: {at: [nan, 0], icon: server}\n"), "is not a number")
+        self.assertReports(problems("nodes:\n  a: {at: [nan, 0], icon: server}\n"), "is not a number")
 
     def test_label_at_range(self):
         self.assertReports(
@@ -51,9 +50,9 @@ class Format(Case):
     def test_ids_do_not_end_in_a_dash(self):
         node = "nodes:\n      x: {at: [0, 0], icon: api}\n"
         cases = {
-            "component": f"id: t\ncomponents:\n  box-:\n    {node}instances:\n  i: {{component: box-}}\n",
-            "instance": f"id: t\ncomponents:\n  box:\n    {node}instances:\n  east-: {{component: box}}\n",
-            "node in a component": "id: t\ncomponents:\n  box:\n    nodes:\n      x-: {at: [0, 0], icon: api}\n"
+            "component": f"components:\n  box-:\n    {node}instances:\n  i: {{component: box-}}\n",
+            "instance": f"components:\n  box:\n    {node}instances:\n  east-: {{component: box}}\n",
+            "node in a component": "components:\n  box:\n    nodes:\n      x-: {at: [0, 0], icon: api}\n"
             "instances:\n  i: {component: box}\n",
             "scenario": BASE + "scenarios:\n  go-: {steps: [{title: s, do: [done a]}]}\n",
         }
@@ -94,7 +93,7 @@ THREE = "nodes:\n  a: {at: [0, 0], icon: api}\n  b: {at: [1, 0], icon: api}\n  c
 
 
 def edges(yml: str):
-    return prepared("id: t\n" + THREE + "edges:\n" + yml).diagram.edges
+    return prepared(THREE + "edges:\n" + yml).diagram.edges
 
 
 class EdgeKeys(Case):
@@ -121,31 +120,31 @@ class EdgeKeys(Case):
         self.assertEqual((e.src.side, e.src.offset, e.dst.side, e.dst.offset), ("bottom", 10, "top", 0))
 
     def test_too_many_labels(self):
-        found = problems("id: t\n" + THREE + "edges:\n  a -> b -> c: [x, y, z]\n")
+        found = problems(THREE + "edges:\n  a -> b -> c: [x, y, z]\n")
         self.assertReports(found, "'a -> b -> c' makes 2 edges but lists 3 labels or mappings")
 
     def test_as_on_a_key_that_makes_several_edges(self):
-        found = problems("id: t\n" + THREE + "edges:\n  a -> b -> c as e: {}\n")
+        found = problems(THREE + "edges:\n  a -> b -> c as e: {}\n")
         self.assertReports(found, "'as e' names one edge, and 'a -> b -> c' makes 2")
 
 
 class ErrorPaths(Case):
     def test_each_is_reported(self):
         cases = {
-            "id: t\n" + THREE + "  a: {at: [3, 0], icon: api}\n": "duplicate key 'a' (first defined at line 3)",
-            "id: t\nnodes:\n  [a, b]: {icon: api}\n": "keys must be plain text",
+            THREE + "  a: {at: [3, 0], icon: api}\n": "duplicate key 'a' (first defined at line 2)",
+            "nodes:\n  [a, b]: {icon: api}\n": "keys must be plain text",
             "": "file is empty",
-            "id: t\ngroups:\n  g: {title: G, nodes: {a: {at: [0, 0], icon: api}}}\n"
+            "groups:\n  g: {title: G, nodes: {a: {at: [0, 0], icon: api}}}\n"
             "nodes:\n  a: {at: [1, 0], icon: api}\n": "node 'a' is defined twice",
-            "id: t\ngroups:\n  a: {title: G}\nnodes:\n  a: {at: [0, 0], icon: api}\n": "is both a group and a node",
-            "id: t\n" + THREE + "edges:\n  a -> b as c: {}\n": "edge id 'c' is also a node or group id",
-            "id: t\n" + THREE + "edges:\n  a -> b: {route: [right], via: [[0.5, 1]]}\n": "either 'route' or 'via'",
-            "id: t\ngroups:\n  g: {title: G, span: [2, 1]}\n" + THREE: "group 'g': 'span' needs 'at'",
-            "id: t\nnodes:\n  a: {at: [0, 0], icon: api}\n  b: {at: [0, 0], icon: api}\n": "on the same cell as 'a'",
-            "id: t\n" + THREE + "actions:\n  go: [go]\nscenarios: {s: {steps: [{title: s, do: [go]}]}}\n": (
+            "groups:\n  a: {title: G}\nnodes:\n  a: {at: [0, 0], icon: api}\n": "is both a group and a node",
+            THREE + "edges:\n  a -> b as c: {}\n": "edge id 'c' is also a node or group id",
+            THREE + "edges:\n  a -> b: {route: [right], via: [[0.5, 1]]}\n": "either 'route' or 'via'",
+            "groups:\n  g: {title: G, span: [2, 1]}\n" + THREE: "group 'g': 'span' needs 'at'",
+            "nodes:\n  a: {at: [0, 0], icon: api}\n  b: {at: [0, 0], icon: api}\n": "on the same cell as 'a'",
+            THREE + "actions:\n  go: [go]\nscenarios: {s: {steps: [{title: s, do: [go]}]}}\n": (
                 "action 'go' calls itself"
             ),
-            "id: t\n" + THREE + "actions:\n  go: [activate a]\nscenarios: {s: {steps: [{title: s, do: [go x]}]}}\n": (
+            THREE + "actions:\n  go: [activate a]\nscenarios: {s: {steps: [{title: s, do: [go x]}]}}\n": (
                 "action 'go' takes no instances"
             ),
         }
@@ -292,7 +291,7 @@ class IconFolders(Case):
         (base / "icons").mkdir()
         for name, text in files.items():
             (base / "icons" / name).write_text(text, encoding="utf-8")
-        yml = f"id: t\nicons: [./icons]\nnodes:\n  a: {{at: [0, 0], {node}}}\n"
+        yml = f"icons: [./icons]\nnodes:\n  a: {{at: [0, 0], {node}}}\n"
         return problems(yml, base)
 
     def test_tile_needs_tone_and_glyph(self):

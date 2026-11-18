@@ -17,7 +17,7 @@ from .model import Diagram, Edge, Effect, Group, Node, Port, edge_id, held
 from .syntax import EDGE, GROUP, NODE, PAIR_GAP, num
 from .theme import load_theme
 
-HEAD = ("version", "id", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
+HEAD = ("version", "title", "description", "theme", "icons", "grid", "step_list", "direction", "align", "layout")
 REPLACED = ("groups", "nodes", "edges", "components", "instances")
 
 

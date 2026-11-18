@@ -8,7 +8,6 @@ from diagr.parse import loads
 from tests.support import ROOT, Case, problems
 
 BASE = """
-id: t
 groups:
   back:
     title: Backend
@@ -94,7 +93,6 @@ class Views(Case):
 
 
 DYNAMIC = """
-id: d
 nodes:
   web: {icon: browser, title: Web}
   api: {icon: api, title: API}
@@ -124,22 +122,22 @@ views:
 
 class DynamicViews(Case):
     def test_keeps_what_the_scenario_uses(self):
-        v = views(DYNAMIC)["d-story"].diagram
+        v = views(DYNAMIC)["t-story"].diagram
         self.assertEqual(set(v.nodes), {"web", "api", "db", "cache"})
         self.assertEqual(set(v.edges), {"web->api", "api->db", "api->cache"})
         self.assertEqual(list(v.scenarios), ["go"])
 
     def test_edges_are_numbered_by_step(self):
-        v = views(DYNAMIC)["d-story"]
+        v = views(DYNAMIC)["t-story"]
         self.assertEqual(v.diagram.numbers, {"web->api": "1,3", "api->db": "2", "api->cache": "2"})
         self.assertTrue(all(v.layout.edges[k].badge_box for k in v.diagram.numbers))
-        self.assertEqual(views(DYNAMIC)["d"].diagram.numbers, {})
+        self.assertEqual(views(DYNAMIC)["t"].diagram.numbers, {})
 
     def test_no_numbers_without_a_step_list(self):
-        self.assertEqual(views(DYNAMIC.replace("id: d", "id: d\nstep_list: false"))["d-story"].diagram.numbers, {})
+        self.assertEqual(views("step_list: false\n" + DYNAMIC)["t-story"].diagram.numbers, {})
 
     def test_include_adds_context(self):
-        v = views(DYNAMIC.replace("{scenario: go}", "{scenario: go, include: [ops, db]}"))["d-story"].diagram
+        v = views(DYNAMIC.replace("{scenario: go}", "{scenario: go, include: [ops, db]}"))["t-story"].diagram
         self.assertIn("ops", v.nodes)
         self.assertIn("ops->db", v.edges)
         self.assertNotIn("web->ops", v.edges)

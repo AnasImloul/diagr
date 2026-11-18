@@ -18,7 +18,7 @@ for f in glob.glob("/lib/play/yaml/_yaml*.so"):
     os.remove(f)
 sys.path.insert(0, "/lib/play")
 import yaml, play
-play.build("id: warm\\nnodes:\\n  a: {}\\n", "html")
+play.build("nodes:\\n  a: {}\\n", "html")
 `;
 
 async function get(url, as) {

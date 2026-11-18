@@ -456,7 +456,6 @@ DIAGRAM = f.Obj(
                 description=f"Format version the file is written in; default 1. The current one is {VERSION}",
             )
         ),
-        "id": f.F(f.Str(pattern=ID, description="Diagram id, used for output file names"), required=True),
         "title": f.F(f.Str()),
         "description": f.F(f.Str(description="Accessible description of the whole diagram")),
         "theme": f.F(f.Str(description="Theme name or path to a theme file")),

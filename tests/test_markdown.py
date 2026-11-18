@@ -5,7 +5,6 @@ import unittest
 from diagr.markdown import fence, validate
 
 STATIC = """
-id: t
 nodes:
   a: {icon: api, title: A}
   b: {icon: database, title: B}
