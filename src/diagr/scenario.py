@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
@@ -96,7 +97,7 @@ def text_key(d: Diagram, path: str, slots: dict[str, int]) -> list[str] | None:
 
 
 def _sub(text: str | None, i: int) -> str | None:
-    return None if text is None else text.replace("{i}", str(i))
+    return None if text is None else re.sub(r"\$i\b", str(i), text)
 
 
 class _Compiler:

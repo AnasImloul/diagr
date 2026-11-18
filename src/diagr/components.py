@@ -1,7 +1,7 @@
 """Components: a block of groups, nodes and edges defined once and used as named instances.
 
 Expansion runs before validation and turns every instance into ordinary groups, nodes and edges named
-'<instance>/<id>', offset by the instance's position, with {param} text filled in.
+'<instance>/<id>', offset by the instance's position, with $param text filled in.
 """
 
 from __future__ import annotations
@@ -14,8 +14,8 @@ from typing import Any
 from .model import Component, Diagram, Edge, Instance, Loc, edge_id
 from .source import Problem, Y, YMap, YScalar, YSeq, did_you_mean
 
-# {name} is a parameter; {{ and }} are literal braces.
-PARAM = re.compile(r"\{\{|\}\}|\{([A-Za-z_][A-Za-z0-9_]*)\}")
+# $name is a parameter; $$ is a literal $.
+PARAM = re.compile(r"\$\$|\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
 def _check(c: Component, problems: list[Problem]) -> None:
@@ -44,7 +44,7 @@ def _check(c: Component, problems: list[Problem]) -> None:
     for n in c.nodes.values():
         scan(n.loc, f"node '{n.id}'", *text(n))
     for k, body in c.actions.items():
-        # {i} in an effect's text is the round of a 'repeat'.
+        # $i in an effect's text is the round of a 'repeat'.
         scan(body.loc if isinstance(body, Y) else c.loc, f"action '{k}'", *_strings(body), also=("i",))
     for e in c.edges.values():
         scan(e.loc, f"edge '{e.id}'", *text(e))
@@ -67,7 +67,7 @@ def _strings(y: Any) -> list[str]:
 
 
 def instance_fill(c: Component, p: Instance) -> Callable[[str], str]:
-    """Fills {param} in text with the instance's value, or the component's default."""
+    """Fills $param in text with the instance's value, or the component's default."""
     values = {k: v for k, v in c.params.items() if v is not None} | p.values
 
     def fill(text: str) -> str:

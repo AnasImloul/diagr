@@ -334,11 +334,11 @@ components:
     params: {name: {required: true}, role: primary}      # a value is the default
     groups:
       region:
-        title: "{name}"
-        sub: "{role}"
+        title: $name
+        sub: $role
         tone: neutral
         nodes:
-          db: {at: [1, 0], icon: database, title: Orders, sub: "{role}"}
+          db: {at: [1, 0], icon: database, title: Orders, sub: $role}
         groups:
           cluster:
             title: Cluster
@@ -362,14 +362,14 @@ edges:
   `a/<name>` for an edge declared with `as <name>`.
 - **Positions.** A component's cells are relative; the instance's `at` moves all of them, fixed group areas and `via`
   points included. A component whose nodes have no `at` is placed automatically, like any other node.
-- **Parameters.** `{param}` in titles, sub text, labels, tooltips and the text of its [actions](#actions) is replaced by
+- **Parameters.** `$param` in titles, sub text, labels, tooltips and the text of its [actions](#actions) is replaced by
   the instance's `with` value or the default from `params`; `{required: true}` instead of a default makes every instance
-  set it. Write `{{` and `}}` for literal braces. Parameters are text only: ids, positions and numbers cannot be
-  parameters.
+  set it. It needs no quotes (`title: $name`, `sub: schema v$version`). Write `$$` for a literal `$` before a letter;
+  `$5` needs nothing. Parameters are text only: ids, positions and numbers cannot be parameters.
 - **`in`** on an instance puts its outermost groups and nodes inside an existing group. It is the one place `in` is
   written: an instance has nowhere to be nested.
 - A component's nodes and edges can only use its own groups and nodes. A problem in a component's definition (an
-  unknown `{param}`, an edge to a node it does not have) is reported once; a problem that depends on the instance, like
+  unknown `$param`, an edge to a node it does not have) is reported once; a problem that depends on the instance, like
   an overlap, names the instance's ids (`a/api`).
 - Components cannot contain other components, and scenarios stay at the top level; a component's
   [actions](#actions) say what it does in them.
@@ -454,7 +454,7 @@ An effect is `verb targets [duration]`. The duration is how long the frame holds
 | `n.sub: text` | Replace text: `n.title`, `n.sub` (every line), `n.sub.1` (one line), `a->b.label` | 0 ms |
 | `status: text` | Replace the status line | 0 ms |
 | `parallel: [...]` | Effects that play together, in lockstep: each frame plays the next frame of every effect and lasts as long as the slowest, so flows advance one hop at a time, cells fill side by side, a `repeat` runs its rounds alongside and a nested `parallel` plays its own lockstep as one lane | longest |
-| `repeat 3: [...]` | Unrolled at build time; `{i}` in text becomes the round number | |
+| `repeat 3: [...]` | Unrolled at build time; `$i` in text becomes the round number | |
 | `[...]` | A list inside a list plays one effect after another, as one lane of a `parallel` | |
 
 Drawing or activating something hidden brings it out, along with the ends of an edge it draws, so a node or edge that
@@ -529,7 +529,7 @@ scenarios:
 ```
 
 Inside a component's action, another action of the same component is called by its name alone and runs on the same
-instance, and `{param}` in text is the instance's value. An action cannot call itself, and it cannot have the name of
+instance, and `$param` in text is the instance's value. An action cannot call itself, and it cannot have the name of
 an effect.
 
 ## Views

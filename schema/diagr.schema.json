@@ -424,7 +424,7 @@
               ],
               "description": "The default value, or {required: true} for a parameter every instance must set"
             },
-            "description": "Text parameters, used as {name} in titles, sub text, labels, tooltips and triggers"
+            "description": "Text parameters, used as $name in titles, sub text, labels, tooltips and triggers"
           },
           "groups": {
             "type": "object",
@@ -1279,7 +1279,7 @@
             "additionalProperties": {
               "$ref": "#/$defs/effects"
             },
-            "description": "'repeat 3: [...]' plays the effects 3 times; '{i}' in text is the round number"
+            "description": "'repeat 3: [...]' plays the effects 3 times; '$i' in text is the round number"
           },
           {
             "$ref": "#/$defs/effects",

@@ -30,7 +30,7 @@ class Compile(unittest.TestCase):
         self.assertEqual([(s.first, s.last) for s in c.steps], [(1, 1), (2, 3)])
 
     def test_repeat_unrolls_and_numbers_rounds(self):
-        c = self.compiled("    - one:\n        - repeat 3: ['status: round {i}']\n")
+        c = self.compiled("    - one:\n        - repeat 3: ['status: round $i']\n")
         self.assertEqual([f.set.get("status") for f in c.frames[2:4]], ["round 2", "round 3"])
 
     def test_cell_ranges_continue(self):
@@ -81,7 +81,7 @@ class Compile(unittest.TestCase):
     def test_cells_and_repeat_inside_parallel(self):
         yml = BASE.replace("title: A}", "title: A, cells: [x, y]}") + (
             "scenarios:\n  s:\n    steps:\n    - one:\n"
-            "        - parallel: [cells a, flow a -> b, {repeat 2: ['status: round {i}']}]\n"
+            "        - parallel: [cells a, flow a -> b, {repeat 2: ['status: round $i']}]\n"
         )
         frames = prepared(yml).scenarios["s"].frames
         self.assertEqual(frames[1].set["c:a:0"], "act")

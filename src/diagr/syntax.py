@@ -394,7 +394,7 @@ COMPONENT = f.Obj(
                 Param(),
                 key_pattern=PARAM_NAME,
                 key_description="a parameter name: letters, digits and _",
-                description="Text parameters, used as {name} in titles, sub text, labels, tooltips and triggers",
+                description="Text parameters, used as $name in titles, sub text, labels, tooltips and triggers",
             )
         ),
         "groups": f.F(f.MapOf(f.Ref("group", lambda: GROUP))),

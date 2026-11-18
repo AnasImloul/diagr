@@ -64,7 +64,7 @@ EFFECT_SCHEMA = {
                 "maxProperties": 1,
                 "propertyNames": {"pattern": r"^repeat\s+\d+$"},
                 "additionalProperties": {"$ref": "#/$defs/effects"},
-                "description": "'repeat 3: [...]' plays the effects 3 times; '{i}' in text is the round number",
+                "description": "'repeat 3: [...]' plays the effects 3 times; '$i' in text is the round number",
             },
             {"$ref": "#/$defs/effects", "description": "Effects that play one after another, as one lane"},
         ]
@@ -86,7 +86,7 @@ def _ms(token: str) -> float | None:
 @dataclass
 class Ctx:
     """What effects are parsed against: where problems go, the actions they can call, and, inside a component's
-    action, how its local ids and {param} text turn into an instance's."""
+    action, how its local ids and $param text turn into an instance's."""
 
     problems: list[Problem]
     actions: Actions | None = None

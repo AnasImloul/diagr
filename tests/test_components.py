@@ -16,14 +16,14 @@ components:
     params: {name: {required: true}, note: default note}
     groups:
       box:
-        title: "{name}"
-        sub: "{note}"
+        title: $name
+        sub: $note
         tone: blue
         nodes:
-          api: {at: [0, 0], icon: api, title: "{name} API"}
-          db: {at: [1, 0], icon: database, title: Store, tooltip: "{note}"}
+          api: {at: [0, 0], icon: api, title: $name API}
+          db: {at: [1, 0], icon: database, title: Store, tooltip: $note}
     edges:
-      api -> db: "writes for {name}"
+      api -> db: writes for $name
       api -> db as backup: {label: backup, route: [up 40px, right, down]}
 instances:
   a: {component: pair, at: [0, 0], with: {name: Alpha}}
@@ -61,8 +61,8 @@ class Expansion(Case):
         self.assertEqual(d.edges["b/api->b/db"].label, "writes for Beta")
 
     def test_literal_braces(self):
-        d = prepared(BASE.replace('title: Store, tooltip: "{note}"', 'title: "{{name}} is {name}"')).diagram
-        self.assertEqual(d.nodes["a/db"].title, "{name} is Alpha")
+        d = prepared(BASE.replace("title: Store, tooltip: $note", "title: $$name is $name")).diagram
+        self.assertEqual(d.nodes["a/db"].title, "$name is Alpha")
 
     def test_empty_parameter_is_an_error(self):
         self.assertReports(problems(BASE.replace("name: {required: true}", "name: ")), "write {required: true}")
@@ -121,25 +121,23 @@ class Errors(Case):
         self.assertReports(problems(BASE.replace("with: {name: Alpha}", "with: {note: x}")), "needs name")
 
     def test_unknown_placeholder_is_reported_once(self):
-        found = problems(BASE.replace('title: Store, tooltip: "{note}"', 'title: "{nmae}"'))
-        hits = [p for p in found if "unknown parameter {nmae}" in p.message]
+        found = problems(BASE.replace("title: Store, tooltip: $note", "title: $nmae"))
+        hits = [p for p in found if "unknown parameter $nmae" in p.message]
         self.assertEqual(len(hits), 1)
 
     def test_unknown_placeholder_in_a_stacked_title_or_an_action(self):
-        behind = BASE.replace(
-            '        title: "{name}"\n', '        title: "{name}"\n        behind: {old: "{nmae} v1"}\n'
-        )
-        self.assertReports(problems(behind), "group 'box' uses unknown parameter {nmae}")
+        behind = BASE.replace("        title: $name\n", "        title: $name\n        behind: {old: $nmae v1}\n")
+        self.assertReports(problems(behind), "group 'box' uses unknown parameter $nmae")
         action = BASE.replace(
             "    edges:\n      api -> db:",
-            "    actions:\n      go: [{api.sub: '{nmae} up'}]\n    edges:\n      api -> db:",
+            "    actions:\n      go: [{api.sub: '$nmae up'}]\n    edges:\n      api -> db:",
         )
-        self.assertReports(problems(action), "action 'go' uses unknown parameter {nmae}")
+        self.assertReports(problems(action), "action 'go' uses unknown parameter $nmae")
 
     def test_repeat_round_in_an_action_is_not_a_parameter(self):
         action = BASE.replace(
             "    edges:\n      api -> db:",
-            "    actions:\n      go: [{repeat 2: ['status: try {i}']}]\n    edges:\n      api -> db:",
+            "    actions:\n      go: [{repeat 2: ['status: try $i']}]\n    edges:\n      api -> db:",
         )
         self.assertClean(problems(action))
 

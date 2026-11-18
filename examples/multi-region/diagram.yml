@@ -13,8 +13,8 @@ components:
     params: {name: {required: true}, role: primary, database: primary}
     groups:
       region:
-        title: "{name}"
-        sub: "{role}"
+        title: $name
+        sub: $role
         tone: neutral
         groups:
           cluster:
@@ -36,7 +36,7 @@ components:
             title: Data
             tone: amber
             nodes:
-              db: {icon: database, title: Orders, sub: "{database}"}
+              db: {icon: database, title: Orders, sub: $database}
     edges:
       api -> worker: jobs
       api -> prices: prices
@@ -166,7 +166,7 @@ scenarios:
             - cells ci rollout
             - activate a/worker
             - repeat 2:
-                - a/worker.sub: replica {i} of 2 on v2
+                - a/worker.sub: replica $i of 2 on v2
                 - wait 1000ms
             - a/worker.sub: v2
               b/worker.sub: v2

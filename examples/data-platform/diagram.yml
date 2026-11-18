@@ -13,13 +13,13 @@ components:
     params: {name: {required: true}, source: {required: true}, format: JSON, version: "3"}
     groups:
       feed:
-        title: "{name}"
-        sub: "{format}"
+        title: $name
+        sub: $format
         tone: blue
         nodes:
-          src: {icon: file, title: "{source}"}
+          src: {icon: file, title: $source}
           ingest: {icon: upload, title: Ingest}
-          check: {icon: check, title: Validate, sub: "schema v{version}"}
+          check: {icon: check, title: Validate, sub: schema v$version}
     edges:
       src -> ingest -> check: [pull, records]
     # Called with the feeds they run on, side by side: 'pull orders clicks stock'.
@@ -160,7 +160,7 @@ scenarios:
           do:
             - activate clicks/check
             - repeat 2:
-                - clicks/check.sub: retry {i} of 2
+                - clicks/check.sub: retry $i of 2
                 - wait 800ms
             - clicks/check.sub: schema v3
             - done clicks/check
@@ -197,7 +197,7 @@ scenarios:
           do:
             - activate spark
             - repeat 3:
-                - raw.sub: day {i} of 3
+                - raw.sub: day $i of 3
                 - draw raw->spark
                 - cells spark
                 - draw spark->clean

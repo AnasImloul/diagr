@@ -50,7 +50,7 @@ scenarios:
             - repeat 3:
                 - activate transcode 1000ms
                 - fail transcode
-                - transcode.sub 800ms: attempt {i} of 3 failed
+                - transcode.sub 800ms: attempt $i of 3 failed
             - draw jobs->dlq
             - activate dlq 800ms
             - done jobs
