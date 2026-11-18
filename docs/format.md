@@ -139,7 +139,7 @@ this way.
 |---|---|
 | `at` | Grid cell `[col, row]`. Fractions are allowed (`[2.5, 1]`). Leave it out to have the node placed for you, see [Automatic layout](#automatic-layout). |
 | `title`, `sub` | Text under the icon; `title` defaults to the node's id, and `title: ""` leaves it out. `sub` is a string or a list of lines. |
-| `icon`, `tone` | Icon name; `tone` recolours a generated tile (`blue`, `teal`, `green`, `violet`, `amber`, `orange`, `slate`, `red`). Without `icon` the node is a tile with its initials (`Web app` is WA, `API` stays API), in a colour picked from its id, the same in every diagram; `tone` picks it instead. |
+| `icon`, `tone` | Icon name; `tone` recolours a generated tile (`blue`, `teal`, `green`, `violet`, `amber`, `orange`, `slate`, `red`). Without `icon` the node is a tile with its initials (`Web app` is WA, `API` stays API), in a colour picked from its id and different from the nodes it has edges to; `tone` picks it instead. |
 | `junction` | A dot where edges meet, for a bus or fan-out. No icon or text. |
 | `cells` | A strip of progress squares. A list of names (each shows as the caption while active) or a count. |
 | `stack` | Draw the icon as a stack of N, for "N workers". |

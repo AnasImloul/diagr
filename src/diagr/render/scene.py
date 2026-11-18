@@ -93,6 +93,7 @@ class SceneBuilder:
         self.comp = next(iter(scenarios.values()), None)
         self.tiles_used: set[str] = set()
         self.symbols: dict[str, SvgIcon] = {}
+        self.letter_tones = self._letter_tones()
 
     def fill_at(self, x: float, y: float) -> str:
         for gid in reversed(list(self.lay.groups)):
@@ -125,16 +126,40 @@ class SceneBuilder:
             out.append(self._one(ic, x + dx, y + dy, size, tone, faded=k > 0))
         return out
 
-    def letters(
-        self, k: str, title: str, x: float, y: float, size: float, tone: str | None = None, stack: int = 1
-    ) -> list[El]:
-        """A node without an icon: a tile with its initials, in a colour picked from its id, so that a diagram
-        written without icons still tells its nodes apart. An instance's node ('a/api') takes the colour of its id in
-        the component ('api'), like its group's tone."""
+    def _letter_tones(self) -> dict[str, str]:
+        """The tile colour of each node without an icon, so that a diagram written without icons still tells its
+        nodes apart: its own tone, or the colour its id picks, the same in every diagram. A node moves on to the next
+        colour when a node it has an edge to already has that one. An instance's nodes ('a/api', 'b/api') share one
+        colour, picked by their id in the component ('api'), like their groups' tone. Red is left out: it reads as
+        a failure."""
+        tones = [x for x in self.t.tiles if x != "red"] or self.t.tiles
+        near: dict[str, set[str]] = {k: set() for k in self.d.nodes}
+        for e in self.d.edges.values():
+            a, b = e.src.node, e.dst.node
+            if a in near and b in near:
+                near[a].add(b)
+                near[b].add(a)
+        out: dict[str, str] = {}
+        shared: dict[str, str] = {}
+        for k, n in self.d.nodes.items():
+            if n.icon or n.junction:
+                continue
+            if n.tone:
+                out[k] = n.tone
+                continue
+            local = k.rpartition("/")[2]
+            if local not in shared:
+                taken = {out[m] for m in near[k] if m in out}
+                start = zlib.crc32(local.encode("utf-8")) % len(tones)
+                turns = [tones[(start + i) % len(tones)] for i in range(len(tones))]
+                shared[local] = next((x for x in turns if x not in taken), turns[0])
+            out[k] = shared[local]
+        return out
+
+    def letters(self, k: str, title: str, x: float, y: float, size: float, stack: int = 1) -> list[El]:
+        """A node without an icon: a tile with its initials, in its colour from _letter_tones."""
         local = k.rpartition("/")[2]
-        if tone is None:
-            tones = [x for x in self.t.tiles if x != "red"] or self.t.tiles
-            tone = tones[zlib.crc32(local.encode("utf-8")) % len(tones)]
+        tone = self.letter_tones[k]
         self.tiles_used.add(tone)
         text = initials(title or local)
         font = {1: 30, 2: 26}.get(len(text), 21)
@@ -531,7 +556,7 @@ class SceneBuilder:
         if n.icon:
             el.add(*self.icon(n.icon, x, y, t.size("icon"), n.tone, n.stack))
         else:
-            el.add(*self.letters(k, n.title, x, y, t.size("icon"), n.tone, n.stack))
+            el.add(*self.letters(k, n.title, x, y, t.size("icon"), n.stack))
         el.add(*self._node_text(k, nb))
         if nb.strip:
             el.add(*self._strip(k, nb, nb.strip))
