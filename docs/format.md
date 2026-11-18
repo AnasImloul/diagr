@@ -34,7 +34,7 @@ groups:
   etl:  {title: Data processing, sub: "ETL: raw to clean", title_at: middle, tone: blue}
 ```
 
-A group is a tinted box with its title at the bottom left; `title_at` moves it: `top` or `bottom` centres it along
+A group is a tinted box with its title (by default its id) at the bottom left; `title_at` moves it: `top` or `bottom` centres it along
 that edge, `top-left` puts it in the top corner, and `middle` makes it a heading, larger and bolder, centred top to
 bottom just right of the box's own nodes, with `sub` on the line below as a description (a card with an icon on the
 left and its name beside it). A box that fits its contents leaves room for the title on the side it is on. Without

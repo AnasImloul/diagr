@@ -165,7 +165,7 @@ LAYOUT = f.Obj(
 GROUP = f.Obj(
     "group",
     {
-        "title": f.F(f.Str(description="Shown at the bottom left of the group"), required=True),
+        "title": f.F(f.Str(description="Shown at the bottom left of the group; default: its id")),
         "sub": f.F(f.Str(description="Muted text after the title")),
         "icon": f.F(f.Str(description="Icon name, shown before the title")),
         "tone": f.F(f.Str(description="Theme tone: blue, teal, green, violet, amber, orange, neutral")),

@@ -70,7 +70,7 @@ def _triggers(d: Diagram, scenarios: list[f.Entry], problems: list[Problem]) -> 
 
 
 def _group(e: f.Entry) -> Group:
-    return f.build(Group, GROUP, e.value, skip=("groups", "nodes"), id=e.key, loc=e.loc)
+    return f.build(Group, GROUP, e.value, skip=("groups", "nodes"), id=e.key, loc=e.loc, title=e.key)
 
 
 def _node(e: f.Entry) -> Node:

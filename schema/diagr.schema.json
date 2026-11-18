@@ -1297,7 +1297,7 @@
             "number",
             "boolean"
           ],
-          "description": "Shown at the bottom left of the group"
+          "description": "Shown at the bottom left of the group; default: its id"
         },
         "sub": {
           "type": [
@@ -1592,9 +1592,6 @@
         }
       },
       "additionalProperties": false,
-      "required": [
-        "title"
-      ],
       "description": "A titled, tinted container around nodes and other groups"
     }
   }
