@@ -15,6 +15,10 @@ STRIP_PAD = 8
 STRIP_H = 32
 BUTTON_W = 132
 BUTTON_H = 34
+# The NEW / REMOVED / CHANGED mark after a node's title: its text, size and the gap before it.
+MARK_TEXT = {"new": "NEW", "removed": "REMOVED", "changed": "CHANGED"}
+MARK_SIZE = 9
+MARK_GAP = 6
 
 
 @dataclass
@@ -130,7 +134,11 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
         w = max(BUTTON_W, text_width(n.trigger, 14, 600) + 18 + 24)
         button = Rect(x - w / 2, bottom + 17, w, BUTTON_H)
         bottom = button.y1 + 4
-    widths = [text_width(n.title, t.size("title"), 600)] + [text_width(s, t.size("sub")) for s in n.sub]
+    title_w = text_width(n.title, t.size("title"), 600)
+    widths = [title_w] + [text_width(s, t.size("sub")) for s in n.sub]
+    if n.mark:
+        # The mark sits after the title, so the box, centred on the node, reaches it on both sides.
+        widths.append(title_w + 2 * (MARK_GAP + mark_width(n.mark)))
     if strip:
         widths.append(strip.w)
     if button:
@@ -150,6 +158,12 @@ def node_box(n: Node, x: float, y: float, t: Theme, slots: int) -> NodeBox:
         Rect(x - half_w, top, 2 * half_w, bottom - top),
         half + 4,
     )
+
+
+def mark_width(mark: str) -> float:
+    """The width of a node's mark, with its letter spacing of .04em."""
+    text = MARK_TEXT[mark]
+    return text_width(text, MARK_SIZE, 700) + len(text) * 0.04 * MARK_SIZE
 
 
 def ink(n: NodeBox) -> list[Rect]:

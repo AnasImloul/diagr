@@ -7,6 +7,9 @@ from html import escape
 
 from ..icons import Icons, SvgIcon, Tile
 from ..layout.geometry import (
+    MARK_GAP,
+    MARK_SIZE,
+    MARK_TEXT,
     EdgePath,
     Layout,
     NodeBox,
@@ -27,7 +30,6 @@ SPIN_GLYPH = (
     '<path d="M46 26a15 15 0 0 0-27-5"/><path d="M18 12v10h10"/>'
     '<path d="M18 38a15 15 0 0 0 27 5"/><path d="M46 52V42H36"/>'
 )
-MARK_TEXT = {"new": "NEW", "removed": "REMOVED", "changed": "CHANGED"}
 # The colour token each mark is drawn in.
 MARK_TOKEN = {"new": "new", "changed": "changed", "removed": "fail"}
 
@@ -500,7 +502,7 @@ class SceneBuilder:
             )
         ]
         if n.mark:
-            mx = x + text_width(n.title, t.size("title"), 600) / 2 + 6
+            mx = x + text_width(n.title, t.size("title"), 600) / 2 + MARK_GAP
             out.append(
                 El(
                     "text",
@@ -508,7 +510,7 @@ class SceneBuilder:
                         "class": "mark",
                         "x": num(mx),
                         "y": num(nb.title_y - 1),
-                        "font-size": 9,
+                        "font-size": MARK_SIZE,
                         "font-weight": 700,
                         "letter-spacing": ".04em",
                     },
