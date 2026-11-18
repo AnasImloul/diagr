@@ -49,8 +49,8 @@ def _wanted(args) -> list[str] | None:
     if not outputs:
         print("error: say what to build: --light, --dark, --svg or --html", file=sys.stderr)
         return None
-    if args.transparent and not set(outputs) & set(SCHEMES):
-        print("warning: --transparent only changes the SVGs, and none is being written", file=sys.stderr)
+    if args.background and not set(outputs) & set(SCHEMES):
+        print("warning: --background only changes the SVGs, and none is being written", file=sys.stderr)
     if args.debug and "html" not in outputs:
         print("warning: --debug only changes the HTML page, which is not being written", file=sys.stderr)
     return outputs
@@ -78,7 +78,7 @@ def cmd_build(args) -> int:
             written = [
                 w
                 for p in ps
-                for w in write_files(p, args.out, outputs=outputs, debug=args.debug, transparent=args.transparent)
+                for w in write_files(p, args.out, outputs=outputs, debug=args.debug, background=args.background)
             ]
         except DiagramError as e:
             _report(e.problems)
@@ -278,7 +278,7 @@ def cmd_watch(args) -> int:
                                 outputs=outputs,
                                 debug=args.debug,
                                 live=bool(server),
-                                transparent=args.transparent,
+                                background=args.background,
                             )
                         ]
                         _report([w for p in ps for w in p.warnings])
@@ -311,7 +311,9 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--theme", help="override the diagram's theme")
     b.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
     b.add_argument(
-        "--transparent", action="store_true", help="leave the background out of the SVGs, for a page of any colour"
+        "--background",
+        action="store_true",
+        help="paint the theme's background behind the SVGs; by default they have none, for a page of any colour",
     )
     b.set_defaults(fn=cmd_build)
 
@@ -322,7 +324,9 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--theme")
     w.add_argument("--debug", action="store_true", help="add the grid and route overlay to the HTML page (G toggles)")
     w.add_argument(
-        "--transparent", action="store_true", help="leave the background out of the SVGs, for a page of any colour"
+        "--background",
+        action="store_true",
+        help="paint the theme's background behind the SVGs; by default they have none, for a page of any colour",
     )
     w.add_argument("--serve", action="store_true", help="serve the output on localhost; open pages reload on rebuild")
     w.add_argument("--port", type=int, default=8001, help="port for --serve (default 8001)")

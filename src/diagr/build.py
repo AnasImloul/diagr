@@ -107,11 +107,11 @@ def build_files(
     outputs: Collection[str],
     debug: bool = False,
     live: bool = False,
-    transparent: bool = False,
+    background: bool = False,
 ) -> tuple[list[Path], list[Problem]]:
     ps = prepare_all(load_file(path), theme)
     written = [
-        f for p in ps for f in write_files(p, out, outputs=outputs, debug=debug, live=live, transparent=transparent)
+        f for p in ps for f in write_files(p, out, outputs=outputs, debug=debug, live=live, background=background)
     ]
     return written, [w for p in ps for w in p.warnings]
 
@@ -123,11 +123,11 @@ def write_files(
     outputs: Collection[str],
     debug: bool = False,
     live: bool = False,
-    transparent: bool = False,
+    background: bool = False,
 ) -> list[Path]:
     """The files among OUTPUTS that outputs names: 'light' and 'dark' for the static SVGs, 'html' for the page.
-    debug adds the authoring overlay to the page, live the reload script, and transparent leaves the background out
-    of the SVGs."""
+    debug adds the authoring overlay to the page, live the reload script, and background paints the theme's background
+    behind the SVGs."""
     unknown = sorted(set(outputs) - set(OUTPUTS))
     if unknown:
         raise ValueError(f"unknown output {', '.join(unknown)}; outputs are {', '.join(OUTPUTS)}")
@@ -137,7 +137,7 @@ def write_files(
     for scheme in SCHEMES:
         if scheme in outputs:
             f = out / f"{p.diagram.id}-{scheme}.svg"
-            f.write_text(render_static(p.scene(), p.theme, scheme, transparent), encoding="utf-8")
+            f.write_text(render_static(p.scene(), p.theme, scheme, background), encoding="utf-8")
             written.append(f)
     if "html" in outputs:
         f = out / f"{p.diagram.id}.html"

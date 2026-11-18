@@ -14,9 +14,10 @@ built in, in `src/diagr/themes/`:
 Either way, the colours reach both outputs:
 
 - Static SVGs bake the colours in, one file per scheme, so they work in slides, PDF tools and `<img>` tags.
-  Each has the theme's `bg` behind it. `--transparent` (on `build` and `watch`) leaves it out, so the diagram
-  sits on whatever colour the page has: an edge label outside any group then cuts the edge under it instead of
-  covering it with a `bg` pill, and a label inside a group keeps the group's colour behind it.
+  They have no background, so the diagram sits on whatever colour the page has: an edge label outside any group
+  cuts the edge under it, and a label inside a group keeps the group's colour behind it. `--background` (on `build`
+  and `watch`) paints the theme's `bg` behind the diagram instead, for a viewer that shows transparency as black or
+  a checkerboard.
 - The HTML page writes the tokens as CSS variables and switches between them with the light and dark button (or the
   reader's system setting on first visit). The contrast button next to it swaps in the `contrast` tokens.
 

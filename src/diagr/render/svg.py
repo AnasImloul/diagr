@@ -104,8 +104,10 @@ def label_mask(mask_id: str, x: float, y: float, w: float, h: float, holes: list
     return El("defs", {}, [mask])
 
 
-def render_static(sb: SceneBuilder, t: Theme, scheme: str, transparent: bool = False) -> str:
-    """The diagram as an SVG with its colours baked in. transparent leaves out the background, for any page colour."""
+def render_static(sb: SceneBuilder, t: Theme, scheme: str, background: bool = False) -> str:
+    """The diagram as an SVG with its colours baked in. It has no background, so it sits on a page of any colour;
+    background paints the theme's behind it."""
+    transparent = not background
     body, b = sb.build()
     extra: list[El] = []
     height = b.h

@@ -90,15 +90,15 @@ edges:
 
 
 class Transparent(Case):
-    def test_default_has_the_theme_background(self):
+    def test_background_paints_the_theme_background(self):
         p = prepared(BASE)
-        svg = render_static(p.scene(), p.theme, "dark")
+        svg = render_static(p.scene(), p.theme, "dark", background=True)
         self.assertIn(f'fill="{p.theme.hex("dark", "bg")}"', svg)
         self.assertNotIn("<mask", svg)
 
-    def test_leaves_out_the_background_and_cuts_the_edge_under_a_label(self):
+    def test_default_leaves_out_the_background_and_cuts_the_edge_under_a_label(self):
         p = prepared(BASE)
-        svg = render_static(p.scene(), p.theme, "dark", transparent=True)
+        svg = render_static(p.scene(), p.theme, "dark")
         self.assertNotIn(f'fill="{p.theme.hex("dark", "bg")}"', svg)
         self.assertIn('<mask id="t-labels" maskUnits="userSpaceOnUse"', svg)
         self.assertIn('fill="black"', svg)
@@ -107,7 +107,7 @@ class Transparent(Case):
 
     def test_label_in_a_group_keeps_its_pill(self):
         p = prepared(GROUPED)
-        svg = render_static(p.scene(), p.theme, "dark", transparent=True)
+        svg = render_static(p.scene(), p.theme, "dark")
         self.assertNotIn("<mask", svg)
         tone = p.diagram.groups["g"].tone
         self.assertIn(f'rx="4" fill="{p.theme.hex("dark", f"tone-{tone}-fill")}"', svg)
@@ -115,19 +115,20 @@ class Transparent(Case):
     def test_row_of_cells_shows_what_is_behind_it(self):
         p = prepared(BASE.replace("title: A}", "title: A, cells: [x, y]}"))
         bg = p.theme.hex("dark", "bg")
-        self.assertRegex(render_static(p.scene(), p.theme, "dark"), rf'<rect class="cellbox"[^>]* fill="{bg}"')
-        svg = render_static(p.scene(), p.theme, "dark", transparent=True)
+        background = render_static(p.scene(), p.theme, "dark", background=True)
+        self.assertRegex(background, rf'<rect class="cellbox"[^>]* fill="{bg}"')
+        svg = render_static(p.scene(), p.theme, "dark")
         self.assertRegex(svg, r'<rect class="cellbox"[^>]* fill="none"')
         self.assertNotIn(f'fill="{bg}"', svg)
 
     def test_cli_flag(self):
-        out = self.tmp()
-        code, _, _ = cli(
-            "build", "--svg", "--html", str(ROOT / "examples/order-flow/diagram.yml"), "-o", str(out), "--transparent"
-        )
-        self.assertEqual(code, 0)
-        self.assertIn("<mask", (out / "order-flow-dark.svg").read_text(encoding="utf-8"))
-        self.assertNotIn("<mask", (out / "order-flow.html").read_text(encoding="utf-8"))
+        order = str(ROOT / "examples/order-flow/diagram.yml")
+        plain, painted = self.tmp(), self.tmp()
+        self.assertEqual(cli("build", "--svg", "--html", order, "-o", str(plain))[0], 0)
+        self.assertEqual(cli("build", "--svg", order, "-o", str(painted), "--background")[0], 0)
+        self.assertIn("<mask", (plain / "order-flow-dark.svg").read_text(encoding="utf-8"))
+        self.assertNotIn("<mask", (plain / "order-flow.html").read_text(encoding="utf-8"))
+        self.assertNotIn("<mask", (painted / "order-flow-dark.svg").read_text(encoding="utf-8"))
 
 
 class Watch(Case):
@@ -405,8 +406,8 @@ class Cli(Case):
 
     def test_options_for_files_not_being_written_warn(self):
         order = str(ROOT / "examples/order-flow/diagram.yml")
-        _, _, err = cli("build", "--html", "--transparent", order, "-o", str(self.tmp()))
-        self.assertIn("--transparent only changes the SVGs", err)
+        _, _, err = cli("build", "--html", "--background", order, "-o", str(self.tmp()))
+        self.assertIn("--background only changes the SVGs", err)
         _, _, err = cli("build", "--svg", "--debug", order, "-o", str(self.tmp()))
         self.assertIn("--debug only changes the HTML page", err)
 
