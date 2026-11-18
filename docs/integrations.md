@@ -60,7 +60,6 @@ title: Sign-up
 groups:
   back:
     title: Backend
-    tone: teal
     nodes:
       api:   {icon: api, title: API}
       users: {icon: database, title: Users}
@@ -70,14 +69,13 @@ nodes:
 edges:
   web -> api: sign up
   api -> (users mail): [insert, send]
-scenarios:
-  signup:
-    trigger: {at: web, label: Sign up}
-    ready: Press Sign up.
-    end: The account exists and the email is on its way.
-    steps:
-      - Submit: [flow web -> api]
-      - Store and send: [flow api -> (users mail) done]
+scenario:
+  trigger: {at: web, label: Sign up}
+  ready: Press Sign up.
+  end: The account exists and the email is on its way.
+  steps:
+    - Submit: [flow web -> api]
+    - Store and send: [flow api -> (users mail) done]
 ```
 
 ## Rebuilding SVGs in CI

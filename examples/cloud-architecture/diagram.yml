@@ -8,50 +8,50 @@ grid: { col: 182, row: 175 }
 step_list: false
 
 nodes:
-  api: { icon: function, title: API, sub: admission }
-  backlog: { icon: database, title: Backlog, sub: fair order }
-  tick: { icon: clock, title: Scheduler, sub: every minute }
-  dispatcher: { icon: function, title: Dispatcher }
-  jobs: { icon: queue, title: Jobs queue }
-  transcode: { icon: server, title: Transcode workers, sub: pull one job at a time, stack: 3 }
-  dlq: { icon: queue, title: Dead letters }
-  cq: { icon: queue, title: Captions queue }
-  captions: { icon: server, title: Captions workers, sub: speech to text }
-  llm: { icon: globe, title: Model API, sub: classification }
+  api:        {icon: function, title: API,               sub: admission}
+  backlog:    {icon: database, title: Backlog,           sub: fair order}
+  tick:       {icon: clock,    title: Scheduler,         sub: every minute}
+  dispatcher: {icon: function, title: Dispatcher}
+  jobs:       {icon: queue,    title: Jobs queue}
+  transcode:  {icon: server,   title: Transcode workers, sub: pull one job at a time, stack: 3}
+  dlq:        {icon: queue,    title: Dead letters}
+  cq:         {icon: queue,    title: Captions queue}
+  captions:   {icon: server,   title: Captions workers,  sub: speech to text}
+  llm:        {icon: globe,    title: Model API,         sub: classification}
 
 edges:
-  api -> backlog -> dispatcher: [admit, release fairly]
-  tick --> dispatcher:
-  api --> dispatcher as wake: wake
-  dispatcher -> jobs: send
-  jobs -> transcode:
-  transcode -> dlq: bad source, deadline
-  jobs -> dlq: three failures
-  dlq --> jobs as redrive: make redrive
-  api -> cq: captions job
-  cq -> captions:
-  captions -> llm: transcript
+  api        -> backlog:          admit
+  backlog    -> dispatcher:       release fairly
+  tick       --> dispatcher:
+  api        --> dispatcher as wake: wake
+  dispatcher -> jobs:             send
+  jobs       -> transcode:
+  transcode  -> dlq:              bad source, deadline
+  jobs       -> dlq:              three failures
+  dlq        --> jobs as redrive: make redrive
+  api        -> cq:               captions job
+  cq         -> captions:
+  captions   -> llm:              transcript
 
-scenarios:
-  job:
-    ready: Follow one job from admission to a dead-letter queue and back.
-    end: The job is back on the queue.
-    steps:
-      - Admit:
-          text: The API admits the job to the backlog and, at the same time, sends its captions job down the captions pipeline.
-          do:
-            - parallel: [flow api 600ms -> backlog, flow api -> cq -> captions -> llm done]
-            - activate backlog 600ms
-      - Dispatch: [flow backlog -> dispatcher 600ms -> jobs]
-      - Fail three times:
-          do:
-            - activate jobs
-            - draw jobs->transcode 800ms
-            - repeat 3:
-                - activate transcode 1000ms
-                - fail transcode
-                - transcode.sub 800ms: attempt $i of 3 failed
-            - draw jobs->dlq
-            - activate dlq 800ms
-            - done jobs
-      - Redrive: [draw redrive 1800ms, done dlq, status: An operator redrove the job., wait 1200ms]
+scenario:
+  ready: Follow one job from admission to a dead-letter queue and back.
+  end: The job is back on the queue.
+  steps:
+    - Admit:
+        text: The API admits the job to the backlog and, at the same time, sends its captions job down the captions pipeline.
+        do:
+          - parallel: [flow api 600ms -> backlog, flow api -> cq -> captions -> llm done]
+          - activate backlog 600ms
+    - Dispatch: [flow backlog -> dispatcher 600ms -> jobs]
+    - Fail three times:
+        do:
+          - activate jobs
+          - draw jobs -> transcode 800ms
+          - repeat 3:
+              - activate transcode 1000ms
+              - fail transcode
+              - transcode.sub 800ms: attempt $i of 3 failed
+          - draw jobs -> dlq
+          - activate dlq 800ms
+          - done jobs
+    - Redrive: [draw redrive 1800ms, done dlq, status: An operator redrove the job., wait 1200ms]

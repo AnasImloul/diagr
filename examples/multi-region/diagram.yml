@@ -15,7 +15,6 @@ components:
       region:
         title: $name
         sub: $role
-        tone: neutral
         groups:
           cluster:
             title: Cluster
@@ -25,7 +24,7 @@ components:
                 title: Checkout
                 tone: teal
                 nodes:
-                  api: {icon: api, title: Checkout API}
+                  api:    {icon: api,    title: Checkout API}
                   worker: {icon: server, title: Workers, sub: v1, stack: 2}
               catalog:
                 title: Catalog
@@ -38,9 +37,9 @@ components:
             nodes:
               db: {icon: database, title: Orders, sub: $database}
     edges:
-      api -> worker: jobs
-      api -> prices: prices
-      worker -> db: write
+      api    -> worker: jobs
+      api    -> prices: prices
+      worker -> db:     write
 
 # Two instances. Their nodes are a/api, a/worker, ... and b/api, b/worker, ...
 instances:
@@ -48,8 +47,8 @@ instances:
   b: {component: region, with: {name: Region B, role: standby, database: replica}}
 
 nodes:
-  health: {icon: clock, title: Health checks, sub: every 10 s}
-  user: {icon: browser, title: Customer}
+  health: {icon: clock,   title: Health checks, sub: every 10 s}
+  user:   {icon: browser, title: Customer}
 
 groups:
   edge:
@@ -64,13 +63,13 @@ groups:
       ci: {icon: pipeline, title: Deploy pipeline, cells: [build, test, canary, rollout]}
 
 edges:
-  user -> lb: HTTPS
-  health --> a/api: probe
-  lb -> a/api: active
-  lb --> b/api: standby
-  a/db --> b/db: replication
-  ci -> a/worker: {label: rollout, hidden: true}
-  ci -> b/worker: {label: canary, hidden: true}
+  user   -> lb:       HTTPS
+  health --> a/api:   probe
+  lb     -> a/api:    active
+  lb     --> b/api:   standby
+  a/db   --> b/db:    replication
+  ci     -> a/worker: {label: rollout, hidden: true}
+  ci     -> b/worker: {label: canary, hidden: true}
 
 scenarios:
   checkout:
@@ -92,7 +91,7 @@ scenarios:
           text: The checkout API asks the pricing service for the total, then queues the order for the workers.
           do:
             - activate a/api
-            - parallel: [draw a/api->a/prices, activate a/prices]
+            - parallel: [draw a/api -> a/prices, activate a/prices]
             - done a/prices
             - flow a/api -> a/worker
       - Persist:
@@ -103,7 +102,7 @@ scenarios:
           at: b/db
           text: The write is replicated to region B, which stays ready to take over.
           do:
-            - draw a/db->b/db
+            - draw a/db -> b/db
             - b/db.sub: replica, in sync
             - done b/db
 
@@ -116,12 +115,12 @@ scenarios:
       - Probe fails:
           at: health
           text: The health check stops getting answers from region A.
-          do: [activate health, draw health->a/api, fail a/api a/worker, health.sub: region A down]
+          do: [activate health, draw health -> a/api, fail a/api a/worker, health.sub: region A down]
       - Drain region A:
           at: lb
           text: The load balancer stops sending traffic to region A.
           focus: [lb, a/api, a/worker]
-          do: [hide lb->a/api, lb.sub: draining A, wait 1200ms]
+          do: [hide lb -> a/api, lb.sub: draining A, wait 1200ms]
       - Promote the replica:
           at: b/db
           text: Region B's database is promoted from replica to primary.
@@ -130,12 +129,12 @@ scenarios:
           at: b/api
           text: All traffic now goes to region B.
           do:
-            - draw lb->b/api
-            - lb->b/api.label: all traffic
+            - draw lb -> b/api
+            - lb -> b/api.label: all traffic
               lb.sub: anycast, to B
             - activate b/api
-            - draw b/api->b/worker
-            - draw b/worker->b/db
+            - draw b/api -> b/worker
+            - draw b/worker -> b/db
             - done b/api b/worker health
 
   deploy:
@@ -153,7 +152,7 @@ scenarios:
           text: The standby region gets the new version first, as a canary with no customer traffic.
           # Drawing the hidden edge from the pipeline brings it out.
           do:
-            - draw ci->b/worker
+            - draw ci -> b/worker
             - cells ci canary
             - activate b/worker 1000ms
             - b/worker.sub: v2 canary
@@ -162,7 +161,7 @@ scenarios:
           at: a/worker
           text: Region A is updated one replica at a time, so it keeps serving during the rollout.
           do:
-            - draw ci->a/worker
+            - draw ci -> a/worker
             - cells ci rollout
             - activate a/worker
             - repeat 2:

@@ -513,12 +513,11 @@ An action is a list of effects with a name, called in `do` by that name:
 
 ```yaml
 actions:
-  refresh: [draw warehouse->dashboards, dashboards.sub: refreshed, done dashboards]
+  refresh: [draw warehouse -> dashboards, dashboards.sub: refreshed, done dashboards]
 
-scenarios:
-  nightly:
-    steps:
-      - Publish: [flow marts -> warehouse, refresh]
+scenario:
+  steps:
+    - Publish: [flow marts -> warehouse, refresh]
 ```
 
 A component's actions use its own ids and are called with the instances they run on. Several instances play side
@@ -532,11 +531,10 @@ components:
       pull: [flow src -> ingest]
       validate: [flow ingest -> check 800ms done]
 
-scenarios:
-  nightly:
-    steps:
-      - Pull the feeds: [pull orders clicks stock]
-      - Validate: [validate orders clicks stock]
+scenario:
+  steps:
+    - Pull the feeds: [pull orders clicks stock]
+    - Validate: [validate orders clicks stock]
 ```
 
 Inside a component's action, another action of the same component is called by its name alone and runs on the same

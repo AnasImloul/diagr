@@ -47,37 +47,35 @@ The starter is a short order flow:
 ```yaml
 version: 1
 title: Order processing
-grid: {col: 200, row: 170}
 
 groups:
   front:
     title: Frontend
-    tone: blue
     nodes:
-      web: {at: [0, 0], icon: browser, title: Web app}
+      web: {icon: browser, title: Web app}
   back:
     title: Backend
     sub: one region
-    tone: teal
     nodes:
-      api: {at: [1, 0], icon: function, title: API, sub: validates}
-      queue: {at: [2, 0], icon: queue, title: Order queue}
-      db: {at: [3, 0], icon: database, title: Orders}
+      api:   {icon: function, title: API, sub: validates}
+      queue: {icon: queue,    title: Order queue}
+      db:    {icon: database, title: Orders}
 
 edges:
-  web -> api -> queue -> db: [POST /orders, enqueue, write]
+  web   -> api:   POST /orders
+  api   -> queue: enqueue
+  queue -> db:    write
 
-scenarios:
-  order:
-    trigger: {at: web, label: Place order}
-    steps:
-      - Submit: {at: web, do: [flow web -> api]}
-      - Queue: {at: api, do: [flow api 400ms -> queue]}
-      - Store: {at: db, do: [flow queue -> db 300ms done]}
+scenario:
+  trigger: {at: web, label: Place order}
+  steps:
+    - Submit: {at: web, do: [flow web -> api]}
+    - Queue: {at: api, do: [flow api 400ms -> queue]}
+    - Store: {at: db, do: [flow queue -> db 300ms done]}
 ```
 
-Groups hold nodes, each edge key can make several edges (`web -> api -> queue -> db` makes three, one label each),
-and each step of a scenario says what happens: `flow web -> api` makes `web` active, draws its edge to `api`, then
+Groups hold nodes, nodes are placed for you, each edge has its label after the colon, and each step of the
+scenario says what happens: `flow web -> api` makes `web` active, draws its edge to `api`, then
 marks `web` done.
 
 To show a diagram in a README, use both SVGs so the image follows the reader's theme:

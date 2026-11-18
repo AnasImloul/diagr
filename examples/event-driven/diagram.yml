@@ -11,37 +11,37 @@ groups:
     title: Clients
     tone: neutral
     nodes:
-      mobile: {icon: mobile, title: Phone app}
-      web: {icon: browser, title: Web shop}
+      mobile: {icon: mobile,  title: Phone app}
+      web:    {icon: browser, title: Web shop}
   core:
     title: Core services
     tone: teal
     nodes:
-      orders: {icon: api, title: Orders service}
-      cache: {icon: cache, title: Session cache}
-      db: {icon: database, title: Orders}
+      orders: {icon: api,      title: Orders service}
+      cache:  {icon: cache,    title: Session cache}
+      db:     {icon: database, title: Orders}
   consumers:
     title: Consumers
     sub: subscribed to order events
     tone: violet
     nodes:
-      stock: {icon: cube, title: Stock}
+      stock:  {icon: cube,   title: Stock}
       search: {icon: search, title: Search index}
-      notify: {icon: bell, title: Notifications}
+      notify: {icon: bell,   title: Notifications}
 
 nodes:
   gateway: {icon: gateway, title: API gateway, sub: "auth, rate limits"}
-  bus: {icon: events, title: Event bus, sub: order.placed}
-  monitor: {icon: monitor, title: Monitoring, sub: traces and alerts}
+  bus:     {icon: events,  title: Event bus,   sub: order.placed}
+  monitor: {icon: monitor, title: Monitoring,  sub: traces and alerts}
 
 edges:
-  (mobile web) -> gateway: HTTPS
-  gateway -> orders: POST /orders
-  orders -> cache: session
-  orders -> db: insert
-  orders -> bus: publish
-  bus -> (stock search notify):
-  bus --> monitor: lag
+  (mobile web) -> gateway:  HTTPS
+  gateway      -> orders:   POST /orders
+  orders       -> cache:    session
+  orders       -> db:       insert
+  orders       -> bus:      publish
+  bus          -> (stock search notify):
+  bus          --> monitor: lag
 
 scenarios:
   order:
