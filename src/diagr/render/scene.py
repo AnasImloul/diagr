@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import math
+import re
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from html import escape
@@ -32,6 +34,18 @@ SPIN_GLYPH = (
 )
 # The colour token each mark is drawn in.
 MARK_TOKEN = {"new": "new", "changed": "changed", "removed": "fail"}
+
+
+def initials(text: str) -> str:
+    """What the tile of a node without an icon shows: a short acronym as written ('API', 'DB'), else the first letter
+    of each of its first two words ('Web app' is WA, 'order-queue' is OQ, 'api' is A)."""
+    words = re.findall(r"[^\W_]+", text)
+    if not words:
+        return ""
+    if len(words) == 1:
+        word = words[0]
+        return word if word.isupper() and len(word) <= 3 else word[0].upper()
+    return (words[0][0] + words[1][0]).upper()
 
 
 @dataclass
@@ -109,6 +123,49 @@ class SceneBuilder:
         for k in range(stack - 1, -1, -1):
             dx, dy = 5 * k, -5 * k
             out.append(self._one(ic, x + dx, y + dy, size, tone, faded=k > 0))
+        return out
+
+    def letters(
+        self, k: str, title: str, x: float, y: float, size: float, tone: str | None = None, stack: int = 1
+    ) -> list[El]:
+        """A node without an icon: a tile with its initials, in a colour picked from its id, so that a diagram
+        written without icons still tells its nodes apart. An instance's node ('a/api') takes the colour of its id in
+        the component ('api'), like its group's tone."""
+        local = k.rpartition("/")[2]
+        if tone is None:
+            tones = [x for x in self.t.tiles if x != "red"] or self.t.tiles
+            tone = tones[zlib.crc32(local.encode("utf-8")) % len(tones)]
+        self.tiles_used.add(tone)
+        text = initials(title or local)
+        font = {1: 30, 2: 26}.get(len(text), 21)
+        out: list[El] = []
+        for j in range(stack - 1, -1, -1):
+            g = El(
+                "g",
+                {
+                    "class": "tile letters",
+                    "transform": f"translate({num(x + 5 * j - size / 2)} {num(y - 5 * j - size / 2)}) "
+                    f"scale({num(size / 64)})",
+                },
+            )
+            if j > 0:
+                g.attrs["opacity"] = ".55"
+            g.add(El("rect", {"width": 64, "height": 64, "rx": 10, "fill": f"url(#tile-{tone})"}))
+            g.add(
+                El(
+                    "text",
+                    {
+                        "x": 32,
+                        "y": num(32 + font * 0.36),
+                        "font-size": font,
+                        "font-weight": 600,
+                        "text-anchor": "middle",
+                        "fill": "#fff",
+                    },
+                    [text],
+                )
+            )
+            out.append(g)
         return out
 
     def _one(self, ic: Tile | SvgIcon, x: float, y: float, size: float, tone: str | None, faded: bool) -> El:
@@ -471,7 +528,10 @@ class SceneBuilder:
                 only="html",
             )
         )
-        el.add(*self.icon(n.icon, x, y, t.size("icon"), n.tone, n.stack))
+        if n.icon:
+            el.add(*self.icon(n.icon, x, y, t.size("icon"), n.tone, n.stack))
+        else:
+            el.add(*self.letters(k, n.title, x, y, t.size("icon"), n.tone, n.stack))
         el.add(*self._node_text(k, nb))
         if nb.strip:
             el.add(*self._strip(k, nb, nb.strip))
