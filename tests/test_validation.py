@@ -54,24 +54,19 @@ class Format(Case):
             "instance": f"components:\n  box:\n    {node}instances:\n  east-: {{component: box}}\n",
             "node in a component": "components:\n  box:\n    nodes:\n      x-: {at: [0, 0], icon: api}\n"
             "instances:\n  i: {component: box}\n",
-            "scenario": BASE + "scenarios:\n  go-: {steps: [{title: s, do: [done a]}]}\n",
+            "scenario": BASE + "scenarios:\n  go-: {steps: [{s: [done a]}]}\n",
         }
         for what, yml in cases.items():
             with self.subTest(what):
                 self.assertReports(problems(yml), "is not an id: letters, digits, _ and - (not last)")
 
     def test_unquoted_number_as_text_passes_the_parser_and_the_schema(self):
-        self.assertClean(problems(BASE + "title: 2024\nscenarios: {s: {steps: [{title: yes, do: [done a]}]}}\n"))
+        self.assertClean(problems(BASE + "title: 2024\nscenarios: {s: {steps: [{yes: [done a]}]}}\n"))
         self.assertEqual(json_schema()["properties"]["title"]["type"], ["string", "number", "boolean"])
 
     def test_list_inside_an_edge_list(self):
         yml = BASE.replace("a -> b: writes", "a -> b: [[x, y]]")
         self.assertReports(problems(yml), "one label or mapping per edge, not another list")
-
-    def test_short_step_named_like_a_step_field(self):
-        found = problems(BASE + "scenarios:\n  s:\n    steps:\n    - status: [done a]\n")
-        self.assertReports(found, "'status' is a step's own field")
-        self.assertReports(found, "write 'Status: [...]'")
 
     def test_version(self):
         self.assertClean(problems("version: 1\n" + BASE))
@@ -85,7 +80,7 @@ class Format(Case):
         self.assertEqual(yaml.safe_load(out)["version"], VERSION)
 
     def test_quoted_repeat_count(self):
-        yml = BASE + "scenarios:\n  s:\n    steps:\n    - title: s\n      do:\n        - repeat two: [done a]\n"
+        yml = BASE + "scenarios:\n  s:\n    steps:\n    - s:\n        - repeat two: [done a]\n"
         self.assertReports(problems(yml), "'repeat' needs a whole number")
 
 
@@ -141,10 +136,8 @@ class ErrorPaths(Case):
             THREE + "edges:\n  a -> b: {route: [right], via: [[0.5, 1]]}\n": "either 'route' or 'via'",
             "groups:\n  g: {title: G, span: [2, 1]}\n" + THREE: "group 'g': 'span' needs 'at'",
             "nodes:\n  a: {at: [0, 0], icon: api}\n  b: {at: [0, 0], icon: api}\n": "on the same cell as 'a'",
-            THREE + "actions:\n  go: [go]\nscenarios: {s: {steps: [{title: s, do: [go]}]}}\n": (
-                "action 'go' calls itself"
-            ),
-            THREE + "actions:\n  go: [activate a]\nscenarios: {s: {steps: [{title: s, do: [go x]}]}}\n": (
+            THREE + "actions:\n  go: [go]\nscenarios: {s: {steps: [{s: [go]}]}}\n": ("action 'go' calls itself"),
+            THREE + "actions:\n  go: [activate a]\nscenarios: {s: {steps: [{s: [go x]}]}}\n": (
                 "action 'go' takes no instances"
             ),
         }
@@ -155,7 +148,7 @@ class ErrorPaths(Case):
 
 class Flow(Case):
     def step(self, do: str) -> str:
-        return BASE + f"scenarios:\n  s:\n    steps:\n    - {{title: s, do: [{do}]}}\n"
+        return BASE + f"scenarios:\n  s:\n    steps:\n    - {{s: [{do}]}}\n"
 
     def test_needs_a_path(self):
         self.assertReports(problems(self.step("flow a")), "'flow' takes a path of nodes")
@@ -182,7 +175,7 @@ class Flow(Case):
 class Cells(Case):
     def step(self, cells: str, do: str) -> str:
         yml = BASE.replace("title: A}", f"title: A, cells: {cells}}}")
-        return yml + f"scenarios:\n  s:\n    steps:\n    - {{title: s, do: [{do}]}}\n"
+        return yml + f"scenarios:\n  s:\n    steps:\n    - {{s: [{do}]}}\n"
 
     def test_unknown_cell_name(self):
         self.assertReports(problems(self.step("[build, test]", "cells a biuld")), "did you mean 'build'")
@@ -207,17 +200,17 @@ class Hidden(Case):
 
     def test_mentioning_a_hidden_node_is_not_showing_it(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}").replace("a -> b: writes", "a -> b: {hidden: true}")
-        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [focus b, b.sub: x, show a->b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {s: [focus b, b.sub: x, show a->b]}\n"
         self.assertReports(problems(yml), "node 'b' is hidden and nothing shows it", "warning")
 
     def test_shown_node_is_fine(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}").replace("a -> b: writes", "a -> b: {hidden: true}")
-        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [show b a->b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {s: [show b a->b]}\n"
         self.assertClean(problems(yml))
 
     def test_visible_edge_into_hidden_node(self):
         yml = BASE.replace("title: B}", "title: B, hidden: true}")
-        yml += "scenarios:\n  s:\n    steps:\n    - {title: s, do: [show b]}\n"
+        yml += "scenarios:\n  s:\n    steps:\n    - {s: [show b]}\n"
         self.assertReports(problems(yml), "edge 'a->b' is visible but node 'b' starts hidden", "warning")
 
     def test_hidden_edge_that_nothing_shows(self):

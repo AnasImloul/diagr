@@ -50,10 +50,7 @@ class Layout(Case):
 
 
 def triggered(label: str) -> str:
-    return (
-        BASE
-        + f"scenarios:\n  s:\n    trigger: {{at: a, label: {label}}}\n    steps:\n    - {{title: go, do: [done a]}}\n"
-    )
+    return BASE + f"scenarios:\n  s:\n    trigger: {{at: a, label: {label}}}\n    steps:\n    - {{go: [done a]}}\n"
 
 
 class Buttons(Case):
@@ -239,7 +236,7 @@ class Escaping(Case):
     def test_text_cannot_end_the_player_data(self):
         # '<!--' then '<script' inside a script element makes the HTML parser swallow the player script after it.
         yml = BASE.replace("title: A", "title: '<!-- <script> A'") + (
-            "scenarios:\n  s:\n    steps:\n    - {title: '<!-- <script> go', text: '</script>', do: [done a]}\n"
+            "scenarios:\n  s:\n    steps:\n    - {'<!-- <script> go': {text: '</script>', do: [done a]}}\n"
         )
         html = render_html(prepared(yml))
         data = re.search(r'<script type="application/json" id="diagr-data">(.*?)</script>', html, re.S)
@@ -266,9 +263,7 @@ class Accessibility(Case):
         self.assertNotIn("aria-label=", svg.split(">", 1)[0])
 
     def test_shortcuts_only_act_inside_the_player(self):
-        html = render_html(
-            prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"), debug=True
-        )
+        html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {go: [done a]}\n"), debug=True)
         self.assertIn('<div class="stage" tabindex="0" role="group" aria-label="t, diagram">', html)
         # The player, zoom, contrast and debug keys each act only while focus is inside the player.
         page_keys = html.count('document.addEventListener("keydown"') + html.count(
@@ -279,15 +274,13 @@ class Accessibility(Case):
         self.assertEqual(scoped, page_keys)
 
     def test_a_looping_scenario_is_not_read_out_until_the_reader_takes_over(self):
-        html = render_html(
-            prepared(BASE + "scenarios:\n  s:\n    loop: true\n    steps:\n    - {title: go, do: [done a]}\n")
-        )
+        html = render_html(prepared(BASE + "scenarios:\n  s:\n    loop: true\n    steps:\n    - {go: [done a]}\n"))
         self.assertIn('<div id="status" aria-live="polite">', html)
         self.assertIn('statusEl.setAttribute("aria-live", "off")', html)
         self.assertIn('wrap.addEventListener("keydown", listen, { once: true })', html)
 
     def test_steps_are_buttons(self):
-        html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {title: go, do: [done a]}\n"))
+        html = render_html(prepared(BASE + "scenarios:\n  s:\n    steps:\n    - {go: [done a]}\n"))
         self.assertIn('<button type="button" aria-label="Step 1: go">go</button>', html)
 
 

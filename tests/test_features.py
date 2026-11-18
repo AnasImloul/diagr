@@ -34,13 +34,13 @@ scenarios:
   first:
     title: First
     steps:
-      - {title: one, at: a, do: [done a]}
+      - {one: {at: a, do: [done a]}}
   second:
     title: Second
     trigger: {at: a, label: Go}
     ready: second ready
     steps:
-      - {title: two, at: b, do: [draw a->b, done b]}
+      - {two: {at: b, do: [draw a->b, done b]}}
 """
 
 

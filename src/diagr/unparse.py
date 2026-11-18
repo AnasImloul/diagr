@@ -93,10 +93,12 @@ def _expand_calls(rest: dict[str, Any], d: Diagram) -> None:
     one = [rest["scenario"]] if rest.get("scenario") else []
     for sc in [*(rest.get("scenarios") or {}).values(), *one]:
         for step in sc.get("steps") or []:
-            # A step is a mapping with 'do', or 'Title: [effects]'.
-            for k in ["do"] if "title" in step else list(step):
-                if k in step:
-                    step[k] = _calls(step[k], d, names)
+            # A step is 'Title: [effects]', or its title with a mapping that may hold 'do'.
+            for title, body in step.items():
+                if isinstance(body, dict) and "do" in body:
+                    body["do"] = _calls(body["do"], d, names)
+                elif isinstance(body, list):
+                    step[title] = _calls(body, d, names)
 
 
 def _flow(v: Any) -> str:

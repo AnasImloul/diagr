@@ -897,73 +897,66 @@
         "steps": {
           "type": "array",
           "items": {
-            "oneOf": [
-              {
-                "type": "object",
-                "properties": {
-                  "title": {
-                    "type": [
-                      "string",
-                      "number",
-                      "boolean"
-                    ]
-                  },
-                  "text": {
-                    "type": [
-                      "string",
-                      "number",
-                      "boolean"
-                    ],
-                    "description": "Longer explanation for the step list"
-                  },
-                  "at": {
-                    "type": [
-                      "string",
-                      "number",
-                      "boolean"
-                    ],
-                    "description": "Node that carries the step's number badge"
-                  },
-                  "status": {
-                    "type": [
-                      "string",
-                      "number",
-                      "boolean"
-                    ],
-                    "description": "Status line while the step plays; default: the title"
-                  },
-                  "focus": {
-                    "type": "array",
-                    "items": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/effects"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "text": {
                       "type": [
                         "string",
                         "number",
                         "boolean"
-                      ]
+                      ],
+                      "description": "Longer explanation for the step list"
                     },
-                    "minItems": 1,
-                    "description": "Dim everything but these, and the edges between them, for the step"
+                    "at": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ],
+                      "description": "Node that carries the step's number badge"
+                    },
+                    "status": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean"
+                      ],
+                      "description": "Status line while the step plays; default: the title"
+                    },
+                    "focus": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Dim everything but these, and the edges between them, for the step"
+                    },
+                    "do": {
+                      "$ref": "#/$defs/effects",
+                      "description": "Effects, in order"
+                    }
                   },
-                  "do": {
-                    "$ref": "#/$defs/effects",
-                    "description": "Effects, in order"
-                  }
+                  "additionalProperties": false
                 },
-                "additionalProperties": false,
-                "required": [
-                  "title"
-                ]
-              },
-              {
-                "type": "object",
-                "minProperties": 1,
-                "maxProperties": 1,
-                "additionalProperties": {
-                  "$ref": "#/$defs/effects"
-                },
-                "description": "'Title: [effects]', for a step with no text"
-              }
-            ]
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "A step: its title, with its effects or its other fields under it"
           },
           "minItems": 1
         }
@@ -1039,73 +1032,66 @@
           "steps": {
             "type": "array",
             "items": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "title": {
-                      "type": [
-                        "string",
-                        "number",
-                        "boolean"
-                      ]
-                    },
-                    "text": {
-                      "type": [
-                        "string",
-                        "number",
-                        "boolean"
-                      ],
-                      "description": "Longer explanation for the step list"
-                    },
-                    "at": {
-                      "type": [
-                        "string",
-                        "number",
-                        "boolean"
-                      ],
-                      "description": "Node that carries the step's number badge"
-                    },
-                    "status": {
-                      "type": [
-                        "string",
-                        "number",
-                        "boolean"
-                      ],
-                      "description": "Status line while the step plays; default: the title"
-                    },
-                    "focus": {
-                      "type": "array",
-                      "items": {
+              "type": "object",
+              "minProperties": 1,
+              "maxProperties": 1,
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/effects"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "text": {
                         "type": [
                           "string",
                           "number",
                           "boolean"
-                        ]
+                        ],
+                        "description": "Longer explanation for the step list"
                       },
-                      "minItems": 1,
-                      "description": "Dim everything but these, and the edges between them, for the step"
+                      "at": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ],
+                        "description": "Node that carries the step's number badge"
+                      },
+                      "status": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ],
+                        "description": "Status line while the step plays; default: the title"
+                      },
+                      "focus": {
+                        "type": "array",
+                        "items": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
+                          ]
+                        },
+                        "minItems": 1,
+                        "description": "Dim everything but these, and the edges between them, for the step"
+                      },
+                      "do": {
+                        "$ref": "#/$defs/effects",
+                        "description": "Effects, in order"
+                      }
                     },
-                    "do": {
-                      "$ref": "#/$defs/effects",
-                      "description": "Effects, in order"
-                    }
+                    "additionalProperties": false
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "title"
-                  ]
-                },
-                {
-                  "type": "object",
-                  "minProperties": 1,
-                  "maxProperties": 1,
-                  "additionalProperties": {
-                    "$ref": "#/$defs/effects"
-                  },
-                  "description": "'Title: [effects]', for a step with no text"
-                }
-              ]
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "description": "A step: its title, with its effects or its other fields under it"
             },
             "minItems": 1
           }

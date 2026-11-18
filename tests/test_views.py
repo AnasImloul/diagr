@@ -31,8 +31,8 @@ scenarios:
   go:
     trigger: {at: web, label: Go}
     steps:
-      - title: Go
-        do: [flow web -> api -> db]
+      - Go:
+          do: [flow web -> api -> db]
 views:
   backend: {title: Backend only, include: [back]}
   front: {include: [web, back], exclude: [data], scenarios: [go]}
@@ -108,13 +108,13 @@ edges:
 scenarios:
   go:
     steps:
-      - title: Ask
-        do: [flow web -> api]
-      - title: Store
-        do:
-          - parallel: [flow api -> db, flow api -> cache]
-      - title: Again
-        do: [draw web->api]
+      - Ask:
+          do: [flow web -> api]
+      - Store:
+          do:
+            - parallel: [flow api -> db, flow api -> cache]
+      - Again:
+          do: [draw web->api]
 views:
   story: {scenario: go}
 """

@@ -214,8 +214,8 @@ class HangingButtons(Case):
           s:
             trigger: {at: repo, label: Go}
             steps:
-              - title: Go
-                do: [activate build]
+              - Go:
+                  do: [activate build]
         """
         self.assertClean(problems(yml))
         p = prepared(yml)

@@ -34,21 +34,21 @@ scenarios:
     ready: One order, from checkout to confirmation.
     end: Order stored and confirmed.
     steps:
-      - title: Submit
-        at: web
-        text: The customer places the order from the checkout page.
-        do: [flow web 600ms -> api]
-      - title: Validate and queue
-        at: api
-        text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.
-        do: [activate api 800ms, api.sub: order is valid, flow api -> queue]
-      - title: Process
-        at: worker
-        text: A worker takes the order off the queue and writes it to the database.
-        do: [flow queue -> worker 1200ms -> db 600ms done]
-      - title: Confirm
-        at: mail
-        text: Once the order is stored, the worker sends the confirmation email.
-        # Drawing the hidden edge brings it and the email node out.
-        focus: [worker, mail]
-        do: [draw worker->mail, run mail 1000ms]
+      - Submit:
+          at: web
+          text: The customer places the order from the checkout page.
+          do: [flow web 600ms -> api]
+      - Validate and queue:
+          at: api
+          text: The API checks the order and puts it on the queue, so a slow worker never blocks checkout.
+          do: [activate api 800ms, api.sub: order is valid, flow api -> queue]
+      - Process:
+          at: worker
+          text: A worker takes the order off the queue and writes it to the database.
+          do: [flow queue -> worker 1200ms -> db 600ms done]
+      - Confirm:
+          at: mail
+          text: Once the order is stored, the worker sends the confirmation email.
+          # Drawing the hidden edge brings it and the email node out.
+          focus: [worker, mail]
+          do: [draw worker->mail, run mail 1000ms]

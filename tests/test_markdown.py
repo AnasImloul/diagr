@@ -18,8 +18,8 @@ PLAYER = (
 scenarios:
   s:
     steps:
-      - title: Go
-        do: [flow a -> b]
+      - Go:
+          do: [flow a -> b]
 """
 )
 

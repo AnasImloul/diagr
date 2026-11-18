@@ -82,7 +82,7 @@ class Expansion(Case):
 
     def test_scenarios_reach_into_copies(self):
         yml = BASE + (
-            "scenarios:\n  s:\n    steps:\n    - title: go\n      do:\n"
+            "scenarios:\n  s:\n    steps:\n    - go:\n"
             "        - draw lb->b/api\n        - 'b/db.sub: busy'\n        - 'lb->a/api.label: idle'\n"
             "        - done b/api\n"
         )
@@ -96,12 +96,12 @@ class Expansion(Case):
         action = "    actions:\n      go: [activate api]\n    edges:\n      api -> db:"
         yml = (
             BASE.replace("    edges:\n      api -> db:", action)
-            + "scenarios:\n  s:\n    steps:\n    - {title: Intro, text: Nothing yet}\n    - Go: [go a]\n"
+            + "scenarios:\n  s:\n    steps:\n    - {Intro: {text: Nothing yet}}\n    - Go: [go a]\n"
         )
         out = to_yaml(loads(yml, "t.yml", ROOT), yaml.safe_load(yml))
         self.assertClean(problems(out))
         steps = yaml.safe_load(out)["scenarios"]["s"]["steps"]
-        self.assertEqual(steps[0], {"title": "Intro", "text": "Nothing yet"})
+        self.assertEqual(steps[0], {"Intro": {"text": "Nothing yet"}})
         self.assertEqual(steps[1], {"Go": ["activate a/api"]})
 
 
@@ -161,8 +161,7 @@ class Errors(Case):
 
     def test_typos_get_suggestions(self):
         yml = BASE.replace("lb -> b/api:", "lb -> b/aip:") + (
-            "scenarios:\n  s:\n    steps:\n"
-            "    - {title: s, at: a/dbb, do: [activate b/apl, draw lb->a/apii, a/bd.sub: x]}\n"
+            "scenarios:\n  s:\n    steps:\n    - {s: {at: a/dbb, do: [activate b/apl, draw lb->a/apii, a/bd.sub: x]}}\n"
         )
         found = problems(yml.replace("icon: database", "icon: databse"))
         for text in (

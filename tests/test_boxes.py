@@ -105,7 +105,7 @@ class EdgesToBoxes(Case):
         self.assertReports(problems(BOXES.replace("e -> bottom", "c -> bottom")), "to the group 'bottom' it is in")
 
     def test_flow_passes_through_a_box(self):
-        yml = BOXES + "scenarios:\n  go:\n    steps:\n      - title: Go\n        do: [flow e -> bottom -> top]\n"
+        yml = BOXES + "scenarios:\n  go:\n    steps:\n      - Go: [flow e -> bottom -> top]\n"
         self.assertClean(problems(yml))
 
 
@@ -278,8 +278,8 @@ class Titles(Case):
           s:
             trigger: {at: a, label: Run}
             steps:
-              - title: Go
-                do: [activate a]
+              - Go:
+                  do: [activate a]
         """
         self.assertReports(problems(yml), "node 'a' covers the title of group 'g'", "warning")
 

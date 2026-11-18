@@ -37,21 +37,21 @@ scenarios:
     ready: Follow one job from admission to a dead-letter queue and back.
     end: The job is back on the queue.
     steps:
-      - title: Admit
-        text: The API admits the job to the backlog and, at the same time, sends its captions job down the captions pipeline.
-        do:
-          - parallel: [flow api 600ms -> backlog, flow api -> cq -> captions -> llm done]
-          - activate backlog 600ms
+      - Admit:
+          text: The API admits the job to the backlog and, at the same time, sends its captions job down the captions pipeline.
+          do:
+            - parallel: [flow api 600ms -> backlog, flow api -> cq -> captions -> llm done]
+            - activate backlog 600ms
       - Dispatch: [flow backlog -> dispatcher 600ms -> jobs]
-      - title: Fail three times
-        do:
-          - activate jobs
-          - draw jobs->transcode 800ms
-          - repeat 3:
-              - activate transcode 1000ms
-              - fail transcode
-              - transcode.sub 800ms: attempt {i} of 3 failed
-          - draw jobs->dlq
-          - activate dlq 800ms
-          - done jobs
+      - Fail three times:
+          do:
+            - activate jobs
+            - draw jobs->transcode 800ms
+            - repeat 3:
+                - activate transcode 1000ms
+                - fail transcode
+                - transcode.sub 800ms: attempt {i} of 3 failed
+            - draw jobs->dlq
+            - activate dlq 800ms
+            - done jobs
       - Redrive: [draw redrive 1800ms, done dlq, status: An operator redrove the job., wait 1200ms]

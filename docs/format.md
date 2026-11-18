@@ -385,26 +385,28 @@ scenario:
   ready: Press Place order to follow one order.
   end: Order stored.
   steps:
-    - title: Validate and queue
-      at: api                        # the node that gets the step's number badge
-      status: Validating             # status line while the step plays; default: the title
-      text: The API checks the order and puts it on the queue.
-      do:
-        - activate api 400ms
-        - api.sub: order is valid
-        - flow api -> queue
-    - title: Store
-      at: db
-      focus: [queue, worker, db]     # dim the rest while the step plays
-      do: [flow queue -> worker 1200ms -> db 600ms done]
-    - Confirm: [run mail 800ms]      # a step with nothing to say but its title
+    - Validate and queue:
+        at: api                      # the node that gets the step's number badge
+        status: Validating           # status line while the step plays; default: the title
+        text: The API checks the order and puts it on the queue.
+        do:
+          - activate api 400ms
+          - api.sub: order is valid
+          - flow api -> queue
+    - Store:
+        at: db
+        focus: [queue, worker, db]   # dim the rest while the step plays
+        do: [flow queue -> worker 1200ms -> db 600ms done]
+    - Confirm: [run mail 800ms]    # a step with nothing to say but its title
 ```
 
 - **`trigger`** puts a button under the node `at`, with `label` on it, that plays the scenario. A node carries one
   trigger at most.
 - **`focus`** on a step dims everything but the nodes, edges and groups it lists, and the edges between the nodes it
   lists, while the step plays, and clears when the step ends.
-- **`Title: [effects]`** is a step with only a title and effects.
+- **Steps.** A step's title is its key, so the titles read down the left like a table of contents. Under it go the
+  step's effects (`Title: [effects]`), or a mapping of its other keys: `at`, `text`, `status`, `focus` and `do`. A
+  title with `: ` in it needs quotes, like any YAML key.
 
 A scenario compiles to a list of frames. Each frame only assigns values (node `api` is active, edge `api->queue` is
 drawn, a text is replaced), and the state at frame k is all assignments up to k. That is what makes step back,

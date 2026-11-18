@@ -112,29 +112,29 @@ scenarios:
     ready: Press Play to run the nightly batch.
     end: Fresh data is on the dashboards.
     steps:
-      - title: Pull the feeds
-        at: orders/src
-        text: All three feeds are pulled at once.
-        do: [pull orders clicks stock]
-      - title: Validate
-        at: orders/check
-        text: Each feed checks its records against the feed's schema.
-        do: [validate orders clicks stock]
-      - title: Land in bronze
-        at: raw
-        text: The validated records are merged and landed as raw tables.
-        do: [draw orders/check->bus clicks/check->bus stock/check->bus, draw bus->raw, done raw]
-      - title: Clean and curate
-        at: spark
-        text: The batch engine deduplicates, joins, enriches and aggregates, writing clean tables.
-        do: [activate spark, draw raw->spark, cells spark, draw spark->clean, done spark clean]
-      - title: Publish
-        at: marts
-        text: The data marts are rebuilt and published to the warehouse.
-        do: [flow clean -> marts -> warehouse done]
-      - title: Refresh the dashboards
-        at: dashboards
-        do: [draw warehouse->dashboards, dashboards.sub: refreshed 02:14, done dashboards]
+      - Pull the feeds:
+          at: orders/src
+          text: All three feeds are pulled at once.
+          do: [pull orders clicks stock]
+      - Validate:
+          at: orders/check
+          text: Each feed checks its records against the feed's schema.
+          do: [validate orders clicks stock]
+      - Land in bronze:
+          at: raw
+          text: The validated records are merged and landed as raw tables.
+          do: [draw orders/check->bus clicks/check->bus stock/check->bus, draw bus->raw, done raw]
+      - Clean and curate:
+          at: spark
+          text: The batch engine deduplicates, joins, enriches and aggregates, writing clean tables.
+          do: [activate spark, draw raw->spark, cells spark, draw spark->clean, done spark clean]
+      - Publish:
+          at: marts
+          text: The data marts are rebuilt and published to the warehouse.
+          do: [flow clean -> marts -> warehouse done]
+      - Refresh the dashboards:
+          at: dashboards
+          do: [draw warehouse->dashboards, dashboards.sub: refreshed 02:14, done dashboards]
 
   bad-record:
     title: Bad record
@@ -142,30 +142,30 @@ scenarios:
     ready: Press Send a bad record to follow one through validation.
     end: The record was fixed and loaded.
     steps:
-      - title: Validation fails
-        at: clicks/check
-        text: A click event arrives without a session id and fails the schema check.
-        do: [flow clicks/src -> clicks/ingest -> clicks/check, fail clicks/check, clicks/check.sub: missing session_id]
-      - title: Quarantine it
-        at: quarantine
-        text: The record is set aside instead of blocking the feed.
-        # Drawing the hidden edge brings it and the quarantine out.
-        do: [draw clicks/check->quarantine, quarantine.sub: 1 record]
-      - title: Page on-call
-        at: oncall
-        do: [draw quarantine->oncall, run oncall 1200ms]
-      - title: Fix and retry
-        at: clicks/check
-        text: The fixed record goes through validation again.
-        do:
-          - activate clicks/check
-          - repeat 2:
-              - clicks/check.sub: retry {i} of 2
-              - wait 800ms
-          - clicks/check.sub: schema v3
-          - done clicks/check
-          - draw clicks/check->bus
-          - draw bus->raw
+      - Validation fails:
+          at: clicks/check
+          text: A click event arrives without a session id and fails the schema check.
+          do: [flow clicks/src -> clicks/ingest -> clicks/check, fail clicks/check, clicks/check.sub: missing session_id]
+      - Quarantine it:
+          at: quarantine
+          text: The record is set aside instead of blocking the feed.
+          # Drawing the hidden edge brings it and the quarantine out.
+          do: [draw clicks/check->quarantine, quarantine.sub: 1 record]
+      - Page on-call:
+          at: oncall
+          do: [draw quarantine->oncall, run oncall 1200ms]
+      - Fix and retry:
+          at: clicks/check
+          text: The fixed record goes through validation again.
+          do:
+            - activate clicks/check
+            - repeat 2:
+                - clicks/check.sub: retry {i} of 2
+                - wait 800ms
+            - clicks/check.sub: schema v3
+            - done clicks/check
+            - draw clicks/check->bus
+            - draw bus->raw
 
   query:
     title: Self-serve query
@@ -173,17 +173,17 @@ scenarios:
     ready: Press Run a query to follow one question.
     end: Answer on screen.
     steps:
-      - title: Open a dashboard
-        at: analyst
-        do: [flow analyst -> dashboards -> warehouse]
-      - title: Check access
-        at: access
-        text: The warehouse checks the analyst's grants before running the query.
-        focus: [warehouse, access]
-        do: [draw access->warehouse, wait 1000ms]
-      - title: Answer
-        at: warehouse
-        do: [activate warehouse 1200ms, draw warehouse->dashboards, done warehouse dashboards, analyst.sub: answer in 1.2 s]
+      - Open a dashboard:
+          at: analyst
+          do: [flow analyst -> dashboards -> warehouse]
+      - Check access:
+          at: access
+          text: The warehouse checks the analyst's grants before running the query.
+          focus: [warehouse, access]
+          do: [draw access->warehouse, wait 1000ms]
+      - Answer:
+          at: warehouse
+          do: [activate warehouse 1200ms, draw warehouse->dashboards, done warehouse dashboards, analyst.sub: answer in 1.2 s]
 
   backfill:
     title: Backfill
@@ -191,20 +191,20 @@ scenarios:
     ready: Press Backfill to reprocess the last three days.
     end: Three days reprocessed.
     steps:
-      - title: Reprocess day by day
-        at: spark
-        text: The batch engine rereads each day's raw tables and rewrites the clean ones.
-        do:
-          - activate spark
-          - repeat 3:
-              - raw.sub: day {i} of 3
-              - draw raw->spark
-              - cells spark
-              - draw spark->clean
-          - done spark
-      - title: Record lineage
-        at: catalog
-        do: [draw catalog->spark, catalog.sub: backfill recorded, done catalog]
+      - Reprocess day by day:
+          at: spark
+          text: The batch engine rereads each day's raw tables and rewrites the clean ones.
+          do:
+            - activate spark
+            - repeat 3:
+                - raw.sub: day {i} of 3
+                - draw raw->spark
+                - cells spark
+                - draw spark->clean
+            - done spark
+      - Record lineage:
+          at: catalog
+          do: [draw catalog->spark, catalog.sub: backfill recorded, done catalog]
 
 # Parts of the diagram built as their own images and pages: data-platform-ingestion and data-platform-serving.
 # Each view is placed again on its own, closing up around what it keeps.

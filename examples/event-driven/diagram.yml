@@ -49,18 +49,18 @@ scenarios:
     ready: Press Place order to follow one order.
     end: Stock, search and the customer all heard about the order.
     steps:
-      - title: Call the gateway
-        text: The phone app sends the order to the API gateway, which checks the token.
-        do: [flow mobile -> gateway 600ms done]
-      - title: Store the order
-        text: The orders service reads the session from the cache and writes the order.
-        do: [flow gateway -> orders -> (cache db) done]
-      - title: Publish
-        text: One event goes on the bus. The orders service is done; it does not wait for anyone.
-        do: [flow orders -> bus 600ms]
-      - title: React
-        text: Each consumer picks the event up on its own.
-        do: [flow bus -> (stock search notify) done]
+      - Call the gateway:
+          text: The phone app sends the order to the API gateway, which checks the token.
+          do: [flow mobile -> gateway 600ms done]
+      - Store the order:
+          text: The orders service reads the session from the cache and writes the order.
+          do: [flow gateway -> orders -> (cache db) done]
+      - Publish:
+          text: One event goes on the bus. The orders service is done; it does not wait for anyone.
+          do: [flow orders -> bus 600ms]
+      - React:
+          text: Each consumer picks the event up on its own.
+          do: [flow bus -> (stock search notify) done]
 
 # A view built as its own images and page, event-driven-consumers. Its nodes were placed automatically, so they are
 # placed again for the view, which closes up around them.

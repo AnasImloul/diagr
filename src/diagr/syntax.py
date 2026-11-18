@@ -318,7 +318,6 @@ EDGES = f.MapOf(
 )
 
 STEP_FIELDS = {
-    "title": f.F(f.Str(), required=True),
     "text": f.F(f.Str(description="Longer explanation for the step list")),
     "at": f.F(f.Str(description="Node that carries the step's number badge")),
     "status": f.F(f.Str(description="Status line while the step plays; default: the title")),
@@ -331,34 +330,32 @@ STEP = f.Obj("step", STEP_FIELDS)
 
 
 class StepT(f.T):
-    """A step, or 'Title: [effects]' for one with nothing else to say."""
+    """A step: its title as the key, with its effects under it, or a mapping of its other fields."""
 
     def kind(self) -> str:
-        return "a mapping"
+        return "a step: 'Title: [effects]', or 'Title:' with 'at', 'text', 'status', 'focus' and 'do' under it"
 
     def check(self, y, problems):
-        if isinstance(y, YMap) and len(y.pairs) == 1:
-            k, v = y.pairs[0]
-            if isinstance(v, YSeq) and k.value not in STEP_FIELDS:
-                return f.Rec(y.loc, {"title": k.value, "do": v}, {"title": k.loc, "do": v.loc})
-            if isinstance(v, YSeq) and k.value in ("title", "text", "at", "status"):
-                return self._fail(
-                    k,
-                    problems,
-                    f"'{k.value}' is a step's own field, so this is not read as a step titled {k.value}: write "
-                    f"'{k.value.capitalize()}: [...]' or '{{title: {k.value}, do: [...]}}'",
-                )
-        return STEP.check(y, problems)
+        if not isinstance(y, YMap) or len(y.pairs) != 1:
+            return self._fail(y, problems)
+        k, v = y.pairs[0]
+        if isinstance(v, YSeq):
+            rec = f.Rec(y.loc, {"do": v}, {"do": v.loc})
+        elif isinstance(v, YScalar) and v.null:
+            rec = f.Rec(y.loc, {}, {})
+        else:
+            rec = STEP.check(v, problems)
+        rec.values["title"], rec.locs["title"] = k.value, k.loc
+        return rec
 
     def schema(self):
-        short = {
+        return {
             "type": "object",
             "minProperties": 1,
             "maxProperties": 1,
-            "additionalProperties": {"$ref": "#/$defs/effects"},
-            "description": "'Title: [effects]', for a step with no text",
+            "additionalProperties": {"oneOf": [{"$ref": "#/$defs/effects"}, STEP.schema(), {"type": "null"}]},
+            "description": "A step: its title, with its effects or its other fields under it",
         }
-        return {"oneOf": [STEP.schema(), short]}
 
 
 TRIGGER = f.Obj(

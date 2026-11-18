@@ -24,6 +24,6 @@ scenarios:
   order:
     trigger: {at: web, label: Place order}
     steps:
-      - {title: Submit, at: web, do: [flow web -> api]}
-      - {title: Queue, at: api, do: [flow api 400ms -> queue]}
-      - {title: Store, at: db, do: [flow queue -> db 300ms done]}
+      - Submit: {at: web, do: [flow web -> api]}
+      - Queue: {at: api, do: [flow api 400ms -> queue]}
+      - Store: {at: db, do: [flow queue -> db 300ms done]}
